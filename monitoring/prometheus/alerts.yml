@@ -36,3 +36,39 @@ groups:
         annotations:
           summary: ERP backend p95 latency is above one second
           description: The 95th percentile HTTP response time exceeded one second for five minutes.
+
+      - alert: SupplierOutboxBacklogGrowing
+        expr: erp_supplier_outbox_pending_events > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Supplier outbox backlog is growing
+          description: More than 100 supplier events have remained pending for five minutes.
+
+      - alert: SupplierOutboxOldestEventTooOld
+        expr: erp_supplier_outbox_oldest_pending_age_seconds > 300
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Supplier outbox contains delayed events
+          description: The oldest pending supplier event is more than five minutes old.
+
+      - alert: SupplierOutboxFailedEvents
+        expr: erp_supplier_outbox_failed_events > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Supplier outbox contains failed events
+          description: One or more supplier events reached the FAILED state and require investigation or replay.
+
+      - alert: SupplierEventsDeadLettered
+        expr: increase(erp_supplier_events_dead_letter_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Supplier events were sent to the dead-letter queue
+          description: At least one supplier event was dead-lettered during the last five minutes.
