@@ -42,6 +42,18 @@ services:
       oracle:
         condition: service_healthy
 
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: erp-cloudbeaver
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8978:8978"
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+    depends_on:
+      oracle:
+        condition: service_healthy
+
   frontend:
     image: node:22-alpine
     container_name: erp-frontend
@@ -59,3 +71,5 @@ services:
 volumes:
   oracle_data:
     name: erp_oracle_data
+  cloudbeaver_data:
+    name: erp_cloudbeaver_data
