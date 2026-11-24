@@ -73,7 +73,7 @@ The publisher claims one pending event inside an Oracle transaction with `FOR UP
 
 A claim has a 60-second lease. If a worker exits unexpectedly, a later publisher returns expired `PROCESSING` records to `PENDING`. Successful RabbitMQ publication uses publisher confirms before Oracle is updated to `PUBLISHED`.
 
-This is an **at-least-once** delivery design, not exactly-once delivery. If RabbitMQ confirms a message but the worker crashes before Oracle records `PUBLISHED`, the event can be published again after lease recovery. Consumers must therefore remain idempotent. The Supplier consumer reloads the current Oracle aggregate state before updating Elasticsearch, which makes duplicate and delayed change events safe for the read model.
+This is an **at-least-once** delivery design, not exactly-once delivery. If RabbitMQ confirms a message but the worker crashes before Oracle records `PUBLISHED`, the event can be published again after lease recovery. Consumers must therefore remain idempotent. The Supplier consumer reloads the current Oracle aggregate state before updating Elasticsearch. It also claims each `eventId` in the Oracle `supplier_consumed_events` ledger. A successfully completed event is marked `PROCESSED`; later deliveries of that ID are acknowledged without repeating the read-model operations. A live `PROCESSING` claim is retried, while a failed operation releases its claim back to `PENDING`. Claims use a five-minute lease and a unique claim token, so a worker that lost ownership cannot mark another worker's attempt as complete. This reduces duplicate work but does not make Oracle, Elasticsearch and Redis one distributed transaction: a crash after an external side effect and before the completion update can still cause that idempotent side effect to be repeated.
 
 ## Failure-injection and recovery runbook
 
@@ -134,6 +134,21 @@ FETCH FIRST 30 ROWS ONLY;
 
 These are operational fault-injection procedures, not automated PHPUnit tests. The live pipeline test covers the normal create/update/delete path; the failure windows above require controlled broker/process fault injection to test deterministically.
 
+Apply the consumer idempotency ledger to an existing Oracle schema:
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/010_create_supplier_consumed_events.sql
+```
+
+Inspect recent consumer state and recovery leases:
+
+```sql
+SELECT event_id, event_type, aggregate_id, status, attempts, locked_until, processed_at, last_error
+FROM supplier_consumed_events
+ORDER BY received_at DESC
+FETCH FIRST 30 ROWS ONLY;
+```
+
 ## Supplier event metrics and alerts
 
 The backend `/metrics` endpoint exposes shared Supplier worker metrics stored in Redis. The publisher and consumer update the same Redis keys even though they run in separate processes.
@@ -142,6 +157,7 @@ Important Prometheus metrics:
 
 - `erp_supplier_events_published_total`
 - `erp_supplier_events_consumed_total`
+- `erp_supplier_events_deduplicated_total`
 - `erp_supplier_events_failed_total`
 - `erp_supplier_events_dead_letter_total`
 - `erp_supplier_outbox_pending_events`
