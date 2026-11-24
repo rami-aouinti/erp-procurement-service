@@ -25,6 +25,9 @@ Build a realistic procurement workflow:
 - [x] Add repeatable supplier, product, purchase-order and order-line seed data
 - [x] Add practical SQL queries using JOIN, LEFT JOIN, GROUP BY and aggregation
 - [ ] Execute the seed script in the local database
+- [x] Add goods receipt and inventory tables
+- [x] Add an atomic PL/SQL procedure for receiving an order line
+- [x] Add a manual goods-receiving test script
 - [ ] Connect the Symfony application to Oracle
 
 ## Requirements
@@ -144,3 +147,26 @@ Oracle data is stored in the named Docker volume `erp_oracle_data`. Stopping or 
 ## Learning approach
 
 This is an educational project. We will implement business rules incrementally and document the Oracle concepts used by each workflow. Credentials in this repository are examples only; use local secrets in `.env`.
+
+## Goods receiving and inventory
+
+`database/oracle/004_create_goods_receiving.sql` adds:
+
+- `GOODS_RECEIPTS` and `GOODS_RECEIPT_LINES` to record deliveries.
+- `RECEIVED_QUANTITY` on each purchase-order line.
+- `INVENTORY` for current stock and `INVENTORY_MOVEMENTS` as an audit trail.
+- `RECEIVE_PURCHASE_ORDER_LINE`, a PL/SQL procedure that locks the order and line, validates the remaining quantity, records the receipt, increases stock, updates the order status, and commits the operation. On an error, it rolls back the changes.
+
+Run this schema extension once, after the initial schema and demo data:
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/004_create_goods_receiving.sql
+```
+
+Then execute the example test (it receives two docking stations for `PO-2026-0001`):
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/005_test_goods_receiving.sql
+```
+
+The test displays the ordered, received and remaining quantities, the current inventory, and the stock movement history. The receiving procedure commits or rolls back its own transaction; call it as a complete business operation.
