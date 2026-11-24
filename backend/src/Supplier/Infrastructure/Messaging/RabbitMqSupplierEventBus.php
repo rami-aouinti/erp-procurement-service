@@ -189,10 +189,10 @@ final readonly class RabbitMqSupplierEventBus
         );
 
         $exchange = $this->exchange($channel, $exchangeName);
-        $published = $exchange->publish($body, $routingKey, AMQP_NOPARAM, $properties);
-        if (!$published) {
-            throw new RuntimeException(sprintf('RabbitMQ rejected publishing to exchange "%s".', $exchangeName));
-        }
+        // ext-amqp 2.x declares AMQPExchange::publish() as void. The broker
+        // acknowledgement is asynchronous, so its result must be checked via
+        // waitForConfirm(), not via the return value of publish().
+        $exchange->publish($body, $routingKey, AMQP_NOPARAM, $properties);
 
         // A timeout or nack is propagated to the outbox publisher, which leaves
         // the event pending for a later retry instead of marking it published.
