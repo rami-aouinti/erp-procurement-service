@@ -51,8 +51,9 @@ docker compose exec backend php bin/console supplier:create "Acme GmbH" \
 ## Validation
 
 `Application/Validator/SupplierDataValidator` validates the SupplierData DTO.
-Both the HTTP controller and Console command use the same validator. Invalid
-business input is reported as HTTP 422 or a failed CLI command.
+`CreateSupplier` and `UpdateSupplier` invoke the validator before running business
+operations. HTTP and Console transports therefore share the same application
+validation. Invalid business input is reported as HTTP 422 or a failed CLI command.
 
 ## Continuous integration
 
