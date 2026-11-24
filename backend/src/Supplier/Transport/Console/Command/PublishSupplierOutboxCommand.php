@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Supplier\Transport\Console\Command;
 
+use App\Observability\MetricsRegistry;
 use App\Supplier\Infrastructure\Messaging\RabbitMqSupplierEventBus;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,6 +20,7 @@ final class PublishSupplierOutboxCommand extends Command
     public function __construct(
         private readonly Connection $connection,
         private readonly RabbitMqSupplierEventBus $eventBus,
+        private readonly MetricsRegistry $metrics,
     ) {
         parent::__construct();
     }
@@ -37,6 +39,7 @@ final class PublishSupplierOutboxCommand extends Command
         $this->connection->executeStatement(
             "UPDATE supplier_outbox_events SET status = 'PENDING', locked_until = NULL WHERE status = 'PROCESSING' AND locked_until < SYSTIMESTAMP"
         );
+        $this->refreshPendingMetric();
 
         for ($i = 0; $i < $limit; ++$i) {
             $this->connection->beginTransaction();
@@ -97,7 +100,9 @@ final class PublishSupplierOutboxCommand extends Command
                     ['eventId' => $eventId]
                 ) > 0) {
                     ++$published;
+                    $this->metrics->incrementSupplierEvent('published');
                 }
+                $this->refreshPendingMetric();
             } catch (Throwable $exception) {
                 $this->connection->executeStatement(
                     "UPDATE supplier_outbox_events
@@ -111,6 +116,7 @@ final class PublishSupplierOutboxCommand extends Command
                        AND locked_until >= SYSTIMESTAMP",
                     ['eventId' => $eventId, 'error' => $exception::class]
                 );
+                $this->refreshPendingMetric();
                 $output->writeln(sprintf('<error>Could not publish supplier event %s (%s).</error>', $eventId, $exception::class));
             }
         }
@@ -119,4 +125,16 @@ final class PublishSupplierOutboxCommand extends Command
 
         return Command::SUCCESS;
     }
+    private function refreshPendingMetric(): void
+    {
+        try {
+            $pending = (int) $this->connection->fetchOne(
+                "SELECT COUNT(*) FROM supplier_outbox_events WHERE status = 'PENDING'"
+            );
+            $this->metrics->setSupplierOutboxPending($pending);
+        } catch (Throwable) {
+            // Metrics must never prevent outbox delivery.
+        }
+    }
+
 }
