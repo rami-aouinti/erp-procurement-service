@@ -27,7 +27,7 @@ final readonly class ManageSupplierBankAccounts
         $this->assertSupplierExists($supplierId);
 
         return array_map(function (SupplierBankAccount $account): SupplierBankAccount {
-            $iban = $this->cipher->decrypt($account->ibanEncrypted);
+            $iban = $this->cipher->decrypt($account->ibanEncrypted, $account->encryptionKeyVersion);
 
             return new SupplierBankAccount(
                 $account->id,
@@ -110,6 +110,45 @@ final readonly class ManageSupplierBankAccounts
         }
 
         return $this->profiles->deleteBankAccount($supplierId, $accountId);
+    }
+
+
+    /**
+     * Re-encrypts every bank account for one supplier with the currently active key.
+     * Plaintext exists only in memory during this operation.
+     */
+    public function rotateEncryptionKey(int $supplierId): int
+    {
+        $this->assertSupplierExists($supplierId);
+        $rotated = 0;
+        $currentVersion = $this->cipher->keyVersion();
+
+        foreach ($this->profiles->findBankAccounts($supplierId) as $account) {
+            if ($account->encryptionKeyVersion === $currentVersion) {
+                continue;
+            }
+
+            $accountHolder = $this->cipher->decrypt(
+                $account->accountHolderEncrypted,
+                $account->encryptionKeyVersion,
+            );
+            $iban = $this->cipher->decrypt(
+                $account->ibanEncrypted,
+                $account->encryptionKeyVersion,
+            );
+
+            if ($this->profiles->updateBankAccountEncryption(
+                $supplierId,
+                (int) $account->id,
+                $this->cipher->encrypt($accountHolder),
+                $this->cipher->encrypt($iban),
+                $currentVersion,
+            )) {
+                ++$rotated;
+            }
+        }
+
+        return $rotated;
     }
 
     private function assertSupplierExists(int $supplierId): void
