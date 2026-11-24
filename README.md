@@ -125,6 +125,8 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `005_test_goods_receiving.sql` — manual example for testing goods receiving.
 - `006_create_suppliers_sequence.sql` — sequence used by Doctrine with the OCI8 driver.
 - `007_extend_supplier_management.sql` — additive supplier status, contact and address columns. Existing data is preserved.
+- `008_create_supplier_outbox.sql` — transactional outbox for reliable Supplier events.
+- `010_create_supplier_consumed_events.sql` — persistent consumer idempotency ledger.
 
 Run a script from the repository root, for example:
 
@@ -208,12 +210,13 @@ The local Elasticsearch container has security disabled for development only. It
 
 ## Reliable supplier synchronization (Oracle + Outbox + RabbitMQ)
 
-Supplier writes append a durable event to `supplier_outbox_events` in the same Oracle transaction as the supplier row. A publisher claims pending outbox rows and publishes persistent messages to RabbitMQ with publisher confirms. A separate consumer updates Elasticsearch and invalidates Redis. RabbitMQ uses durable exchanges and queues, a delayed retry queue (five retries), and a dead-letter queue for messages that still fail. The outbox publisher retries broker outages with exponential backoff and marks events FAILED after ten unsuccessful publish attempts. Delivery is at-least-once: the consumer reloads the current supplier from Oracle before updating the read model, so duplicate and delayed create/update events cannot overwrite newer data or recreate a deleted supplier.
+Supplier writes append a durable event to `supplier_outbox_events` in the same Oracle transaction as the supplier row. A publisher claims pending outbox rows and publishes persistent messages to RabbitMQ with publisher confirms. A separate consumer updates Elasticsearch and invalidates Redis. RabbitMQ uses durable exchanges and queues, a delayed retry queue (five retries), and a dead-letter queue for messages that still fail. The outbox publisher retries broker outages with exponential backoff and marks events FAILED after ten unsuccessful publish attempts. Delivery is at-least-once, not exactly-once. The consumer reloads the current supplier from Oracle before updating the read model and uses `supplier_consumed_events` to persist processed event IDs. A duplicate already marked `PROCESSED` is acknowledged without repeating read-model work; a live processing claim is retried rather than acknowledged.
 
 Apply the additive outbox schema once to the existing Oracle application schema:
 
 ```bash
 docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/008_create_supplier_outbox.sql
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/010_create_supplier_consumed_events.sql
 ```
 
 Set `RABBITMQ_USER` and `RABBITMQ_PASSWORD` in your local `.env` (copy the values from `.env.example` and choose your own password). Rebuild and start the stack:
