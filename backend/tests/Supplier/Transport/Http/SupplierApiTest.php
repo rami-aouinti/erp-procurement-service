@@ -137,7 +137,7 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string) $created->getContent());
         $id = (int) json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR)['id'];
 
-        $results = $this->request('GET', '/api/suppliers?search=Dusseldorf');
+        $results = $this->request('GET', '/api/suppliers?search=Elasticsearch%20Demo');
         self::assertSame(Response::HTTP_OK, $results->getStatusCode());
         $items = json_decode((string) $results->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertContains($id, array_column($items, 'id'));
