@@ -18,6 +18,40 @@ services:
       retries: 20
       start_period: 60s
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: erp-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: erp-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 8s
+      retries: 30
+      start_period: 60s
+
   backend:
     build:
       context: ./backend
@@ -34,12 +68,19 @@ services:
       ORACLE_SERVICE: FREEPDB1
       ORACLE_USER: ${APP_USER:-ERP_APP}
       ORACLE_PASSWORD: ${APP_USER_PASSWORD:?Set APP_USER_PASSWORD in .env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
       oracle:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
 
   cloudbeaver:
@@ -73,3 +114,7 @@ volumes:
     name: erp_oracle_data
   cloudbeaver_data:
     name: erp_cloudbeaver_data
+  redis_data:
+    name: erp_redis_data
+  elasticsearch_data:
+    name: erp_elasticsearch_data
