@@ -65,7 +65,7 @@ final readonly class OracleSupplierEventDeduplication implements SupplierEventDe
         }
 
         $existing = $this->connection->fetchAssociative(
-            'SELECT status, event_type, aggregate_id
+            'SELECT status AS "status", event_type AS "event_type", aggregate_id AS "aggregate_id"
              FROM supplier_consumed_events
              WHERE event_id = :eventId',
             ['eventId' => $eventId],
