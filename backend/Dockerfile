@@ -28,7 +28,7 @@ RUN mkdir -p /opt/oracle \
 
 # Compile all PHP extensions before removing the build toolchain.
 RUN docker-php-ext-install opcache \
-    && apt-get purge -y --auto-remove curl unzip ${PHPIZE_DEPS} \
+    && apt-get purge -y --auto-remove curl ${PHPIZE_DEPS} \
     && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8000
