@@ -36,7 +36,14 @@ final class RotateSupplierBankEncryptionCommand extends Command
             return Command::INVALID;
         }
 
-        $rotated = $this->accounts->rotateEncryptionKey($supplierId);
+        try {
+            $rotated = $this->accounts->rotateEncryptionKey($supplierId);
+        } catch (SupplierNotFound) {
+            $output->writeln(sprintf('<error>Supplier %d was not found.</error>', $supplierId));
+
+            return Command::FAILURE;
+        }
+
         $output->writeln(sprintf('Re-encrypted %d bank account(s) for supplier %d.', $rotated, $supplierId));
 
         return Command::SUCCESS;
