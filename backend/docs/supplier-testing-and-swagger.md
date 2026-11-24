@@ -38,7 +38,7 @@ docker compose up -d --build
 docker compose exec backend composer test:integration
 ```
 
-The integration test creates, updates and deletes a Supplier through the HTTP kernel. It waits for each committed Oracle outbox event to reach `PUBLISHED`, then verifies that the RabbitMQ consumer has updated or removed the corresponding Elasticsearch document. It has a 30-second timeout per asynchronous assertion and uses a unique email address. It deliberately does not wrap the test in a database transaction, so the independent worker processes can see the committed rows.
+The integration test creates, updates and deletes a Supplier through the HTTP kernel. It waits for each committed Oracle outbox event to reach `PUBLISHED`, verifies that the RabbitMQ consumer has updated or removed the corresponding Elasticsearch document, and confirms that every event reaches `PROCESSED` in the persistent idempotency ledger. It has a 30-second timeout per asynchronous assertion and uses a unique email address. It deliberately does not wrap the test in a database transaction, so the independent worker processes can see the committed rows.
 
 If the PHPUnit bridge has not downloaded its PHPUnit runner yet, run:
 
