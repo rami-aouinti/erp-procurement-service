@@ -1,6 +1,6 @@
 # ERP Procurement Service
 
-A hands-on ERP procurement and inventory project built to learn enterprise workflows, Oracle Database, SQL/PLSQL, PHP and Symfony.
+A hands-on full-stack ERP procurement and inventory project built to learn enterprise workflows, Oracle Database, SQL/PLSQL, PHP, Symfony and React.
 
 ## Project goals
 
@@ -12,161 +12,161 @@ Build a realistic procurement workflow:
 4. Track inventory movements.
 5. Register and reconcile supplier invoices.
 6. Explore Oracle transactions, constraints, indexes, PL/SQL and query plans.
+7. Expose business workflows through a Symfony REST API.
+8. Build an ERP user interface with React.
+
+## Architecture
+
+- **Frontend:** React + Vite (JavaScript), port 5173.
+- **Backend:** Symfony 7.4 on PHP 8.4, port 8000.
+- **Database:** Oracle Database Free, service `FREEPDB1`, port 1521.
+- **Communication:** HTTP/JSON. Vite proxies `/api` requests to Symfony during development.
+
+The application starts as one modular Symfony backend. We will keep clear boundaries inside the application instead of prematurely splitting it into microservices.
 
 ## Current status
 
-**Phase 1 — Oracle infrastructure and initial schema**
+**Oracle foundation**
 
 - [x] Docker Compose definition for Oracle Database Free
-- [x] Environment variable template
 - [x] Persistent database volume
-- [x] Oracle container started and reported healthy
-- [x] Initial procurement schema SQL script added
-- [x] Add repeatable supplier, product, purchase-order and order-line seed data
-- [x] Add practical SQL queries using JOIN, LEFT JOIN, GROUP BY and aggregation
-- [ ] Execute the seed script in the local database
-- [x] Add goods receipt and inventory tables
-- [x] Add an atomic PL/SQL procedure for receiving an order line
-- [x] Add a manual goods-receiving test script
-- [ ] Connect the Symfony application to Oracle
+- [x] Initial procurement schema and demo data scripts
+- [x] Practical SQL query exercises
+- [x] Goods receipt and inventory tables
+- [x] PL/SQL goods-receiving procedure and manual test
+- [x] Local Oracle database initialized and goods-receiving workflow tested
+
+**Full-stack foundation**
+
+- [x] Symfony 7.4 application skeleton
+- [x] Symfony health endpoint at `/api/health`
+- [x] React + Vite application skeleton
+- [x] React dashboard starter that calls the Symfony health endpoint
+- [x] Docker Compose services for backend and frontend
+- [ ] Start and verify the full stack locally
+- [ ] Validate the PHP Oracle driver and connect Symfony to Oracle
+- [ ] Implement suppliers and products API
+- [ ] Implement purchase orders and goods-receiving API
+- [ ] Build the corresponding React screens
 
 ## Requirements
 
 - Docker Desktop or Docker Engine with the Compose plugin
 - Git
-- A SQL client (DBeaver or Oracle SQL Developer is optional)
+
+No local PHP, Composer or Node.js installation is required for the Docker-based development workflow.
 
 ## Quick start
 
-1. Copy the environment template:
+1. Copy the environment template if you have not already done so:
 
    ```bash
    cp .env.example .env
    ```
 
-2. Set strong local passwords in `.env`. Do not commit this file.
+   Keep the passwords already used by your existing Oracle container. Do not replace them with the example values if your database has already been initialized.
 
-3. Start Oracle:
+2. Start all services:
 
    ```bash
-   docker compose pull
-   docker compose up -d
+   docker compose up -d --build
    docker compose ps
    ```
 
-4. Follow the first database initialization:
+   The first start installs Composer and npm dependencies inside the development containers. It can take a little longer.
+
+3. Open the applications:
+
+   - React: http://localhost:5173
+   - Symfony health endpoint: http://localhost:8000/api/health
+   - Oracle listener: localhost:1521
+
+4. Follow logs when needed:
 
    ```bash
-   docker compose logs -f oracle
+   docker compose logs -f backend frontend
    ```
 
-5. When the container is healthy, connect with SQL*Plus:
+5. Stop the application without deleting database data:
 
    ```bash
-   docker compose exec oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"'
+   docker compose down
    ```
 
-## Initial Oracle schema
+   **Warning:** never use `docker compose down -v` unless you intentionally want to delete the Oracle data volume.
 
-The first database migration creates these tables:
+## Oracle setup
 
-- `SUPPLIERS` — supplier master data
-- `PRODUCTS` — product catalogue and SKU
-- `PURCHASE_ORDERS` — purchase order header and supplier relationship
-- `PURCHASE_ORDER_LINES` — products, quantities and prices per order
+Oracle data is stored in the named Docker volume `erp_oracle_data`. Stopping or recreating the container does not remove this volume.
 
-It also defines primary keys, foreign keys, unique constraints, check constraints, indexes for foreign-key lookups and table comments.
-
-Run it from the repository root while connected as the application user:
-
-```sql
-@database/oracle/001_create_procurement_schema.sql
-```
-
-Or run it directly from your terminal:
-
-```bash
-docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/001_create_procurement_schema.sql
-```
-
-The script is intended to run once on a fresh schema. It is not idempotent: running it again after successful creation will report that the tables already exist.
-
-## Demo data and SQL exercises
-
-The repeatable seed script creates five suppliers, eight products, five purchase orders with different statuses, and their order lines. It uses Oracle `MERGE`, so you can run it again without duplicating the demo records:
-
-```bash
-git pull origin main
-docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/002_seed_procurement_data.sql
-```
-
-The script commits its changes at the end. It is safe to rerun to restore the example values.
-
-`database/oracle/003_practice_queries.sql` contains five exercises:
-
-1. Purchase orders with supplier names and calculated totals.
-2. Total ordered value per supplier.
-3. Purchase-order counts grouped by status.
-4. Most frequently ordered products, excluding cancelled orders.
-5. Suppliers that do not have a purchase order.
-
-Run the query file from the repository root:
-
-```bash
-docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/003_practice_queries.sql
-```
-
-## Oracle connection settings
+Connection settings:
 
 | Setting | Value |
 |---|---|
 | Host from your computer | `localhost` |
+| Host from another Compose container | `oracle` |
 | Listener port | `1521` |
 | Service name | `FREEPDB1` |
 | Application user | Value of `APP_USER` in `.env` |
 | Application password | Value of `APP_USER_PASSWORD` in `.env` |
 
-The application user is created by the Oracle container image. The application connects to the pluggable database service `FREEPDB1`, not to the container database root.
+The application user is created by the Oracle container image. Connect to the pluggable database service `FREEPDB1`, not to the container database root.
 
-## Data persistence
+### SQL scripts
 
-Oracle data is stored in the named Docker volume `erp_oracle_data`. Stopping or recreating the container does not remove this volume.
+The scripts in `database/oracle` build the procurement schema and its sample workflow:
 
-**Warning:** `docker compose down -v` removes the volume and permanently deletes the local database data.
+- `001_create_procurement_schema.sql` — suppliers, products and purchase orders.
+- `002_seed_procurement_data.sql` — repeatable sample data using Oracle MERGE.
+- `003_practice_queries.sql` — joins, aggregation and reporting exercises.
+- `004_create_goods_receiving.sql` — goods receipts, inventory, movement history and the PL/SQL receiving procedure.
+- `005_test_goods_receiving.sql` — manual example for testing goods receiving.
 
-## Planned stack
-
-- PHP 8.4
-- Symfony 7.4
-- Oracle Database Free
-- Doctrine DBAL / ORM (Oracle driver compatibility will be validated before choosing the integration)
-- PHPUnit
-- RabbitMQ for selected asynchronous workflows (later phase)
-- Vue.js frontend (later phase)
-
-## Learning approach
-
-This is an educational project. We will implement business rules incrementally and document the Oracle concepts used by each workflow. Credentials in this repository are examples only; use local secrets in `.env`.
-
-## Goods receiving and inventory
-
-`database/oracle/004_create_goods_receiving.sql` adds:
-
-- `GOODS_RECEIPTS` and `GOODS_RECEIPT_LINES` to record deliveries.
-- `RECEIVED_QUANTITY` on each purchase-order line.
-- `INVENTORY` for current stock and `INVENTORY_MOVEMENTS` as an audit trail.
-- `RECEIVE_PURCHASE_ORDER_LINE`, a PL/SQL procedure that locks the order and line, validates the remaining quantity, records the receipt, increases stock, updates the order status, and commits the operation. On an error, it rolls back the changes.
-
-Run this schema extension once, after the initial schema and demo data:
+Run a script from the repository root, for example:
 
 ```bash
 docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/004_create_goods_receiving.sql
 ```
 
-Then execute the example test (it receives two docking stations for `PO-2026-0001`):
+The schema-creation scripts are intended for their documented order. Do not rerun non-idempotent schema scripts against an already initialized database.
 
-```bash
-docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/005_test_goods_receiving.sql
+## Symfony backend
+
+The Symfony application lives in `backend/`.
+
+Initial structure:
+
+- `src/Controller` — HTTP controllers.
+- `config/` — Symfony configuration.
+- `public/index.php` — application entry point.
+- `tests/` — automated tests (to be expanded with the first business feature).
+
+The initial endpoint is:
+
+```http
+GET /api/health
 ```
 
-The test displays the ordered, received and remaining quantities, the current inventory, and the stock movement history. The receiving procedure commits or rolls back its own transaction; call it as a complete business operation.
+It returns a small JSON response and is used by the React starter screen.
+
+**Oracle integration is intentionally a separate next step.** Before installing Doctrine ORM or choosing a DBAL driver, we will validate the available PHP Oracle extension (OCI8 or PDO_OCI) with PHP 8.4. The PL/SQL receiving procedure currently manages its own COMMIT/ROLLBACK, so we will preserve that transaction boundary when calling it from PHP.
+
+## React frontend
+
+The React application lives in `frontend/` and uses Vite.
+
+Learning path:
+
+1. JSX and components.
+2. Props and component composition.
+3. State with `useState`.
+4. Side effects and API calls with `useEffect`.
+5. Forms and validation.
+6. React Router for application pages.
+7. Reusable hooks and API service modules.
+
+Vite proxies requests beginning with `/api` to the Symfony backend, so browser code can call relative URLs such as `fetch('/api/health')`.
+
+## Learning approach
+
+This is an educational project. We will implement business rules incrementally and document the enterprise concepts used by each workflow. Credentials in this repository are examples only; use local secrets in `.env`.
