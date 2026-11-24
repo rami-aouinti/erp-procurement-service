@@ -130,7 +130,9 @@ final readonly class RabbitMqSupplierEventBus
             'password' => $this->password,
             'vhost' => $this->vhost,
             'connect_timeout' => 5,
-            'read_timeout' => 60,
+            // Consumers must be allowed to wait longer than 60 seconds when the queue is idle.
+            // Publisher confirmations already have their own bounded waitForConfirm() timeout.
+            'read_timeout' => 0,
             'write_timeout' => 5,
             'heartbeat' => 30,
         ]);
