@@ -162,10 +162,6 @@ final readonly class RabbitMqSupplierEventBus
                     $headers = $envelope->getHeaders();
                     $retryCount = is_array($headers) ? (int) ($headers['x-retry-count'] ?? 0) : 0;
                     $isRetry = $retryCount < self::MAX_RETRIES;
-                    $this->metrics->incrementSupplierEvent('failed');
-                    if (!$isRetry) {
-                        $this->metrics->incrementSupplierEvent('dead_letter');
-                    }
                     $targetExchange = $isRetry ? self::RETRY_EXCHANGE : self::DEAD_EXCHANGE;
                     $routingKey = $isRetry ? 'supplier.retry' : 'supplier.dead';
 
@@ -202,6 +198,10 @@ final readonly class RabbitMqSupplierEventBus
                         return;
                     }
 
+                    $this->metrics->incrementSupplierEvent('failed');
+                    if (!$isRetry) {
+                        $this->metrics->incrementSupplierEvent('dead_letter');
+                    }
                     $queue->ack($deliveryTag);
                     error_log(sprintf(
                         'Supplier event %s failed (retry %d, error %s).',
