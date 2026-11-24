@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Infrastructure\\Messaging;
+namespace App\Supplier\Infrastructure\Messaging;
 
 use RuntimeException;
 
