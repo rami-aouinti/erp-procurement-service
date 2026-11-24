@@ -11,6 +11,7 @@ services:
             - '../src/Kernel.php'
             - '../src/Supplier/Domain/'
             - '../src/Supplier/Application/Exception/'
+            - '../src/Supplier/Application/Port/'
             - '../src/Supplier/Application/DTO/'
             - '../src/Supplier/Infrastructure/Persistence/Doctrine/Entity/'
 
