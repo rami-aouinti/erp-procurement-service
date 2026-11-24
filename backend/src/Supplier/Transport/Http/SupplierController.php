@@ -56,6 +56,8 @@ final class SupplierController
             return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
         } catch (SupplierEmailAlreadyUsed $exception) {
             return $this->error($exception->getMessage(), 409);
+        } catch (UniqueConstraintViolationException) {
+            return $this->error('A supplier with this email already exists.', 409);
         }
     }
 
@@ -72,6 +74,8 @@ final class SupplierController
             return $this->error($exception->getMessage(), 404);
         } catch (SupplierEmailAlreadyUsed $exception) {
             return $this->error($exception->getMessage(), 409);
+        } catch (UniqueConstraintViolationException) {
+            return $this->error('A supplier with this email already exists.', 409);
         }
     }
 
