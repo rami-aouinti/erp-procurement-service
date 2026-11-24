@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Observability;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\EventRequestEvent;
-use Symfony\Component\HttpKernel\EventResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 final class HttpMetricsSubscriber implements EventSubscriberInterface
