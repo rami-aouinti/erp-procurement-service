@@ -13,7 +13,7 @@ Swagger UI is served by Symfony. Its UI assets are loaded from the Swagger UI pu
 
 The backend PHPUnit configuration defines a default suite for CI and five focused suites:
 
-- **Supplier Unit**: domain model validation/normalization and application use cases.
+- **Supplier Unit**: domain model validation/normalization and application use cases. The `HandleSupplierEvent` tests cover duplicate delivery, delayed events after deletion, unsupported event types and Elasticsearch failures that must be retried.
 - **Supplier Functional**: real Symfony HTTP kernel, routing, JSON payload handling, Doctrine persistence and Oracle database behavior.
 - **Supplier Infrastructure**: infrastructure-level components such as event-envelope validation and encryption.
 - **Supplier Integration**: a live end-to-end test that requires Oracle, Redis, Elasticsearch, RabbitMQ, the outbox publisher and the Supplier consumer.
