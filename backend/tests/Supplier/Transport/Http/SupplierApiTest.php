@@ -103,6 +103,9 @@ final class SupplierApiTest extends KernelTestCase
 
         $duplicate = $this->request('POST', '/api/suppliers', ['name' => 'Second Supplier', 'email' => $this->email]);
         self::assertSame(Response::HTTP_CONFLICT, $duplicate->getStatusCode());
+
+        $createdId = (int) json_decode((string) $this->request('GET', '/api/suppliers?search=Duplicate%20Test%20Supplier')->getContent(), true, 512, JSON_THROW_ON_ERROR)[0]['id'];
+        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/'.$createdId)->getStatusCode());
     }
 
     public function testMissingSupplierReturnsNotFoundForGetAndUpdate(): void
@@ -121,6 +124,25 @@ final class SupplierApiTest extends KernelTestCase
 
         $response = $this->request('DELETE', '/api/suppliers/'.(int) $supplierId);
         self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
+    }
+
+    public function testSupplierSearchFindsIndexedFields(): void
+    {
+        $created = $this->request('POST', '/api/suppliers', [
+            'name' => 'Elasticsearch Demo Vendor',
+            'email' => $this->email,
+            'city' => 'Düsseldorf',
+            'status' => 'ACTIVE',
+        ]);
+        self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string) $created->getContent());
+        $id = (int) json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR)['id'];
+
+        $results = $this->request('GET', '/api/suppliers?search=Dusseldorf');
+        self::assertSame(Response::HTTP_OK, $results->getStatusCode());
+        $items = json_decode((string) $results->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertContains($id, array_column($items, 'id'));
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/'.$id)->getStatusCode());
     }
 
     public function testCreateRejectsNonStringFields(): void
