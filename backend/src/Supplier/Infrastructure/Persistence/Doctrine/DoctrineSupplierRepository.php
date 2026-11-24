@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Supplier\Infrastructure\Persistence\Doctrine;
 
+use App\Supplier\Domain\Event\SupplierCreated;
+use App\Supplier\Domain\Event\SupplierDeleted;
+use App\Supplier\Domain\Event\SupplierDomainEvent;
+use App\Supplier\Domain\Event\SupplierUpdated;
 use App\Supplier\Domain\Model\Supplier;
 use App\Supplier\Domain\Repository\SupplierRepository as SupplierRepositoryInterface;
 use App\Supplier\Infrastructure\Persistence\Doctrine\Entity\SupplierRecord;
@@ -24,10 +28,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
     /** @return list<Supplier> */
     public function findAll(): array
     {
-        $records = $this->createQueryBuilder('supplier')
-            ->orderBy('supplier.name', \SortDirection::Ascending)
-            ->getQuery()->getResult();
-
+        $records = $this->createQueryBuilder('supplier')->orderBy('supplier.name', \SortDirection::Ascending)->getQuery()->getResult();
         return array_map($this->toDomain(...), $records);
     }
 
@@ -42,7 +43,6 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
         $connection = $this->getEntityManager()->getConnection();
         $isNew = $supplier->id() === null;
         $connection->beginTransaction();
-
         try {
             $em = $this->getEntityManager();
             if ($isNew) {
@@ -50,22 +50,16 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
                 $em->persist($record);
             } else {
                 $record = $this->find($supplier->id());
-                if (!$record instanceof SupplierRecord) {
-                    throw new \RuntimeException('Supplier persistence record disappeared during update.');
-                }
+                if (!$record instanceof SupplierRecord) throw new \RuntimeException('Supplier persistence record disappeared during update.');
                 $record->updateFrom($supplier);
             }
-
             $em->flush();
             $saved = $this->toDomain($record);
-            $this->appendOutboxEvent($isNew ? 'SupplierCreated' : 'SupplierUpdated', $saved);
+            $this->appendOutboxEvent($isNew ? new SupplierCreated($saved) : new SupplierUpdated($saved));
             $connection->commit();
-
             return $saved;
         } catch (Throwable $exception) {
-            if ($connection->isTransactionActive()) {
-                $connection->rollBack();
-            }
+            if ($connection->isTransactionActive()) $connection->rollBack();
             throw $exception;
         }
     }
@@ -73,66 +67,37 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
     public function delete(Supplier $supplier): void
     {
         $record = $this->find($supplier->id());
-        if (!$record instanceof SupplierRecord) {
-            return;
-        }
-
+        if (!$record instanceof SupplierRecord) return;
         $connection = $this->getEntityManager()->getConnection();
         $connection->beginTransaction();
         try {
             $this->getEntityManager()->remove($record);
             $this->getEntityManager()->flush();
-            $connection->executeStatement(
-                "INSERT INTO supplier_outbox_events (event_id, event_type, aggregate_id, payload, status, attempts, occurred_at, next_attempt_at)
-                 VALUES (RAWTOHEX(SYS_GUID()), 'SupplierDeleted', :supplierId, :payload, 'PENDING', 0, SYSTIMESTAMP, SYSTIMESTAMP)",
-                [
-                    'supplierId' => $supplier->id(),
-                    'payload' => json_encode(['id' => $supplier->id()], JSON_THROW_ON_ERROR),
-                ]
-            );
+            $this->appendOutboxEvent(new SupplierDeleted((int) $supplier->id()));
             $connection->commit();
         } catch (Throwable $exception) {
-            if ($connection->isTransactionActive()) {
-                $connection->rollBack();
-            }
+            if ($connection->isTransactionActive()) $connection->rollBack();
             throw $exception;
         }
     }
 
     public function emailExists(string $email, ?int $excludingId = null): bool
     {
-        $query = $this->createQueryBuilder('supplier')
-            ->select('COUNT(supplier.id)')
-            ->andWhere('LOWER(supplier.email) = LOWER(:email)')
-            ->setParameter('email', trim($email));
-        if ($excludingId !== null) {
-            $query->andWhere('supplier.id != :excludingId')->setParameter('excludingId', $excludingId);
-        }
+        $query = $this->createQueryBuilder('supplier')->select('COUNT(supplier.id)')
+            ->andWhere('LOWER(supplier.email) = LOWER(:email)')->setParameter('email', trim($email));
+        if ($excludingId !== null) $query->andWhere('supplier.id != :excludingId')->setParameter('excludingId', $excludingId);
         return (int) $query->getQuery()->getSingleScalarResult() > 0;
     }
 
-    private function appendOutboxEvent(string $eventType, Supplier $supplier): void
+    private function appendOutboxEvent(SupplierDomainEvent $event): void
     {
         $this->getEntityManager()->getConnection()->executeStatement(
             "INSERT INTO supplier_outbox_events (event_id, event_type, aggregate_id, payload, status, attempts, occurred_at, next_attempt_at)
              VALUES (RAWTOHEX(SYS_GUID()), :eventType, :supplierId, :payload, 'PENDING', 0, SYSTIMESTAMP, SYSTIMESTAMP)",
             [
-                'eventType' => $eventType,
-                'supplierId' => $supplier->id(),
-                'payload' => json_encode([
-                    'id' => $supplier->id(),
-                    'name' => $supplier->name(),
-                    'email' => $supplier->email(),
-                    'phone' => $supplier->phone(),
-                    'taxNumber' => $supplier->taxNumber(),
-                    'status' => $supplier->status(),
-                    'contactPerson' => $supplier->contactPerson(),
-                    'street' => $supplier->street(),
-                    'city' => $supplier->city(),
-                    'postalCode' => $supplier->postalCode(),
-                    'country' => $supplier->country(),
-                    'createdAt' => $supplier->createdAt()->format(DATE_ATOM),
-                ], JSON_THROW_ON_ERROR),
+                'eventType' => $event->eventType(),
+                'supplierId' => $event->aggregateId(),
+                'payload' => json_encode($event->payload(), JSON_THROW_ON_ERROR),
             ]
         );
     }
@@ -140,18 +105,10 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
     private function toDomain(SupplierRecord $record): Supplier
     {
         return Supplier::reconstitute(
-            (int) $record->id(),
-            $record->name(),
-            $record->email(),
-            $record->phone(),
-            $record->taxNumber(),
-            $record->createdAt(),
-            $record->status(),
-            $record->contactPerson(),
-            $record->street(),
-            $record->city(),
-            $record->postalCode(),
-            $record->country(),
+            (int) $record->id(), $record->name(), $record->email(), $record->phone(),
+            $record->taxNumber(), $record->createdAt(), $record->status(),
+            $record->contactPerson(), $record->street(), $record->city(),
+            $record->postalCode(), $record->country(),
         );
     }
 }

@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Supplier\Application\UseCase;
 
 use App\Supplier\Application\DTO\SupplierData;
-use App\Supplier\Application\Port\SupplierListCache;
-use App\Supplier\Application\Port\SupplierSearchIndex;
-use App\Supplier\Application\Service\SupplierReadModelSynchronizer;
 use App\Supplier\Application\UseCase\CreateSupplier;
 use App\Supplier\Application\UseCase\DeleteSupplier;
 use App\Supplier\Application\UseCase\GetSupplier;
@@ -22,14 +19,6 @@ use PHPUnit\Framework\TestCase;
 
 final class SupplierUseCasesTest extends TestCase
 {
-    private function readModel(): SupplierReadModelSynchronizer
-    {
-        return new SupplierReadModelSynchronizer(
-            $this->createMock(SupplierSearchIndex::class),
-            $this->createMock(SupplierListCache::class),
-        );
-    }
-
     public function testCreateSupplierPersistsDomainModel(): void
     {
         $repository = $this->createMock(SupplierRepository::class);
@@ -37,9 +26,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository->expects(self::once())->method('save')->willReturnCallback(static function (Supplier $supplier): Supplier {
             return Supplier::reconstitute(42, $supplier->name(), $supplier->email(), $supplier->phone(), $supplier->taxNumber(), $supplier->createdAt());
         });
-
-        $created = (new CreateSupplier($repository, new SupplierDataValidator(), $this->readModel()))->execute(new SupplierData('New Supplier', 'new@example.com'));
-
+        $created = (new CreateSupplier($repository, new SupplierDataValidator()))->execute(new SupplierData('New Supplier', 'new@example.com'));
         self::assertSame(42, $created->id());
         self::assertSame('New Supplier', $created->name());
     }
@@ -49,9 +36,8 @@ final class SupplierUseCasesTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->method('emailExists')->willReturn(true);
         $repository->expects(self::never())->method('save');
-
         $this->expectException(SupplierEmailAlreadyUsed::class);
-        (new CreateSupplier($repository, new SupplierDataValidator(), $this->readModel()))->execute(new SupplierData('Duplicate', 'taken@example.com'));
+        (new CreateSupplier($repository, new SupplierDataValidator()))->execute(new SupplierData('Duplicate', 'taken@example.com'));
     }
 
     public function testCreateAllowsMissingEmailWithoutUniquenessQuery(): void
@@ -59,8 +45,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->expects(self::never())->method('emailExists');
         $repository->expects(self::once())->method('save')->willReturnArgument(0);
-
-        self::assertNull((new CreateSupplier($repository, new SupplierDataValidator(), $this->readModel()))->execute(new SupplierData('No Email'))->id());
+        self::assertNull((new CreateSupplier($repository, new SupplierDataValidator()))->execute(new SupplierData('No Email'))->id());
     }
 
     public function testGetReturnsSupplierAndThrowsWhenMissing(): void
@@ -69,14 +54,8 @@ final class SupplierUseCasesTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->method('findById')->willReturnMap([[7, $supplier], [99, null]]);
         self::assertSame($supplier, (new GetSupplier($repository))->execute(7));
-
-
-        try {
-            (new GetSupplier($repository))->execute(99);
-            self::fail('Expected SupplierNotFound.');
-        } catch (SupplierNotFound) {
-            self::assertTrue(true);
-        }
+        $this->expectException(SupplierNotFound::class);
+        (new GetSupplier($repository))->execute(99);
     }
 
     public function testListReturnsRepositoryCollection(): void
@@ -94,8 +73,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository->method('findById')->with(5)->willReturn($supplier);
         $repository->expects(self::once())->method('emailExists')->with('new@example.com', 5)->willReturn(false);
         $repository->expects(self::once())->method('save')->willReturnArgument(0);
-
-        $updated = (new UpdateSupplier($repository, new SupplierDataValidator(), $this->readModel()))->execute(5, new SupplierData('New name', 'new@example.com'));
+        $updated = (new UpdateSupplier($repository, new SupplierDataValidator()))->execute(5, new SupplierData('New name', 'new@example.com'));
         self::assertSame('New name', $updated->name());
         self::assertSame('new@example.com', $updated->email());
     }
@@ -107,9 +85,8 @@ final class SupplierUseCasesTest extends TestCase
         $repository->method('findById')->willReturn($supplier);
         $repository->method('emailExists')->willReturn(true);
         $repository->expects(self::never())->method('save');
-
         $this->expectException(SupplierEmailAlreadyUsed::class);
-        (new UpdateSupplier($repository, new SupplierDataValidator(), $this->readModel()))->execute(5, new SupplierData('Name', 'taken@example.com'));
+        (new UpdateSupplier($repository, new SupplierDataValidator()))->execute(5, new SupplierData('Name', 'taken@example.com'));
     }
 
     public function testDeleteRemovesExistingSupplier(): void
@@ -118,8 +95,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->method('findById')->willReturn($supplier);
         $repository->expects(self::once())->method('delete')->with($supplier);
-
-        (new DeleteSupplier($repository, $this->readModel()))->execute(5);
+        (new DeleteSupplier($repository))->execute(5);
     }
 
     public function testDeleteThrowsWhenSupplierDoesNotExist(): void
@@ -127,8 +103,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->method('findById')->willReturn(null);
         $repository->expects(self::never())->method('delete');
-
         $this->expectException(SupplierNotFound::class);
-        (new DeleteSupplier($repository, $this->readModel()))->execute(404);
+        (new DeleteSupplier($repository))->execute(404);
     }
 }
