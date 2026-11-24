@@ -94,7 +94,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         );
     }
     
-    /** @return list<\\App\\Supplier\\Domain\\Model\\SupplierContact> */
+    /** @return list<\App\Supplier\Domain\Model\SupplierContact> */
     public function findContacts(int $supplierId): array
     {
         $rows = $this->connection->fetchAllAssociative(
@@ -103,7 +103,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             ['supplierId' => $supplierId],
         );
 
-        return array_map(static fn (array $row): \\App\\Supplier\\Domain\\Model\\SupplierContact => new \\App\\Supplier\\Domain\\Model\\SupplierContact(
+        return array_map(static fn (array $row): \App\Supplier\Domain\Model\SupplierContact => new \App\Supplier\Domain\Model\SupplierContact(
             (int) $row['ID'],
             (int) $row['SUPPLIER_ID'],
             (string) $row['CONTACT_TYPE'],
@@ -116,7 +116,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         ), $rows);
     }
 
-    public function addContact(\\App\\Supplier\\Domain\\Model\\SupplierContact $contact): \\App\\Supplier\\Domain\\Model\\SupplierContact
+    public function addContact(\App\Supplier\Domain\Model\SupplierContact $contact): \App\Supplier\Domain\Model\SupplierContact
     {
         $this->connection->beginTransaction();
         try {
@@ -136,12 +136,12 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 'email' => $contact->email,
                 'phone' => $contact->phone,
                 'is_primary' => $contact->primary ? 'Y' : 'N',
-                'created_at' => new \\DateTimeImmutable(),
-                'updated_at' => new \\DateTimeImmutable(),
+                'created_at' => new \DateTimeImmutable(),
+                'updated_at' => new \DateTimeImmutable(),
             ]);
             $this->connection->commit();
             return $contact;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
             }
@@ -149,7 +149,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         }
     }
 
-    /** @return list<\\App\\Supplier\\Domain\\Model\\SupplierAddress> */
+    /** @return list<\App\Supplier\Domain\Model\SupplierAddress> */
     public function findAddresses(int $supplierId): array
     {
         $rows = $this->connection->fetchAllAssociative(
@@ -159,7 +159,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             ['supplierId' => $supplierId],
         );
 
-        return array_map(static fn (array $row): \\App\\Supplier\\Domain\\Model\\SupplierAddress => new \\App\\Supplier\\Domain\\Model\\SupplierAddress(
+        return array_map(static fn (array $row): \App\Supplier\Domain\Model\SupplierAddress => new \App\Supplier\Domain\Model\SupplierAddress(
             (int) $row['ID'],
             (int) $row['SUPPLIER_ID'],
             (string) $row['ADDRESS_TYPE'],
@@ -175,7 +175,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         ), $rows);
     }
 
-    public function addAddress(\\App\\Supplier\\Domain\\Model\\SupplierAddress $address): \\App\\Supplier\\Domain\\Model\\SupplierAddress
+    public function addAddress(\App\Supplier\Domain\Model\SupplierAddress $address): \App\Supplier\Domain\Model\SupplierAddress
     {
         $this->connection->beginTransaction();
         try {
@@ -198,12 +198,12 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 'region' => $address->region,
                 'country' => $address->country,
                 'is_default' => $address->default ? 'Y' : 'N',
-                'created_at' => new \\DateTimeImmutable(),
-                'updated_at' => new \\DateTimeImmutable(),
+                'created_at' => new \DateTimeImmutable(),
+                'updated_at' => new \DateTimeImmutable(),
             ]);
             $this->connection->commit();
             return $address;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
             }
