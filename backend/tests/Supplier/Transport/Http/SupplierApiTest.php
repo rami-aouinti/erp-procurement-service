@@ -86,6 +86,12 @@ final class SupplierApiTest extends KernelTestCase
         $deleted = $this->request('DELETE', '/api/suppliers/' . $id);
         self::assertSame(Response::HTTP_NO_CONTENT, $deleted->getStatusCode());
 
+        $eventTypes = $this->connection->fetchFirstColumn(
+            'SELECT event_type FROM supplier_outbox_events WHERE aggregate_id = :id ORDER BY occurred_at',
+            ['id' => $id],
+        );
+        self::assertSame(['SupplierCreated', 'SupplierUpdated', 'SupplierDeleted'], $eventTypes);
+
         self::assertSame(Response::HTTP_NOT_FOUND, $this->request('GET', '/api/suppliers/' . $id)->getStatusCode());
     }
 
