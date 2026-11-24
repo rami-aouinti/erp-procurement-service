@@ -16,7 +16,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
     {
     }
 
-    public function search(string $query, ?string $status = null, int $limit = 100): array
+    public function search(string $query, ?string $status = null, int $limit = 500): array
     {
         $this->ensureIndex();
         $filters = [];
