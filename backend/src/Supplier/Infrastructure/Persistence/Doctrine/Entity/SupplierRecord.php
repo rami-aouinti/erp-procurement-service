@@ -8,7 +8,8 @@ use Doctrine\ORM\Mapping as ORM;
 class SupplierRecord
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue(strategy: 'IDENTITY')]
+    #[ORM\GeneratedValue(strategy: 'SEQUENCE')]
+    #[ORM\SequenceGenerator(sequenceName: 'SUPPLIERS_SEQ', allocationSize: 1)]
     #[ORM\Column(name: 'id', type: 'integer')]
     private ?int $id = null;
     #[ORM\Column(name: 'name', length: 150)]
