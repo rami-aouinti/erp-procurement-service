@@ -32,7 +32,6 @@ final class ConsumeSupplierEventsCommand extends Command
     {
         $output->writeln('<info>Supplier event consumer connected. Waiting for messages...</info>');
         $this->eventBus->consume(function (array $event): void {
-            try {
                 $type = (string) $event['eventType'];
                 $supplierId = (int) $event['aggregateId'];
 
