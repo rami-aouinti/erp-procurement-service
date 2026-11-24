@@ -21,6 +21,9 @@
         <testsuite name="Supplier Functional">
             <directory>tests/Supplier/Transport</directory>
         </testsuite>
+        <testsuite name="Supplier Integration">
+            <directory>tests/Supplier/Integration</directory>
+        </testsuite>
         <testsuite name="Supplier Infrastructure">
             <directory>tests/Supplier/Infrastructure</directory>
         </testsuite>
