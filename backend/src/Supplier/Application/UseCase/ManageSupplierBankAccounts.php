@@ -89,6 +89,29 @@ final readonly class ManageSupplierBankAccounts
         return $this->profiles->addBankAccount($account);
     }
 
+
+    public function setPrimary(int $supplierId, int $accountId): bool
+    {
+        $this->assertSupplierExists($supplierId);
+
+        if ($accountId < 1) {
+            throw new InvalidArgumentException('Bank account ID must be positive.');
+        }
+
+        return $this->profiles->setPrimaryBankAccount($supplierId, $accountId);
+    }
+
+    public function delete(int $supplierId, int $accountId): bool
+    {
+        $this->assertSupplierExists($supplierId);
+
+        if ($accountId < 1) {
+            throw new InvalidArgumentException('Bank account ID must be positive.');
+        }
+
+        return $this->profiles->deleteBankAccount($supplierId, $accountId);
+    }
+
     private function assertSupplierExists(int $supplierId): void
     {
         if ($this->suppliers->findById($supplierId) === null) {
