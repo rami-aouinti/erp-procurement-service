@@ -110,6 +110,74 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  supplier-outbox-publisher:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp-supplier-outbox-publisher
+    working_dir: /app
+    restart: unless-stopped
+    command: ["sh", "-lc", "until [ -f vendor/autoload.php ]; do sleep 2; done; while true; do php bin/console supplier:outbox:publish --limit=100 || true; sleep 2; done"]
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET:-local-development-secret-change-me}
+      ORACLE_HOST: oracle
+      ORACLE_PORT: 1521
+      ORACLE_SERVICE: FREEPDB1
+      ORACLE_USER: ${APP_USER:-ERP_APP}
+      ORACLE_PASSWORD: ${APP_USER_PASSWORD:?Set APP_USER_PASSWORD in .env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-erp_app}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      RABBITMQ_VHOST: /erp
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_started
+      oracle:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  supplier-events-consumer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp-supplier-events-consumer
+    working_dir: /app
+    restart: unless-stopped
+    command: ["sh", "-lc", "until [ -f vendor/autoload.php ]; do sleep 2; done; php bin/console supplier:events:consume"]
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET:-local-development-secret-change-me}
+      ORACLE_HOST: oracle
+      ORACLE_PORT: 1521
+      ORACLE_SERVICE: FREEPDB1
+      ORACLE_USER: ${APP_USER:-ERP_APP}
+      ORACLE_PASSWORD: ${APP_USER_PASSWORD:?Set APP_USER_PASSWORD in .env}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-erp_app}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      RABBITMQ_VHOST: /erp
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_started
+      oracle:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   cloudbeaver:
     image: dbeaver/cloudbeaver:latest
     container_name: erp-cloudbeaver
