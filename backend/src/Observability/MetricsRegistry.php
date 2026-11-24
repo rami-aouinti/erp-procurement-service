@@ -69,7 +69,8 @@ final class MetricsRegistry
         foreach ($this->histograms as $histogram) {
             $labels = implode(',', $histogram['labels']);
             foreach (self::BUCKETS as $bucket) {
-                $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="' . $bucket . '"} ' . $histogram['buckets'][sprintf('%.3F', $bucket)];
+                $bucketLabel = sprintf('%.3F', $bucket);
+                $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="' . $bucketLabel . '"} ' . $histogram['buckets'][$bucketLabel];
             }
             $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="+Inf"} ' . $histogram['count'];
             $output[] = 'erp_http_request_duration_seconds_sum{' . $labels . '} ' . $this->format($histogram['sum']);
