@@ -9,3 +9,9 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+            - '../src/Supplier/Domain/'
+            - '../src/Supplier/Application/DTO/'
+            - '../src/Supplier/Infrastructure/Persistence/Doctrine/Entity/'
+
+    App\Supplier\Domain\Repository\SupplierRepository:
+        alias: App\Supplier\Infrastructure\Persistence\Doctrine\DoctrineSupplierRepository
