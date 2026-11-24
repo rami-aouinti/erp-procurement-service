@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Supplier\Infrastructure\Security;
 
+use App\Supplier\Application\Port\SupplierBankDataCipher;
 use InvalidArgumentException;
 use RuntimeException;
 
-final readonly class SupplierBankDataEncryptor
+final readonly class SupplierBankDataEncryptor implements SupplierBankDataCipher
 {
     private string $key;
 
@@ -89,7 +90,7 @@ final readonly class SupplierBankDataEncryptor
         return $this->keyVersion;
     }
 
-    public static function maskIban(string $iban): string
+    public function maskIban(string $iban): string
     {
         $normalized = strtoupper((string) preg_replace('/\s+/', '', $iban));
         $length = strlen($normalized);
