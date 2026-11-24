@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Supplier\Transport\Http;
 
+use App\Supplier\Application\Port\SupplierSearchIndex;
+use App\Supplier\Domain\Repository\SupplierRepository;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
