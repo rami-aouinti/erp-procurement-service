@@ -302,4 +302,53 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         }
     }
 
+
+    public function setPrimaryBankAccount(int $supplierId, int $accountId): bool
+    {
+        $this->connection->beginTransaction();
+
+        try {
+            $exists = $this->connection->fetchOne(
+                'SELECT id FROM supplier_bank_accounts
+                 WHERE supplier_id = :supplierId AND id = :accountId',
+                ['supplierId' => $supplierId, 'accountId' => $accountId],
+            );
+
+            if ($exists === false) {
+                $this->connection->commit();
+                return false;
+            }
+
+            $this->connection->executeStatement(
+                "UPDATE supplier_bank_accounts SET is_primary = 'N', updated_at = SYSTIMESTAMP
+                 WHERE supplier_id = :supplierId AND is_primary = 'Y'",
+                ['supplierId' => $supplierId],
+            );
+            $this->connection->executeStatement(
+                "UPDATE supplier_bank_accounts SET is_primary = 'Y', updated_at = SYSTIMESTAMP
+                 WHERE supplier_id = :supplierId AND id = :accountId",
+                ['supplierId' => $supplierId, 'accountId' => $accountId],
+            );
+
+            $this->connection->commit();
+            return true;
+        } catch (Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function deleteBankAccount(int $supplierId, int $accountId): bool
+    {
+        $deleted = $this->connection->executeStatement(
+            'DELETE FROM supplier_bank_accounts
+             WHERE supplier_id = :supplierId AND id = :accountId',
+            ['supplierId' => $supplierId, 'accountId' => $accountId],
+        );
+
+        return $deleted > 0;
+    }
+
 }
