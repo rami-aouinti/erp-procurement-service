@@ -45,8 +45,23 @@ final class MetricsRegistry
 
     public function setSupplierOutboxPending(int $count): void
     {
+        $this->setGauge('erp_supplier_outbox_pending_events', $count);
+    }
+
+    public function setSupplierOutboxFailed(int $count): void
+    {
+        $this->setGauge('erp_supplier_outbox_failed_events', $count);
+    }
+
+    public function setSupplierOutboxOldestPendingAge(float $seconds): void
+    {
+        $this->setGauge('erp_supplier_outbox_oldest_pending_age_seconds', $seconds);
+    }
+
+    private function setGauge(string $name, int|float $value): void
+    {
         try {
-            $this->redis()->set('erp:metrics:erp_supplier_outbox_pending_events', max(0, $count));
+            $this->redis()->set('erp:metrics:' . $name, max(0, $value));
         } catch (Throwable) {
             $this->redis = null;
         }
@@ -121,6 +136,12 @@ final class MetricsRegistry
         $output[] = '# HELP erp_supplier_outbox_pending_events Number of supplier outbox events waiting to be published.';
         $output[] = '# TYPE erp_supplier_outbox_pending_events gauge';
         $output[] = 'erp_supplier_outbox_pending_events ' . $this->readMetric('erp_supplier_outbox_pending_events');
+        $output[] = '# HELP erp_supplier_outbox_failed_events Number of supplier outbox events in FAILED state.';
+        $output[] = '# TYPE erp_supplier_outbox_failed_events gauge';
+        $output[] = 'erp_supplier_outbox_failed_events ' . $this->readMetric('erp_supplier_outbox_failed_events');
+        $output[] = '# HELP erp_supplier_outbox_oldest_pending_age_seconds Age of the oldest pending supplier outbox event.';
+        $output[] = '# TYPE erp_supplier_outbox_oldest_pending_age_seconds gauge';
+        $output[] = 'erp_supplier_outbox_oldest_pending_age_seconds ' . $this->readMetric('erp_supplier_outbox_oldest_pending_age_seconds');
 
         return implode("\n", $output) . "\n";
     }
