@@ -92,6 +92,24 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame(Response::HTTP_NOT_FOUND, $this->request('PUT', '/api/suppliers/2147483000', ['name' => 'Missing'])->getStatusCode());
     }
 
+
+    public function testDeleteRejectsSupplierReferencedByPurchaseOrders(): void
+    {
+        $supplierId = $this->connection->fetchOne('SELECT supplier_id FROM purchase_orders FETCH FIRST 1 ROWS ONLY');
+        if ($supplierId === false) {
+            self::markTestSkipped('Seed a purchase order to test the supplier foreign-key restriction.');
+        }
+
+        $response = $this->request('DELETE', '/api/suppliers/'.(int) $supplierId);
+        self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
+    }
+
+    public function testCreateRejectsNonStringFields(): void
+    {
+        $response = $this->request('POST', '/api/suppliers', ['name' => 'Invalid payload', 'phone' => 12345]);
+        self::assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+    }
+
     public function testOpenApiSpecificationAndSwaggerUiAreAvailable(): void
     {
         $spec = $this->request('GET', '/api/docs.json');
