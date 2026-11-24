@@ -49,6 +49,12 @@ final class MetricsRegistry
             '# HELP erp_backend_uptime_seconds Time since the current PHP application process started.',
             '# TYPE erp_backend_uptime_seconds gauge',
             'erp_backend_uptime_seconds ' . $this->format(microtime(true) - $this->startedAt),
+            '# HELP erp_php_memory_usage_bytes Current PHP memory usage in bytes.',
+            '# TYPE erp_php_memory_usage_bytes gauge',
+            'erp_php_memory_usage_bytes ' . memory_get_usage(true),
+            '# HELP erp_php_memory_peak_bytes Peak PHP memory usage in bytes.',
+            '# TYPE erp_php_memory_peak_bytes gauge',
+            'erp_php_memory_peak_bytes ' . memory_get_peak_usage(true),
             '# HELP erp_http_requests_total Total HTTP responses handled by the backend.',
             '# TYPE erp_http_requests_total counter',
         ];
