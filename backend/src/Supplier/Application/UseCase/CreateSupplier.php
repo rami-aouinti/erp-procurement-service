@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Application\\UseCase;
+namespace App\Supplier\Application\UseCase;
 
-use App\\Supplier\\Application\\DTO\\SupplierData;
-use App\\Supplier\\Application\\Validator\\SupplierDataValidator;
-use App\\Supplier\\Domain\\Exception\\SupplierEmailAlreadyUsed;
-use App\\Supplier\\Domain\\Model\\Supplier;
-use App\\Supplier\\Domain\\Repository\\SupplierRepository;
+use App\Supplier\Application\DTO\SupplierData;
+use App\Supplier\Application\Validator\SupplierDataValidator;
+use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
+use App\Supplier\Domain\Model\Supplier;
+use App\Supplier\Domain\Repository\SupplierRepository;
 
 final readonly class CreateSupplier
 {
