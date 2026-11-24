@@ -2,33 +2,46 @@
 
 declare(strict_types=1);
 
-namespace App\Supplier\Transport\Http;
+namespace App\\Supplier\\Transport\\Http;
 
-use App\Supplier\Application\DTO\SupplierData;
-use App\Supplier\Application\Exception\SupplierValidationException;
-use App\Supplier\Application\UseCase\CreateSupplier;
-use App\Supplier\Application\UseCase\DeleteSupplier;
-use App\Supplier\Application\UseCase\GetSupplier;
-use App\Supplier\Application\UseCase\ListSuppliers;
-use App\Supplier\Application\UseCase\UpdateSupplier;
-use App\Supplier\Domain\Exception\InvalidSupplierData;
-use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
-use App\Supplier\Domain\Exception\SupplierNotFound;
-use App\Supplier\Domain\Model\Supplier;
-use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
+use App\\Supplier\\Application\\DTO\\SupplierData;
+use App\\Supplier\\Application\\Exception\\SupplierValidationException;
+use App\\Supplier\\Application\\UseCase\\CreateSupplier;
+use App\\Supplier\\Application\\UseCase\\DeleteSupplier;
+use App\\Supplier\\Application\\UseCase\\GetSupplier;
+use App\\Supplier\\Application\\UseCase\\ListSuppliers;
+use App\\Supplier\\Application\\UseCase\\UpdateSupplier;
+use App\\Supplier\\Domain\\Exception\\InvalidSupplierData;
+use App\\Supplier\\Domain\\Exception\\SupplierEmailAlreadyUsed;
+use App\\Supplier\\Domain\\Exception\\SupplierNotFound;
+use App\\Supplier\\Domain\\Model\\Supplier;
+use Doctrine\\DBAL\\Exception\\ForeignKeyConstraintViolationException;
 use JsonException;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\\Component\\HttpFoundation\\JsonResponse;
+use Symfony\\Component\\HttpFoundation\\Request;
+use Symfony\\Component\\HttpFoundation\\Response;
+use Symfony\\Component\\Routing\\Attribute\\Route;
 
 #[Route('/api/suppliers')]
 final class SupplierController
 {
     #[Route('', name: 'api_suppliers_list', methods: ['GET'])]
-    public function list(ListSuppliers $useCase): JsonResponse
+    public function list(Request $request, ListSuppliers $useCase): JsonResponse
     {
-        return new JsonResponse(array_map($this->serialize(...), $useCase->execute()));
+        $suppliers = $useCase->execute();
+        $search = mb_strtolower(trim((string) $request->query->get('search', '')));
+        $status = strtoupper(trim((string) $request->query->get('status', '')));
+        if ($search !== '') {
+            $suppliers = array_values(array_filter($suppliers, static fn (Supplier $supplier): bool =>
+                str_contains(mb_strtolower($supplier->name()), $search)
+                || str_contains(mb_strtolower((string) $supplier->email()), $search)
+                || str_contains(mb_strtolower((string) $supplier->city()), $search)
+            ));
+        }
+        if ($status !== '') {
+            $suppliers = array_values(array_filter($suppliers, static fn (Supplier $supplier): bool => $supplier->status() === $status));
+        }
+        return new JsonResponse(array_map($this->serialize(...), $suppliers));
     }
 
     #[Route('/{id<\\d+>}', name: 'api_suppliers_get', methods: ['GET'])]
@@ -42,37 +55,28 @@ final class SupplierController
     }
 
     #[Route('', name: 'api_suppliers_create', methods: ['POST'])]
-    public function create(
-        Request $request,
-        CreateSupplier $useCase,
-    ): JsonResponse {
+    public function create(Request $request, CreateSupplier $useCase): JsonResponse
+    {
         try {
-            $data = $this->input($request);
-
-            return new JsonResponse($this->serialize($useCase->execute($data)), 201);
-        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
+            return new JsonResponse($this->serialize($useCase->execute($this->input($request))), 201);
+        } catch (JsonException|InvalidSupplierData|\\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
-            return $this->error($exception->getMessage(), 422);
+            return new JsonResponse(['error' => $exception->getMessage(), 'violations' => $exception->violations()], 422);
         } catch (SupplierEmailAlreadyUsed $exception) {
             return $this->error($exception->getMessage(), 409);
         }
     }
 
     #[Route('/{id<\\d+>}', name: 'api_suppliers_update', methods: ['PUT'])]
-    public function update(
-        int $id,
-        Request $request,
-        UpdateSupplier $useCase,
-    ): JsonResponse {
+    public function update(int $id, Request $request, UpdateSupplier $useCase): JsonResponse
+    {
         try {
-            $data = $this->input($request);
-
-            return new JsonResponse($this->serialize($useCase->execute($id, $data)));
-        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
+            return new JsonResponse($this->serialize($useCase->execute($id, $this->input($request))));
+        } catch (JsonException|InvalidSupplierData|\\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
-            return $this->error($exception->getMessage(), 422);
+            return new JsonResponse(['error' => $exception->getMessage(), 'violations' => $exception->violations()], 422);
         } catch (SupplierNotFound $exception) {
             return $this->error($exception->getMessage(), 404);
         } catch (SupplierEmailAlreadyUsed $exception) {
@@ -85,7 +89,6 @@ final class SupplierController
     {
         try {
             $useCase->execute($id);
-
             return new Response('', Response::HTTP_NO_CONTENT);
         } catch (SupplierNotFound $exception) {
             return $this->error($exception->getMessage(), 404);
@@ -98,24 +101,22 @@ final class SupplierController
     {
         $payload = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($payload) || array_is_list($payload)) {
-            throw new \InvalidArgumentException('A JSON object is required.');
+            throw new \\InvalidArgumentException('A JSON object is required.');
         }
-
-        foreach (['name', 'email', 'phone', 'taxNumber'] as $field) {
+        $fields = ['name', 'email', 'phone', 'taxNumber', 'status', 'contactPerson', 'street', 'city', 'postalCode', 'country'];
+        foreach ($fields as $field) {
             if (array_key_exists($field, $payload) && $payload[$field] !== null && !is_string($payload[$field])) {
-                throw new \InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
+                throw new \\InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
             }
         }
-
         if (!isset($payload['name']) || !is_string($payload['name'])) {
-            throw new \InvalidArgumentException('Field "name" is required and must be a string.');
+            throw new \\InvalidArgumentException('Field "name" is required and must be a string.');
         }
-
         return new SupplierData(
-            $payload['name'],
-            $payload['email'] ?? null,
-            $payload['phone'] ?? null,
-            $payload['taxNumber'] ?? null,
+            $payload['name'], $payload['email'] ?? null, $payload['phone'] ?? null,
+            $payload['taxNumber'] ?? null, $payload['status'] ?? 'ACTIVE',
+            $payload['contactPerson'] ?? null, $payload['street'] ?? null,
+            $payload['city'] ?? null, $payload['postalCode'] ?? null, $payload['country'] ?? null,
         );
     }
 
@@ -123,11 +124,11 @@ final class SupplierController
     private function serialize(Supplier $supplier): array
     {
         return [
-            'id' => $supplier->id(),
-            'name' => $supplier->name(),
-            'email' => $supplier->email(),
-            'phone' => $supplier->phone(),
-            'taxNumber' => $supplier->taxNumber(),
+            'id' => $supplier->id(), 'name' => $supplier->name(), 'email' => $supplier->email(),
+            'phone' => $supplier->phone(), 'taxNumber' => $supplier->taxNumber(),
+            'status' => $supplier->status(), 'contactPerson' => $supplier->contactPerson(),
+            'street' => $supplier->street(), 'city' => $supplier->city(),
+            'postalCode' => $supplier->postalCode(), 'country' => $supplier->country(),
             'createdAt' => $supplier->createdAt()->format(DATE_ATOM),
         ];
     }
