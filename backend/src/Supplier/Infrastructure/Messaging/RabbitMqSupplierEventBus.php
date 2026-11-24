@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Supplier\Infrastructure\Messaging;
 
+use App\Observability\MetricsRegistry;
 use AMQPChannel;
 use AMQPConnection;
 use AMQPEnvelope;
@@ -30,6 +31,7 @@ final readonly class RabbitMqSupplierEventBus
         private string $password,
         private string $vhost,
         private SupplierEventEnvelopeValidator $eventValidator,
+        private MetricsRegistry $metrics,
     ) {
     }
 
@@ -160,6 +162,10 @@ final readonly class RabbitMqSupplierEventBus
                     $headers = $envelope->getHeaders();
                     $retryCount = is_array($headers) ? (int) ($headers['x-retry-count'] ?? 0) : 0;
                     $isRetry = $retryCount < self::MAX_RETRIES;
+                    $this->metrics->incrementSupplierEvent('failed');
+                    if (!$isRetry) {
+                        $this->metrics->incrementSupplierEvent('dead_letter');
+                    }
                     $targetExchange = $isRetry ? self::RETRY_EXCHANGE : self::DEAD_EXCHANGE;
                     $routingKey = $isRetry ? 'supplier.retry' : 'supplier.dead';
 
