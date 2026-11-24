@@ -47,16 +47,9 @@ final class PublishSupplierOutboxCommand extends Command
                 $event = $this->connection->executeQuery(
                     "SELECT event_id, event_type, aggregate_id, payload
                      FROM supplier_outbox_events
-                     WHERE event_id = (
-                         SELECT event_id
-                         FROM (
-                             SELECT event_id
-                             FROM supplier_outbox_events
-                             WHERE status = 'PENDING' AND next_attempt_at <= SYSTIMESTAMP
-                             ORDER BY occurred_at
-                         )
-                         WHERE ROWNUM = 1
-                     )
+                     WHERE status = 'PENDING'
+                       AND next_attempt_at <= SYSTIMESTAMP
+                     ORDER BY occurred_at
                      FOR UPDATE SKIP LOCKED"
                 )->fetchAssociative();
 
