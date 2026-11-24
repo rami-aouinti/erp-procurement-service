@@ -18,6 +18,7 @@ use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/suppliers')]
@@ -66,11 +67,11 @@ final class SupplierController
     }
 
     #[Route('/{id<\\d+>}', name: 'api_suppliers_delete', methods: ['DELETE'])]
-    public function delete(int $id, DeleteSupplier $useCase): JsonResponse
+    public function delete(int $id, DeleteSupplier $useCase): Response
     {
         try {
             $useCase->execute($id);
-            return new JsonResponse(null, 204);
+            return new Response('', Response::HTTP_NO_CONTENT);
         } catch (SupplierNotFound $exception) {
             return $this->error($exception->getMessage(), 404);
         } catch (ForeignKeyConstraintViolationException) {
