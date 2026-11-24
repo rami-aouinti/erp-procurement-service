@@ -23,10 +23,12 @@ RUN mkdir -p /opt/oracle \
     && ldconfig \
     && printf "instantclient,/opt/oracle/instantclient\n" | pecl install oci8 \
     && docker-php-ext-enable oci8 \
-    && rm -f /tmp/instantclient-basic.zip /tmp/instantclient-sdk.zip \
-    && apt-get purge -y --auto-remove curl unzip ${PHPIZE_DEPS}
+    && rm -f /tmp/instantclient-basic.zip /tmp/instantclient-sdk.zip
 
-RUN docker-php-ext-install opcache
+# Compile all PHP extensions before removing the build toolchain.
+RUN docker-php-ext-install opcache \
+    && apt-get purge -y --auto-remove curl unzip ${PHPIZE_DEPS} \
+    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8000
 
