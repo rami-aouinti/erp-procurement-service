@@ -363,6 +363,48 @@
           "mode": "multi"
         }
       }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "PHP memory usage",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "erp_php_memory_usage_bytes",
+          "legendFormat": "Current",
+          "refId": "A"
+        },
+        {
+          "expr": "erp_php_memory_peak_bytes",
+          "legendFormat": "Peak",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
     }
   ],
   "refresh": "10s",
