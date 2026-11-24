@@ -45,9 +45,11 @@ The application starts as one modular Symfony backend. We will keep clear bounda
 - [x] Docker Compose services for backend and frontend
 - [ ] Start and verify the full stack locally
 - [ ] Validate the PHP Oracle driver and connect Symfony to Oracle
-- [ ] Implement suppliers and products API
+- [x] Implement supplier CRUD API with profile details and status filters
+- [ ] Implement products API
 - [ ] Implement purchase orders and goods-receiving API
-- [ ] Build the corresponding React screens
+- [x] Build supplier management React screen with search, status filters, client-side pagination and edit/create forms
+- [ ] Build product and purchase-order screens
 
 ## Requirements
 
@@ -121,6 +123,8 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `003_practice_queries.sql` — joins, aggregation and reporting exercises.
 - `004_create_goods_receiving.sql` — goods receipts, inventory, movement history and the PL/SQL receiving procedure.
 - `005_test_goods_receiving.sql` — manual example for testing goods receiving.
+- `006_create_suppliers_sequence.sql` — sequence used by Doctrine with the OCI8 driver.
+- `007_extend_supplier_management.sql` — additive supplier status, contact and address columns. Existing data is preserved.
 
 Run a script from the repository root, for example:
 
@@ -128,7 +132,11 @@ Run a script from the repository root, for example:
 docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/004_create_goods_receiving.sql
 ```
 
-The schema-creation scripts are intended for their documented order. Do not rerun non-idempotent schema scripts against an already initialized database.
+The initial schema-creation scripts are intended for their documented order. Do not rerun non-idempotent schema scripts against an already initialized database. For an existing database, apply only the new additive supplier extension:
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/007_extend_supplier_management.sql
+```
 
 ## Symfony backend
 
