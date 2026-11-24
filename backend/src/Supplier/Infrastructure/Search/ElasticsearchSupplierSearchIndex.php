@@ -45,10 +45,18 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
 
         $response = $this->request('POST', '/' . self::INDEX . '/_search', $body);
         $hits = $response['hits']['hits'] ?? [];
+        if (!is_array($hits)) {
+            return [];
+        }
+
+        $validHits = array_filter(
+            $hits,
+            static fn (mixed $hit): bool => is_array($hit) && isset($hit['_source']) && is_array($hit['_source']),
+        );
 
         return array_values(array_map(
             static fn (array $hit): array => $hit['_source'],
-            array_filter($hits, static fn (array $hit): bool => isset($hit['_source']) && is_array($hit['_source'])),
+            $validHits,
         ));
     }
 
