@@ -26,6 +26,10 @@ final class ApiDocumentationController
                 '/api/suppliers' => [
                     'get' => [
                         'tags' => ['Suppliers'], 'summary' => 'List suppliers', 'operationId' => 'listSuppliers',
+                        'parameters' => [
+                            ['name' => 'search', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string'], 'description' => 'Search supplier name, email or city.'],
+                            ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['ACTIVE', 'INACTIVE', 'BLOCKED']]],
+                        ],
                         'responses' => ['200' => ['description' => 'Supplier collection', 'content' => ['application/json' => ['schema' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Supplier']]]]]],
                     ],
                     'post' => [
@@ -63,6 +67,12 @@ final class ApiDocumentationController
                             'email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 150, 'nullable' => true],
                             'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
                             'taxNumber' => ['type' => 'string', 'maxLength' => 50, 'nullable' => true],
+                            'status' => ['type' => 'string', 'enum' => ['ACTIVE', 'INACTIVE', 'BLOCKED'], 'default' => 'ACTIVE'],
+                            'contactPerson' => ['type' => 'string', 'maxLength' => 150, 'nullable' => true],
+                            'street' => ['type' => 'string', 'maxLength' => 180, 'nullable' => true],
+                            'city' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
+                            'postalCode' => ['type' => 'string', 'maxLength' => 20, 'nullable' => true],
+                            'country' => ['type' => 'string', 'maxLength' => 2, 'nullable' => true, 'example' => 'DE'],
                         ],
                     ],
                     'Supplier' => [
