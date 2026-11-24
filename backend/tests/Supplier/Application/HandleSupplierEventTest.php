@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Supplier\Application;
 
 use App\Observability\MetricsRegistry;
+use App\Supplier\Application\Port\SupplierEventDeduplication;
 use App\Supplier\Application\Port\SupplierListCache;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Application\Service\HandleSupplierEvent;
@@ -25,49 +26,72 @@ final class HandleSupplierEventTest extends TestCase
 
         $cache = $this->createMock(SupplierListCache::class);
         $cache->expects(self::once())->method('invalidate');
+
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::once())->method('claim')
+            ->with('event-42', 'SupplierCreated', 42)->willReturn('claim-token');
+        $deduplication->expects(self::once())->method('markProcessed')->with('event-42', 'claim-token');
+        $deduplication->expects(self::never())->method('release');
+
         $metrics = $this->metrics();
         $metrics->expects(self::once())->method('incrementSupplierEvent')->with('consumed');
 
-        $handler = new HandleSupplierEvent($suppliers, $search, $cache, $metrics);
+        $handler = new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics);
         $handler($this->event('SupplierCreated'));
     }
 
-    public function testDuplicateDeleteEventIsIdempotent(): void
+    public function testDuplicateDeliveryIsSkippedAfterFirstSuccessfulProcessing(): void
     {
         $suppliers = $this->createMock(SupplierRepository::class);
         $suppliers->expects(self::never())->method('findById');
 
         $search = $this->createMock(SupplierSearchIndex::class);
-        $search->expects(self::exactly(2))->method('delete')->with(42);
+        $search->expects(self::once())->method('delete')->with(42);
 
         $cache = $this->createMock(SupplierListCache::class);
-        $cache->expects(self::exactly(2))->method('invalidate');
-        $metrics = $this->metrics();
-        $metrics->expects(self::exactly(2))->method('incrementSupplierEvent')->with('consumed');
+        $cache->expects(self::once())->method('invalidate');
 
-        $handler = new HandleSupplierEvent($suppliers, $search, $cache, $metrics);
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::exactly(2))->method('claim')
+            ->with('event-42', 'SupplierDeleted', 42)
+            ->willReturnOnConsecutiveCalls('claim-token', null);
+        $deduplication->expects(self::once())->method('markProcessed')->with('event-42', 'claim-token');
+        $deduplication->expects(self::never())->method('release');
+
+        $metrics = $this->metrics();
+        $metrics->expects(self::once())->method('incrementSupplierEvent')->with('consumed');
+        $metrics->expects(self::once())->method('incrementSupplierEvent')->with('deduplicated');
+
+        $handler = new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics);
         $event = $this->event('SupplierDeleted');
 
         $handler($event);
         $handler($event);
     }
 
-    public function testUnsupportedEventIsRejectedAndNotCountedAsConsumed(): void
+    public function testUnsupportedEventIsReleasedAndNotCountedAsConsumed(): void
     {
         $suppliers = $this->createMock(SupplierRepository::class);
         $search = $this->createMock(SupplierSearchIndex::class);
         $cache = $this->createMock(SupplierListCache::class);
         $cache->expects(self::never())->method('invalidate');
+
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::once())->method('claim')->willReturn('claim-token');
+        $deduplication->expects(self::never())->method('markProcessed');
+        $deduplication->expects(self::once())->method('release')
+            ->with('event-42', 'claim-token', RuntimeException::class);
+
         $metrics = $this->metrics();
         $metrics->expects(self::never())->method('incrementSupplierEvent');
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Unsupported supplier event type');
 
-        (new HandleSupplierEvent($suppliers, $search, $cache, $metrics))($this->event('SupplierArchived'));
+        (new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics))($this->event('SupplierArchived'));
     }
 
-    public function testReadModelFailureIsPropagatedAndNotCountedAsConsumed(): void
+    public function testReadModelFailureReleasesClaimAndIsPropagated(): void
     {
         $suppliers = $this->createMock(SupplierRepository::class);
         $search = $this->createMock(SupplierSearchIndex::class);
@@ -76,11 +100,18 @@ final class HandleSupplierEventTest extends TestCase
 
         $cache = $this->createMock(SupplierListCache::class);
         $cache->expects(self::never())->method('invalidate');
+
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::once())->method('claim')->willReturn('claim-token');
+        $deduplication->expects(self::never())->method('markProcessed');
+        $deduplication->expects(self::once())->method('release')
+            ->with('event-42', 'claim-token', RuntimeException::class);
+
         $metrics = $this->metrics();
         $metrics->expects(self::never())->method('incrementSupplierEvent');
 
         try {
-            (new HandleSupplierEvent($suppliers, $search, $cache, $metrics))($this->event('SupplierDeleted'));
+            (new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics))($this->event('SupplierDeleted'));
             self::fail('The Elasticsearch exception should reach the RabbitMQ consumer.');
         } catch (RuntimeException $exception) {
             self::assertSame('Elasticsearch unavailable', $exception->getMessage());
