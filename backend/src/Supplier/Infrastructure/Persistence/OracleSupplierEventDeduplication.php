@@ -64,10 +64,25 @@ final readonly class OracleSupplierEventDeduplication implements SupplierEventDe
             return $claimToken;
         }
 
-        $status = $this->connection->fetchOne(
-            'SELECT status FROM supplier_consumed_events WHERE event_id = :eventId',
+        $existing = $this->connection->fetchAssociative(
+            'SELECT status, event_type, aggregate_id
+             FROM supplier_consumed_events
+             WHERE event_id = :eventId',
             ['eventId' => $eventId],
         );
+
+        if ($existing === false) {
+            throw new RuntimeException('Supplier event disappeared while claiming it for processing.');
+        }
+
+        if (
+            (string) $existing['event_type'] !== $eventType
+            || (int) $existing['aggregate_id'] !== $aggregateId
+        ) {
+            throw new RuntimeException('Supplier event ID was reused with different event metadata.');
+        }
+
+        $status = (string) $existing['status'];
 
         if (in_array($status, ['PROCESSED', 'PROCESSING'], true)) {
             // A second delivery must not exhaust the short RabbitMQ retry
