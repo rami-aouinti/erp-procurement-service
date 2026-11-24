@@ -16,6 +16,7 @@ use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use App\Supplier\Domain\Exception\SupplierNotFound;
 use App\Supplier\Domain\Model\Supplier;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
