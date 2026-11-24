@@ -11,7 +11,7 @@ WORKDIR /app
 RUN apt-get update \
     && (apt-get install -y --no-install-recommends libaio1t64 || apt-get install -y --no-install-recommends libaio1) \
     && if [ -e /usr/lib/x86_64-linux-gnu/libaio.so.1t64 ] && [ ! -e /usr/lib/x86_64-linux-gnu/libaio.so.1 ]; then ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/lib/x86_64-linux-gnu/libaio.so.1; fi \
-    && apt-get install -y --no-install-recommends curl unzip ${PHPIZE_DEPS} \
+    && apt-get install -y --no-install-recommends curl unzip librabbitmq-dev ${PHPIZE_DEPS} \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /opt/oracle \
@@ -24,7 +24,8 @@ RUN mkdir -p /opt/oracle \
     && ldconfig \
     && printf "instantclient,/opt/oracle/instantclient\n" | pecl install oci8 \
     && pecl install redis \
-    && docker-php-ext-enable oci8 redis \
+    && pecl install amqp \
+    && docker-php-ext-enable oci8 redis amqp \
     && rm -f /tmp/instantclient-basic.zip /tmp/instantclient-sdk.zip
 
 # Compile all PHP extensions before removing the build toolchain.
