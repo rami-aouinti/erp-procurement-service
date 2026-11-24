@@ -233,3 +233,18 @@ docker compose exec oracle bash -lc 'echo "SELECT status, COUNT(*) FROM supplier
 ```
 
 The RabbitMQ dead-letter queue is `supplier.events.dead`; inspect it in the management UI and only requeue messages after the underlying consumer error is corrected. Outbox rows marked `FAILED` can be reset with `supplier:outbox:retry-failed`, optionally passing a specific 32-character event ID.
+
+
+## Observability (Prometheus + Grafana)
+
+The local Docker Compose stack includes Prometheus, Grafana, cAdvisor and Node Exporter.
+
+- Grafana dashboard: http://localhost:3000
+- Prometheus UI and alert rules: http://localhost:9090
+- Symfony application metrics: http://localhost:8000/metrics
+- cAdvisor container metrics: http://localhost:8088
+- Node Exporter metrics: http://localhost:9100/metrics
+
+Add \`GRAFANA_ADMIN_USER\` and a strong \`GRAFANA_ADMIN_PASSWORD\` to your local \`.env\` before starting the stack. Prometheus automatically scrapes backend HTTP metrics and infrastructure exporters. The provisioned **ERP Procurement - Overview** dashboard includes backend availability, request rate, 5xx rate, p95 latency, container CPU and memory. Prometheus also evaluates backend-down, high-error-rate and high-latency alert rules.
+
+See [docs/observability.md](docs/observability.md) for setup, metric definitions, PromQL examples, limitations and security notes.
