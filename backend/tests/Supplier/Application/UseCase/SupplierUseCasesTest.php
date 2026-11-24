@@ -10,6 +10,7 @@ use App\Supplier\Application\UseCase\DeleteSupplier;
 use App\Supplier\Application\UseCase\GetSupplier;
 use App\Supplier\Application\UseCase\ListSuppliers;
 use App\Supplier\Application\UseCase\UpdateSupplier;
+use App\Supplier\Application\Validator\SupplierDataValidator;
 use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use App\Supplier\Domain\Exception\SupplierNotFound;
 use App\Supplier\Domain\Model\Supplier;
@@ -39,7 +40,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository->expects(self::never())->method('save');
 
         $this->expectException(SupplierEmailAlreadyUsed::class);
-        (new CreateSupplier($repository))->execute(new SupplierData('Duplicate', 'taken@example.com'));
+        (new CreateSupplier($repository, new SupplierDataValidator()))->execute(new SupplierData('Duplicate', 'taken@example.com'));
     }
 
     public function testCreateAllowsMissingEmailWithoutUniquenessQuery(): void
@@ -48,7 +49,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository->expects(self::never())->method('emailExists');
         $repository->expects(self::once())->method('save')->willReturnArgument(0);
 
-        self::assertNull((new CreateSupplier($repository))->execute(new SupplierData('No Email'))->id());
+        self::assertNull((new CreateSupplier($repository, new SupplierDataValidator()))->execute(new SupplierData('No Email'))->id());
     }
 
     public function testGetReturnsSupplierAndThrowsWhenMissing(): void
@@ -97,7 +98,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository->expects(self::never())->method('save');
 
         $this->expectException(SupplierEmailAlreadyUsed::class);
-        (new UpdateSupplier($repository))->execute(5, new SupplierData('Name', 'taken@example.com'));
+        (new UpdateSupplier($repository, new SupplierDataValidator()))->execute(5, new SupplierData('Name', 'taken@example.com'));
     }
 
     public function testDeleteRemovesExistingSupplier(): void
