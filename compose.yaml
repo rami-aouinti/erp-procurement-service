@@ -285,3 +285,7 @@ volumes:
     name: erp_elasticsearch_data
   rabbitmq_data:
     name: erp_rabbitmq_data
+  prometheus_data:
+    name: erp_prometheus_data
+  grafana_data:
+    name: erp_grafana_data
