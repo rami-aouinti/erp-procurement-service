@@ -53,7 +53,7 @@ final class SupplierController
             $validator->validate($data);
 
             return new JsonResponse($this->serialize($useCase->execute($data)), 201);
-        } catch (JsonException|InvalidSupplierData|\\InvalidArgumentException $exception) {
+        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
             return $this->error($exception->getMessage(), 422);
@@ -74,7 +74,7 @@ final class SupplierController
             $validator->validate($data);
 
             return new JsonResponse($this->serialize($useCase->execute($id, $data)));
-        } catch (JsonException|InvalidSupplierData|\\InvalidArgumentException $exception) {
+        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
             return $this->error($exception->getMessage(), 422);
@@ -103,17 +103,17 @@ final class SupplierController
     {
         $payload = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($payload) || array_is_list($payload)) {
-            throw new \\InvalidArgumentException('A JSON object is required.');
+            throw new \InvalidArgumentException('A JSON object is required.');
         }
 
         foreach (['name', 'email', 'phone', 'taxNumber'] as $field) {
             if (array_key_exists($field, $payload) && $payload[$field] !== null && !is_string($payload[$field])) {
-                throw new \\InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
+                throw new \InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
             }
         }
 
         if (!isset($payload['name']) || !is_string($payload['name'])) {
-            throw new \\InvalidArgumentException('Field "name" is required and must be a string.');
+            throw new \InvalidArgumentException('Field "name" is required and must be a string.');
         }
 
         return new SupplierData(
