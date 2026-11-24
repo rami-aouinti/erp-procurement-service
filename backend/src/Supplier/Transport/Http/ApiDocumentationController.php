@@ -108,4 +108,3 @@ final class ApiDocumentationController
 HTML, Response::HTTP_OK, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 }
-HTML
