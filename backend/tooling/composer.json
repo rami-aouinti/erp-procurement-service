@@ -3,8 +3,10 @@
   "description": "Isolated PHP quality tooling for the ERP Procurement backend",
   "type": "project",
   "license": "proprietary",
+  "require": {
+    "php": "^8.2"
+  },
   "require-dev": {
-    "php": "^8.2",
     "nunomaduro/phpinsights": "^2.13",
     "phpmd/phpmd": "^2.15",
     "phpstan/phpstan": "^2.1",
