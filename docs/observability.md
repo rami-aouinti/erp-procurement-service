@@ -1,6 +1,6 @@
 # Observability
 
-The local stack uses Prometheus for metrics collection, Grafana for dashboards, cAdvisor for container metrics, and Node Exporter for host-level metrics.
+The local stack uses Prometheus for metrics, Loki for centralized logs, Grafana for dashboards, Grafana Alloy for log collection, cAdvisor for container metrics, and Node Exporter for host-level metrics.
 
 ## Services and URLs
 
@@ -11,8 +11,10 @@ The local stack uses Prometheus for metrics collection, Grafana for dashboards, 
 | cAdvisor | http://localhost:8088 | Docker container resource metrics |
 | Node Exporter | http://localhost:9100/metrics | Host/kernel metrics |
 | Symfony metrics | http://localhost:8000/metrics | Application HTTP metrics |
+| Loki | http://localhost:3100 | Log query API |
+| Alloy | http://localhost:12345 | Collector UI and health |
 
-Grafana provisions the Prometheus datasource and the **ERP Procurement - Overview** dashboard automatically. Sign in with \`GRAFANA_ADMIN_USER\` and \`GRAFANA_ADMIN_PASSWORD\` from your local \`.env\`.
+Grafana provisions Prometheus and Loki datasources and the **ERP Procurement - Overview** dashboard automatically. The dashboard includes centralized container logs. Sign in with \`GRAFANA_ADMIN_USER\` and \`GRAFANA_ADMIN_PASSWORD\` from your local \`.env\`.
 
 ## Start the monitoring stack
 
@@ -85,3 +87,25 @@ container_memory_working_set_bytes{name!=""}
 ## Security notes
 
 Monitoring ports are bound to \`127.0.0.1\` for local development. Keep them off public interfaces unless authentication, TLS, network restrictions and appropriate retention have been configured. Change the example Grafana password before using the stack beyond a local machine.
+
+
+## Centralized logs with Loki and Alloy
+
+- Loki stores local logs for seven days in the persistent `erp_loki_data` volume.
+- Grafana Alloy discovers Docker containers and forwards stdout/stderr logs to Loki.
+- Container labels include the container name and Docker Compose service when available.
+- Symfony HTTP logs are JSON on stderr and include request ID, route name, method, status and duration. Raw URLs, query strings, request bodies and business data are not logged.
+- The PSR-3 logger filters sensitive context keys and exception messages before writing JSON to stderr.
+
+Explore logs in Grafana → Explore → Loki. Useful LogQL:
+
+```logql
+{job="docker"}
+{job="docker", compose_service="backend"}
+{job="docker", compose_service="supplier-events-consumer"} |= "error"
+{job="docker"} | json | level="error"
+```
+
+The local Alloy collector mounts `/var/run/docker.sock`. Access to this socket is effectively privileged access to the Docker host: keep this collector on a trusted developer machine and do not expose the Docker API or Alloy UI publicly. Loki is unauthenticated and bound to loopback for local development only.
+
+For Kubernetes, apply `k8s/observability.yaml`. It deploys single-replica Loki with a 10 GiB PVC and an Alloy DaemonSet that tails pod logs using Kubernetes metadata. Loki is ClusterIP-only. This is a learning/small-cluster setup, not HA production. Production needs object storage, authentication/tenant isolation, network policies, backup/retention policy and scalable Loki or a managed logging service.

@@ -79,6 +79,18 @@ kubectl -n erp-procurement logs deployment/erp-backend
 
 Install an NGINX Ingress Controller and configure DNS/TLS (for example with cert-manager) before exposing the host. Replace `erp.example.com` with your domain. The HPA also requires Metrics Server.
 
+## Centralized Kubernetes logs
+
+Apply the separate logging stack after the cluster is ready:
+
+```bash
+kubectl apply -f k8s/observability.yaml
+kubectl -n monitoring get pods,services,pvc
+kubectl -n monitoring logs daemonset/alloy
+```
+
+Loki is exposed only as `loki.monitoring.svc.cluster.local:3100`. Alloy runs as a DaemonSet, discovers pods through Kubernetes API permissions and tails `/var/log/pods`. If Grafana is deployed in the cluster, configure its Loki datasource to that internal service address. The PVC uses the default StorageClass. This single-replica filesystem setup is for learning/small environments, not HA production.
+
 ## Important production follow-ups
 
 The current Symfony adapters connect to Redis by host/port and to Elasticsearch by URL; they do not yet configure Redis AUTH or Elasticsearch API-key/basic authentication. For this first cloud-learning deployment, use private network endpoints with access restricted to the cluster. Before exposing this as a production system, implement and test the provider credentials/TLS settings in the adapters and source secrets from the cloud secret manager.
