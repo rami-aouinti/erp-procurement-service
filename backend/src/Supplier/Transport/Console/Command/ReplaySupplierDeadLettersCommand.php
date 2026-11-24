@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Transport\\Console\\Command;
+namespace App\Supplier\Transport\Console\Command;
 
-use App\\Supplier\\Infrastructure\\Messaging\\RabbitMqSupplierEventBus;
+use App\Supplier\Infrastructure\Messaging\RabbitMqSupplierEventBus;
 use RuntimeException;
-use Symfony\\Component\\Console\\Attribute\\AsCommand;
-use Symfony\\Component\\Console\\Command\\Command;
-use Symfony\\Component\\Console\\Input\\InputInterface;
-use Symfony\\Component\\Console\\Input\\InputOption;
-use Symfony\\Component\\Console\\Output\\OutputInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(name: 'supplier:events:dead-letter:replay', description: 'Replay supplier events from the RabbitMQ dead-letter queue.')]
 final class ReplaySupplierDeadLettersCommand extends Command
