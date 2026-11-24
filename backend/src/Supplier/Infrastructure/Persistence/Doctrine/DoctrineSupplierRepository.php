@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Infrastructure\\Persistence\\Doctrine;
+namespace App\Supplier\Infrastructure\Persistence\Doctrine;
 
-use App\\Supplier\\Domain\\Model\\Supplier;
-use App\\Supplier\\Domain\\Repository\\SupplierRepository as SupplierRepositoryInterface;
-use App\\Supplier\\Infrastructure\\Persistence\\Doctrine\\Entity\\SupplierRecord;
-use Doctrine\\Bundle\\DoctrineBundle\\Repository\\ServiceEntityRepository;
-use Doctrine\\DBAL\\Connection;
-use Doctrine\\Persistence\\ManagerRegistry;
+use App\Supplier\Domain\Model\Supplier;
+use App\Supplier\Domain\Repository\SupplierRepository as SupplierRepositoryInterface;
+use App\Supplier\Infrastructure\Persistence\Doctrine\Entity\SupplierRecord;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Connection;
+use Doctrine\Persistence\ManagerRegistry;
 
 final class DoctrineSupplierRepository extends ServiceEntityRepository implements SupplierRepositoryInterface
 {
@@ -24,7 +24,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
     public function findAll(): array
     {
         $records = $this->createQueryBuilder('supplier')
-            ->orderBy('supplier.name', \\SortDirection::Ascending)
+            ->orderBy('supplier.name', \SortDirection::Ascending)
             ->getQuery()->getResult();
 
         return array_map($this->toDomain(...), $records);
@@ -48,7 +48,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
 
         $record = $this->find($supplier->id());
         if (!$record instanceof SupplierRecord) {
-            throw new \\RuntimeException('Supplier persistence record disappeared during update.');
+            throw new \RuntimeException('Supplier persistence record disappeared during update.');
         }
         $record->updateFrom($supplier);
         $em->flush();
