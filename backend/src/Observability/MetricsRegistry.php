@@ -28,7 +28,7 @@ final class MetricsRegistry
                 'labels' => $labels,
                 'count' => 0,
                 'sum' => 0.0,
-                'buckets' => array_fill_keys(self::BUCKETS, 0),
+                'buckets' => array_fill_keys(array_map(static fn (float $bucket): string => sprintf('%.3F', $bucket), self::BUCKETS), 0),
             ];
         }
 
@@ -38,7 +38,7 @@ final class MetricsRegistry
 
         foreach (self::BUCKETS as $bucket) {
             if ($duration <= $bucket) {
-                $this->histograms[$key]['buckets'][$bucket]++;
+                $this->histograms[$key]['buckets'][sprintf('%.3F', $bucket)]++;
             }
         }
     }
@@ -63,7 +63,7 @@ final class MetricsRegistry
         foreach ($this->histograms as $histogram) {
             $labels = implode('|', $histogram['labels']);
             foreach (self::BUCKETS as $bucket) {
-                $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="' . $bucket . '"} ' . $histogram['buckets'][$bucket];
+                $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="' . $bucket . '"} ' . $histogram['buckets'][sprintf('%.3F', $bucket)];
             }
             $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="+Inf"} ' . $histogram['count'];
             $output[] = 'erp_http_request_duration_seconds_sum{' . $labels . '} ' . $this->format($histogram['sum']);
