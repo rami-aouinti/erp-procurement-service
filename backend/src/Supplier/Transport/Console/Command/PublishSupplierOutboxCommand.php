@@ -131,7 +131,17 @@ final class PublishSupplierOutboxCommand extends Command
             $pending = (int) $this->connection->fetchOne(
                 "SELECT COUNT(*) FROM supplier_outbox_events WHERE status = 'PENDING'"
             );
+            $failed = (int) $this->connection->fetchOne(
+                "SELECT COUNT(*) FROM supplier_outbox_events WHERE status = 'FAILED'"
+            );
+            $oldestPendingAge = (float) $this->connection->fetchOne(
+                "SELECT COALESCE((CAST(SYSTIMESTAMP AS DATE) - CAST(MIN(occurred_at) AS DATE)) * 86400, 0)
+                 FROM supplier_outbox_events
+                 WHERE status = 'PENDING'"
+            );
             $this->metrics->setSupplierOutboxPending($pending);
+            $this->metrics->setSupplierOutboxFailed($failed);
+            $this->metrics->setSupplierOutboxOldestPendingAge($oldestPendingAge);
         } catch (Throwable) {
             // Metrics must never prevent outbox delivery.
         }
