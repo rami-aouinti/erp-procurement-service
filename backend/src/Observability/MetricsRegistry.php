@@ -24,7 +24,7 @@ final class MetricsRegistry
     private const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0];
 
     public function __construct(
-        private readonly string $redisHost = '127.0.0.1',
+        private readonly string $redisHost = '',
         private readonly int $redisPort = 6379,
     ) {
         $this->startedAt = microtime(true);
@@ -142,6 +142,10 @@ final class MetricsRegistry
     {
         if ($this->redis instanceof Redis && $this->redis->isConnected()) {
             return $this->redis;
+        }
+
+        if ($this->redisHost === '') {
+            throw new \\RuntimeException('Redis metrics storage is not configured.');
         }
 
         $redis = new Redis();
