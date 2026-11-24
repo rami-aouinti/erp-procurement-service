@@ -169,7 +169,7 @@ final class MetricsRegistry
 
     private function escape(string $value): string
     {
-        return str_replace(["\", "\n", '"'], ["\\", "\n", '\"'], $value);
+        return str_replace(["\\", "\n", '"'], ["\\\\", "\\n", '\\"'], $value);
     }
 
     private function format(float $value): string
