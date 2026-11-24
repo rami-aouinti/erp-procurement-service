@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Supplier\Infrastructure\Persistence;
 
 use App\Supplier\Application\Port\SupplierEventDeduplication;
-use App\Supplier\Infrastructure\Messaging\SupplierEventAlreadyProcessing;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use RuntimeException;
