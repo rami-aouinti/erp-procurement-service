@@ -9,7 +9,6 @@ use AMQPConnection;
 use AMQPEnvelope;
 use AMQPExchange;
 use AMQPQueue;
-use AMQPTable;
 use RuntimeException;
 use Throwable;
 
@@ -93,7 +92,7 @@ final readonly class RabbitMqSupplierEventBus
                     'content_type' => 'application/json',
                     'delivery_mode' => 2,
                     'message_id' => $envelope->getMessageId(),
-                    'headers' => new AMQPTable(['x-retry-count' => $retryCount + 1, 'x-last-error' => substr($exception->getMessage(), 0, 500)]),
+                    'headers' => ['x-retry-count' => $retryCount + 1, 'x-last-error' => substr($exception->getMessage(), 0, 500)],
                 ];
                 if (!$exchange->publish($envelope->getBody(), $routingKey, AMQP_NOPARAM, $properties)) {
                     $queue->nack($tag, AMQP_REQUEUE);
@@ -151,11 +150,11 @@ final readonly class RabbitMqSupplierEventBus
         $retry = new AMQPQueue($channel);
         $retry->setName(self::RETRY_QUEUE);
         $retry->setFlags(AMQP_DURABLE);
-        $retry->setArguments(new AMQPTable([
+        $retry->setArguments([
             'x-message-ttl' => 5000,
             'x-dead-letter-exchange' => self::EVENTS_EXCHANGE,
             'x-dead-letter-routing-key' => self::ROUTING_KEY,
-        ]));
+        ]);
         $retry->declareQueue();
         $retry->bind(self::RETRY_EXCHANGE, 'supplier.retry');
 
