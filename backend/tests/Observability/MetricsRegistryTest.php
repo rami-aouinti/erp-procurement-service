@@ -45,6 +45,8 @@ final class MetricsRegistryTest extends TestCase
         self::assertStringContainsString('erp_supplier_events_dead_letter_total 0', $output);
         self::assertStringContainsString('# TYPE erp_supplier_outbox_pending_events gauge', $output);
         self::assertStringContainsString('erp_supplier_outbox_pending_events 0', $output);
+        self::assertStringContainsString('erp_supplier_outbox_failed_events 0', $output);
+        self::assertStringContainsString('erp_supplier_outbox_oldest_pending_age_seconds 0', $output);
     }
 
 }
