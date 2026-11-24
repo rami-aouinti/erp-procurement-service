@@ -23,7 +23,8 @@ RUN mkdir -p /opt/oracle \
     && echo "/opt/oracle/instantclient" > /etc/ld.so.conf.d/oracle-instantclient.conf \
     && ldconfig \
     && printf "instantclient,/opt/oracle/instantclient\n" | pecl install oci8 \
-    && docker-php-ext-enable oci8 \
+    && pecl install redis \
+    && docker-php-ext-enable oci8 redis \
     && rm -f /tmp/instantclient-basic.zip /tmp/instantclient-sdk.zip
 
 # Compile all PHP extensions before removing the build toolchain.
