@@ -208,7 +208,7 @@ The local Elasticsearch container has security disabled for development only. It
 
 ## Reliable supplier synchronization (Oracle + Outbox + RabbitMQ)
 
-Supplier writes append a durable event to `supplier_outbox_events` in the same Oracle transaction as the supplier row. A publisher claims pending outbox rows and publishes persistent messages to RabbitMQ. A separate consumer updates Elasticsearch and invalidates Redis. RabbitMQ uses durable exchanges and queues, a delayed retry queue (five retries), and a dead-letter queue for messages that still fail. The outbox publisher retries broker outages with exponential backoff and marks events FAILED after ten unsuccessful publish attempts.
+Supplier writes append a durable event to `supplier_outbox_events` in the same Oracle transaction as the supplier row. A publisher claims pending outbox rows and publishes persistent messages to RabbitMQ with publisher confirms. A separate consumer updates Elasticsearch and invalidates Redis. RabbitMQ uses durable exchanges and queues, a delayed retry queue (five retries), and a dead-letter queue for messages that still fail. The outbox publisher retries broker outages with exponential backoff and marks events FAILED after ten unsuccessful publish attempts. Delivery is at-least-once: the consumer reloads the current supplier from Oracle before updating the read model, so duplicate and delayed create/update events cannot overwrite newer data or recreate a deleted supplier.
 
 Apply the additive outbox schema once to the existing Oracle application schema:
 
@@ -228,7 +228,8 @@ RabbitMQ management UI: http://localhost:15672 (use the credentials from `.env`)
 ```bash
 docker compose logs -f supplier-outbox-publisher supplier-events-consumer
 docker compose exec backend php bin/console supplier:outbox:publish --limit=100
+docker compose exec backend php bin/console supplier:outbox:retry-failed
 docker compose exec oracle bash -lc 'echo "SELECT status, COUNT(*) FROM supplier_outbox_events GROUP BY status;" | sqlplus -s "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"'
 ```
 
-The RabbitMQ dead-letter queue is `supplier.events.dead`; inspect it in the management UI and only requeue messages after the underlying consumer error is corrected.
+The RabbitMQ dead-letter queue is `supplier.events.dead`; inspect it in the management UI and only requeue messages after the underlying consumer error is corrected. Outbox rows marked `FAILED` can be reset with `supplier:outbox:retry-failed`, optionally passing a specific 32-character event ID.
