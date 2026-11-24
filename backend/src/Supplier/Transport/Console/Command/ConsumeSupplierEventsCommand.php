@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Supplier\Transport\Console\Command;
 
+use App\Observability\MetricsRegistry;
 use App\Supplier\Application\Port\SupplierListCache;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Domain\Repository\SupplierRepository;
@@ -22,6 +23,7 @@ final class ConsumeSupplierEventsCommand extends Command
         private readonly SupplierRepository $suppliers,
         private readonly SupplierSearchIndex $searchIndex,
         private readonly SupplierListCache $cache,
+        private readonly MetricsRegistry $metrics,
     ) {
         parent::__construct();
     }
@@ -30,6 +32,7 @@ final class ConsumeSupplierEventsCommand extends Command
     {
         $output->writeln('<info>Supplier event consumer connected. Waiting for messages...</info>');
         $this->eventBus->consume(function (array $event): void {
+            try {
             $type = (string) $event['eventType'];
             $supplierId = (int) $event['aggregateId'];
 
@@ -52,6 +55,11 @@ final class ConsumeSupplierEventsCommand extends Command
                 $this->searchIndex->index($supplier);
             }
             $this->cache->invalidate();
+            $this->metrics->incrementSupplierEvent('consumed');
+            } catch (\\Throwable $exception) {
+                $this->metrics->incrementSupplierEvent('failed');
+                throw $exception;
+            }
         });
 
         return Command::SUCCESS;
