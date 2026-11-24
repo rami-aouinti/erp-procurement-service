@@ -28,10 +28,18 @@ services:
     environment:
       APP_ENV: dev
       APP_SECRET: ${APP_SECRET:-local-development-secret-change-me}
+      ORACLE_HOST: oracle
+      ORACLE_PORT: 1521
+      ORACLE_SERVICE: FREEPDB1
+      ORACLE_USER: ${APP_USER:-ERP_APP}
+      ORACLE_PASSWORD: ${APP_USER_PASSWORD:?Set APP_USER_PASSWORD in .env}
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
+    depends_on:
+      oracle:
+        condition: service_healthy
 
   frontend:
     image: node:22-alpine
