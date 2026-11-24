@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Supplier\Transport\Http;
 
+use App\Supplier\Application\UseCase\ManageSupplierProfileRelations;
+use App\Supplier\Domain\Exception\SupplierNotFound;
 use App\Supplier\Domain\Model\SupplierAddress;
 use App\Supplier\Domain\Model\SupplierContact;
-use App\Supplier\Domain\Repository\SupplierProfileRepository;
-use App\Supplier\Domain\Repository\SupplierRepository;
 use InvalidArgumentException;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,29 +17,23 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/suppliers/{id<\\d+>}')]
 final readonly class SupplierProfileRelationsController
 {
-    public function __construct(
-        private SupplierRepository $suppliers,
-        private SupplierProfileRepository $profiles,
-    ) {
+    public function __construct(private ManageSupplierProfileRelations $relations)
+    {
     }
 
     #[Route('/contacts', name: 'api_supplier_contacts_list', methods: ['GET'])]
     public function contacts(int $id): JsonResponse
     {
-        if ($this->suppliers->findById($id) === null) {
+        try {
+            return new JsonResponse(array_map(self::serializeContact(...), $this->relations->listContacts($id)));
+        } catch (SupplierNotFound) {
             return new JsonResponse(['error' => 'Supplier not found.'], 404);
         }
-
-        return new JsonResponse(array_map(self::serializeContact(...), $this->profiles->findContacts($id)));
     }
 
     #[Route('/contacts', name: 'api_supplier_contacts_add', methods: ['POST'])]
     public function addContact(int $id, Request $request): JsonResponse
     {
-        if ($this->suppliers->findById($id) === null) {
-            return new JsonResponse(['error' => 'Supplier not found.'], 404);
-        }
-
         try {
             $data = $this->payload($request);
             $contact = new SupplierContact(
@@ -53,9 +47,10 @@ final readonly class SupplierProfileRelationsController
                 self::nullableString($data, 'phone'),
                 self::boolean($data, 'primary'),
             );
-            $this->profiles->addContact($contact);
 
-            return new JsonResponse(self::serializeContact($contact), 201);
+            return new JsonResponse(self::serializeContact($this->relations->addContact($contact)), 201);
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
         } catch (JsonException | InvalidArgumentException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], 400);
         }
@@ -64,20 +59,16 @@ final readonly class SupplierProfileRelationsController
     #[Route('/addresses', name: 'api_supplier_addresses_list', methods: ['GET'])]
     public function addresses(int $id): JsonResponse
     {
-        if ($this->suppliers->findById($id) === null) {
+        try {
+            return new JsonResponse(array_map(self::serializeAddress(...), $this->relations->listAddresses($id)));
+        } catch (SupplierNotFound) {
             return new JsonResponse(['error' => 'Supplier not found.'], 404);
         }
-
-        return new JsonResponse(array_map(self::serializeAddress(...), $this->profiles->findAddresses($id)));
     }
 
     #[Route('/addresses', name: 'api_supplier_addresses_add', methods: ['POST'])]
     public function addAddress(int $id, Request $request): JsonResponse
     {
-        if ($this->suppliers->findById($id) === null) {
-            return new JsonResponse(['error' => 'Supplier not found.'], 404);
-        }
-
         try {
             $data = $this->payload($request);
             $address = new SupplierAddress(
@@ -94,9 +85,10 @@ final readonly class SupplierProfileRelationsController
                 strtoupper(self::string($data, 'country')),
                 self::boolean($data, 'default'),
             );
-            $this->profiles->addAddress($address);
 
-            return new JsonResponse(self::serializeAddress($address), 201);
+            return new JsonResponse(self::serializeAddress($this->relations->addAddress($address)), 201);
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
         } catch (JsonException | InvalidArgumentException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], 400);
         }
