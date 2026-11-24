@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Supplier\Infrastructure\Persistence\Doctrine;
 
 use App\Supplier\Domain\Model\SupplierProfile;
+use App\Supplier\Domain\Model\SupplierBankAccount;
 use App\Supplier\Domain\Repository\SupplierProfileRepository;
 use Doctrine\DBAL\Connection;
 use Throwable;
@@ -204,6 +205,96 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             $this->connection->commit();
             return $address;
         } catch (\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+
+    /** @return list<SupplierBankAccount> */
+    public function findBankAccounts(int $supplierId): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, supplier_id, account_holder_encrypted, iban_encrypted, bic, bank_name,
+                    currency, encryption_key_version, is_primary
+             FROM supplier_bank_accounts
+             WHERE supplier_id = :supplierId
+             ORDER BY is_primary DESC, id ASC',
+            ['supplierId' => $supplierId],
+        );
+
+        return array_map(static fn (array $row): SupplierBankAccount => new SupplierBankAccount(
+            (int) $row['ID'],
+            (int) $row['SUPPLIER_ID'],
+            (string) $row['ACCOUNT_HOLDER_ENCRYPTED'],
+            (string) $row['IBAN_ENCRYPTED'],
+            '',
+            $row['BIC'] !== null ? trim((string) $row['BIC']) : null,
+            $row['BANK_NAME'] !== null ? (string) $row['BANK_NAME'] : null,
+            trim((string) $row['CURRENCY']),
+            (string) $row['ENCRYPTION_KEY_VERSION'],
+            $row['IS_PRIMARY'] === 'Y',
+        ), $rows);
+    }
+
+    public function addBankAccount(SupplierBankAccount $account): SupplierBankAccount
+    {
+        $this->connection->beginTransaction();
+
+        try {
+            if ($account->primary) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_bank_accounts SET is_primary = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND is_primary = 'Y'",
+                    ['supplierId' => $account->supplierId],
+                );
+            }
+
+            $this->connection->insert('supplier_bank_accounts', [
+                'supplier_id' => $account->supplierId,
+                'account_holder_encrypted' => $account->accountHolderEncrypted,
+                'iban_encrypted' => $account->ibanEncrypted,
+                'bic' => $account->bic,
+                'bank_name' => $account->bankName,
+                'currency' => $account->currency,
+                'encryption_key_version' => $account->encryptionKeyVersion,
+                'is_primary' => $account->primary ? 'Y' : 'N',
+                'created_at' => new \\DateTimeImmutable(),
+                'updated_at' => new \\DateTimeImmutable(),
+            ]);
+
+            $id = $this->connection->fetchOne(
+                'SELECT id FROM supplier_bank_accounts
+                 WHERE supplier_id = :supplierId AND iban_encrypted = :ibanEncrypted
+                   AND account_holder_encrypted = :holderEncrypted',
+                [
+                    'supplierId' => $account->supplierId,
+                    'ibanEncrypted' => $account->ibanEncrypted,
+                    'holderEncrypted' => $account->accountHolderEncrypted,
+                ],
+            );
+
+            if ($id === false) {
+                throw new \\RuntimeException('Unable to retrieve the created supplier bank account.');
+            }
+
+            $this->connection->commit();
+
+            return new SupplierBankAccount(
+                (int) $id,
+                $account->supplierId,
+                $account->accountHolderEncrypted,
+                $account->ibanEncrypted,
+                $account->maskedIban,
+                $account->bic,
+                $account->bankName,
+                $account->currency,
+                $account->encryptionKeyVersion,
+                $account->primary,
+            );
+        } catch (\\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
             }
