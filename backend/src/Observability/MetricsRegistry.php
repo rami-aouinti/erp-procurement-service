@@ -4,17 +4,52 @@ declare(strict_types=1);
 
 namespace App\Observability;
 
+use Redis;
+use Throwable;
+
 final class MetricsRegistry
 {
     private array $requests = [];
     private array $histograms = [];
     private readonly float $startedAt;
+    private ?Redis $redis = null;
+
+    private const SUPPLIER_COUNTERS = [
+        'published' => 'erp_supplier_events_published_total',
+        'consumed' => 'erp_supplier_events_consumed_total',
+        'failed' => 'erp_supplier_events_failed_total',
+        'dead_letter' => 'erp_supplier_events_dead_letter_total',
+    ];
 
     private const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0];
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly string $redisHost = '127.0.0.1',
+        private readonly int $redisPort = 6379,
+    ) {
         $this->startedAt = microtime(true);
+    }
+
+    public function incrementSupplierEvent(string $counter): void
+    {
+        if (!isset(self::SUPPLIER_COUNTERS[$counter])) {
+            return;
+        }
+
+        try {
+            $this->redis()->incr('erp:metrics:' . self::SUPPLIER_COUNTERS[$counter]);
+        } catch (Throwable) {
+            $this->redis = null;
+        }
+    }
+
+    public function setSupplierOutboxPending(int $count): void
+    {
+        try {
+            $this->redis()->set('erp:metrics:erp_supplier_outbox_pending_events', max(0, $count));
+        } catch (Throwable) {
+            $this->redis = null;
+        }
     }
 
     public function observeRequest(string $method, string $route, int $status, float $duration): void
@@ -77,7 +112,46 @@ final class MetricsRegistry
             $output[] = 'erp_http_request_duration_seconds_count{' . $labels . '} ' . $histogram['count'];
         }
 
+        foreach (self::SUPPLIER_COUNTERS as $counter => $metric) {
+            $output[] = '# HELP ' . $metric . ' Supplier asynchronous events ' . str_replace('_', ' ', $counter) . '.';
+            $output[] = '# TYPE ' . $metric . ' counter';
+            $output[] = $metric . ' ' . $this->readMetric($metric);
+        }
+
+        $output[] = '# HELP erp_supplier_outbox_pending_events Number of supplier outbox events waiting to be published.';
+        $output[] = '# TYPE erp_supplier_outbox_pending_events gauge';
+        $output[] = 'erp_supplier_outbox_pending_events ' . $this->readMetric('erp_supplier_outbox_pending_events');
+
         return implode("\n", $output) . "\n";
+    }
+
+    private function readMetric(string $name): string
+    {
+        try {
+            $value = $this->redis()->get('erp:metrics:' . $name);
+
+            return is_string($value) && is_numeric($value) ? $value : '0';
+        } catch (Throwable) {
+            $this->redis = null;
+
+            return '0';
+        }
+    }
+
+    private function redis(): Redis
+    {
+        if ($this->redis instanceof Redis && $this->redis->isConnected()) {
+            return $this->redis;
+        }
+
+        $redis = new Redis();
+        if (!$redis->connect($this->redisHost, $this->redisPort, 1.0)) {
+            throw new \\RuntimeException('Unable to connect to Redis metrics store.');
+        }
+        $redis->setOption(Redis::OPT_READ_TIMEOUT, 1.0);
+        $this->redis = $redis;
+
+        return $redis;
     }
 
     private function labels(string $method, string $route, int $status): array
