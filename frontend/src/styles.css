@@ -256,3 +256,27 @@ h3 { margin: 0; color: #101828; font-size: 15px; }
 .alert-error { color: #b42318; background: #fef3f2; }
 .alert-success { color: #067647; background: #ecfdf3; }
 @media (max-width: 900px) { .supplier-layout { grid-template-columns: 1fr; } }
+
+
+/* Supplier management phase 1 */
+.supplier-form select, .supplier-filters input, .supplier-filters select {
+  width: 100%; min-width: 0; padding: 10px 11px; border: 1px solid #d0d5dd;
+  border-radius: 8px; color: #101828; background: #fff; font: inherit; font-size: 13px;
+}
+.supplier-form select:focus, .supplier-filters input:focus, .supplier-filters select:focus {
+  outline: none; border-color: #528bff; box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
+}
+.form-subheading { padding-top: 5px; border-top: 1px solid #eef0f4; color: #344054; font-size: 12px; font-weight: 700; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.supplier-filters { display: grid; grid-template-columns: minmax(0, 1fr) 160px; gap: 10px; margin: 0 0 15px; }
+.supplier-status { display: inline-flex; padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.status-active { color: #067647; background: #ecfdf3; }
+.status-inactive { color: #475467; background: #f2f4f7; }
+.status-blocked { color: #b42318; background: #fef3f2; }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; color: #667085; font-size: 12px; }
+.pagination > div { display: flex; gap: 8px; }
+.pagination .secondary-button { padding: 7px 10px; }
+@media (max-width: 600px) {
+  .supplier-filters, .form-row { grid-template-columns: 1fr; }
+  .pagination { align-items: flex-start; flex-direction: column; }
+}
