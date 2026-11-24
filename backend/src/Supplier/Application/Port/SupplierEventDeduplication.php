@@ -9,8 +9,9 @@ interface SupplierEventDeduplication
     /**
      * Claims an event for processing.
      *
-     * Returns a claim token, or null when the event was already processed.
-     * Throws when another live claim is currently processing the event.
+     * Returns a claim token when this worker owns the event.
+     * Returns null when it is already processed or another live delivery owns it.
+     * Expired claims and previously released failures can be reclaimed.
      */
     public function claim(string $eventId, string $eventType, int $aggregateId): ?string;
 
