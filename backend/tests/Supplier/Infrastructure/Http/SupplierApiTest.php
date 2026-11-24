@@ -73,7 +73,7 @@ final class SupplierApiTest extends KernelTestCase
     public function testCreateRejectsInvalidPayload(): void
     {
         $response = $this->request('POST', '/api/suppliers', ['name' => ' ', 'email' => 'not-an-email']);
-        self::assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
         self::assertArrayHasKey('error', json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR));
     }
 
