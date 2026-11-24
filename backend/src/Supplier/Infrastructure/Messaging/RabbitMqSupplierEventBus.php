@@ -57,6 +57,71 @@ final readonly class RabbitMqSupplierEventBus
     }
 
     /**
+     * Replay messages from the dead-letter queue to the main exchange.
+     * A dead-letter message is acknowledged only after RabbitMQ confirms
+     * the republish, so a broker failure cannot silently discard it.
+     */
+    public function replayDeadLetters(int $limit = 100): int
+    {
+        if ($limit < 1 || $limit > 1000) {
+            throw new RuntimeException('Dead-letter replay limit must be between 1 and 1000.');
+        }
+
+        $connection = $this->connection();
+        $replayed = 0;
+
+        try {
+            $channel = new AMQPChannel($connection);
+            $this->declareTopology($channel);
+
+            $dead = new AMQPQueue($channel);
+            $dead->setName(self::DEAD_QUEUE);
+            $dead->setFlags(AMQP_DURABLE);
+            $dead->declareQueue();
+
+            while ($replayed < $limit) {
+                $envelope = $dead->get(AMQP_NOPARAM);
+                if (!$envelope instanceof AMQPEnvelope) {
+                    break;
+                }
+
+                $deliveryTag = $envelope->getDeliveryTag();
+
+                try {
+                    $messageId = $envelope->getMessageId();
+                    $headers = $envelope->getHeaders();
+                    $this->publishConfirmed(
+                        $channel,
+                        self::EVENTS_EXCHANGE,
+                        $envelope->getBody(),
+                        self::ROUTING_KEY,
+                        [
+                            'content_type' => 'application/json',
+                            'delivery_mode' => 2,
+                            'message_id' => is_string($messageId) ? $messageId : '',
+                            'headers' => [
+                                'x-retry-count' => 0,
+                                'x-replayed-from-dead-letter' => true,
+                            ],
+                        ],
+                    );
+                    $dead->ack($deliveryTag);
+                    ++$replayed;
+                } catch (Throwable $exception) {
+                    $dead->nack($deliveryTag, AMQP_REQUEUE);
+                    throw $exception;
+                }
+            }
+
+            return $replayed;
+        } finally {
+            if ($connection->isConnected()) {
+                $connection->disconnect();
+            }
+        }
+    }
+
+    /**
      * @param callable(array<string, mixed>): void $handler
      */
     public function consume(callable $handler): void
