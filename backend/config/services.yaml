@@ -33,6 +33,9 @@ services:
     App\Supplier\Application\Port\SupplierListCache:
         alias: App\Supplier\Infrastructure\Cache\RedisSupplierListCache
 
+    App\Supplier\Application\Port\SupplierEventDeduplication:
+        alias: App\Supplier\Infrastructure\Persistence\OracleSupplierEventDeduplication
+
     App\Observability\MetricsRegistry:
         arguments:
             $redisHost: '%env(REDIS_HOST)%'
