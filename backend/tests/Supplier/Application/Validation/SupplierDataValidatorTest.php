@@ -42,6 +42,27 @@ final class SupplierDataValidatorTest extends TestCase
         $this->validator->validate(new SupplierData('Acme GmbH', 'not-an-email'));
     }
 
+    public function testRejectsInvalidPhoneCountryStatusAndPostalCode(): void
+    {
+        try {
+            $this->validator->validate(new SupplierData(
+                'Acme GmbH',
+                'valid@acme.de',
+                'call-me',
+                null,
+                'PENDING',
+                null,
+                null,
+                'Berlin',
+                '!!',
+                'GER',
+            ));
+            self::fail('Expected SupplierValidationException.');
+        } catch (SupplierValidationException $exception) {
+            self::assertCount(4, $exception->violations());
+        }
+    }
+
     public function testRejectsFieldsExceedingMaximumLength(): void
     {
         try {
