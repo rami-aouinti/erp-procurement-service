@@ -51,8 +51,8 @@ MERGE INTO purchase_orders target
 USING (
     SELECT 'PO-2026-0001' order_number, 'purchasing@nordtech.example' supplier_email, 'SUBMITTED' status, DATE '2026-11-03' order_date FROM dual
     UNION ALL SELECT 'PO-2026-0002', 'orders@hanseatic-office.example', 'DRAFT', DATE '2026-11-10' FROM dual
-    UNION ALL SELECT 'PO-2026-0003', 'procurement@global-parts.example', 'PARTIALLY_RECEIVED', DATE '2026-11-12' FROM dual
-    UNION ALL SELECT 'PO-2026-0004', 'orders@weser-electronics.example', 'RECEIVED', DATE '2026-11-15' FROM dual
+    UNION ALL SELECT 'PO-2026-0003', 'procurement@global-parts.example', 'SUBMITTED', DATE '2026-11-12' FROM dual
+    UNION ALL SELECT 'PO-2026-0004', 'orders@weser-electronics.example', 'SUBMITTED', DATE '2026-11-15' FROM dual
     UNION ALL SELECT 'PO-2026-0005', 'sales@elbe-tools.example', 'CANCELLED', DATE '2026-11-18' FROM dual
 ) source
 ON (target.order_number = source.order_number)
