@@ -7,7 +7,6 @@ namespace App\Supplier\Application\Service;
 use App\Supplier\Application\Port\SupplierListCache;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Domain\Model\Supplier;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 final readonly class SupplierReadModelSynchronizer
@@ -15,7 +14,6 @@ final readonly class SupplierReadModelSynchronizer
     public function __construct(
         private SupplierSearchIndex $searchIndex,
         private SupplierListCache $cache,
-        private LoggerInterface $logger,
     ) {
     }
 
@@ -25,10 +23,7 @@ final readonly class SupplierReadModelSynchronizer
         try {
             $this->searchIndex->index($supplier);
         } catch (Throwable $exception) {
-            $this->logger->error('Supplier saved in Oracle but Elasticsearch indexing failed. Run supplier:reindex.', [
-                'supplierId' => $supplier->id(),
-                'exception' => $exception,
-            ]);
+            error_log(sprintf('Supplier %s was saved in Oracle but Elasticsearch indexing failed: %s. Run supplier:reindex.', $supplier->id(), $exception->getMessage()));
         }
     }
 
@@ -38,10 +33,7 @@ final readonly class SupplierReadModelSynchronizer
         try {
             $this->searchIndex->delete($supplierId);
         } catch (Throwable $exception) {
-            $this->logger->error('Supplier deleted in Oracle but Elasticsearch removal failed. Run supplier:reindex.', [
-                'supplierId' => $supplierId,
-                'exception' => $exception,
-            ]);
+            error_log(sprintf('Supplier %d was deleted in Oracle but Elasticsearch removal failed: %s. Run supplier:reindex.', $supplierId, $exception->getMessage()));
         }
     }
 }
