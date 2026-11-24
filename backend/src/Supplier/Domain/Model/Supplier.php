@@ -30,14 +30,6 @@ final class Supplier
         return new self($id, $name, $email, $phone, $taxNumber, $createdAt);
     }
 
-    public function assignIdentity(int $id): void
-    {
-        if ($id <= 0 || $this->id !== null) {
-            throw new \LogicException('Supplier identity can only be assigned once.');
-        }
-        $this->id = $id;
-    }
-
     public function update(string $name, ?string $email, ?string $phone, ?string $taxNumber): void
     {
         $this->name = self::normalizeName($name);
@@ -54,7 +46,7 @@ final class Supplier
     private static function normalizeName(string $name): string
     {
         $name = trim($name);
-        if ($name === '' || mb_strlen($name) > 150) {
+        if ($name === '' || self::length($name) > 150) {
             throw new InvalidSupplierData('Supplier name is required and must not exceed 150 characters.');
         }
         return $name;
@@ -66,13 +58,13 @@ final class Supplier
         $email = self::nullableTrim($email);
         $phone = self::nullableTrim($phone);
         $taxNumber = self::nullableTrim($taxNumber);
-        if ($email !== null && (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 150)) {
+        if ($email !== null && (!filter_var($email, FILTER_VALIDATE_EMAIL) || self::length($email) > 150)) {
             throw new InvalidSupplierData('A valid supplier email of at most 150 characters is required.');
         }
-        if ($phone !== null && mb_strlen($phone) > 30) {
+        if ($phone !== null && self::length($phone) > 30) {
             throw new InvalidSupplierData('Supplier phone must not exceed 30 characters.');
         }
-        if ($taxNumber !== null && mb_strlen($taxNumber) > 50) {
+        if ($taxNumber !== null && self::length($taxNumber) > 50) {
             throw new InvalidSupplierData('Supplier tax number must not exceed 50 characters.');
         }
         return [$email, $phone, $taxNumber];
@@ -82,5 +74,11 @@ final class Supplier
     {
         $value = $value !== null ? trim($value) : null;
         return $value === '' ? null : $value;
+    }
+
+    private static function length(string $value): int
+    {
+        preg_match_all('/./us', $value, $matches);
+        return count($matches[0]);
     }
 }

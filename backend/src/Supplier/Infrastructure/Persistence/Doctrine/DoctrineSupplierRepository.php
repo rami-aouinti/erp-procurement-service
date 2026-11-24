@@ -26,8 +26,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
             $record = new SupplierRecord($supplier->name(), $supplier->email(), $supplier->phone(), $supplier->taxNumber(), $supplier->createdAt());
             $em->persist($record);
             $em->flush();
-            $supplier->assignIdentity((int) $record->id());
-            return $supplier;
+            return Supplier::reconstitute((int) $record->id(), $record->name(), $record->email(), $record->phone(), $record->taxNumber(), $record->createdAt());
         }
         $record = $this->find($supplier->id());
         if (!$record instanceof SupplierRecord) {
