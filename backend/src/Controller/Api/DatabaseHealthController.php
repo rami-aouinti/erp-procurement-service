@@ -1,11 +1,11 @@
 <?php
 
-namespace App\\Controller\\Api;
+namespace App\Controller\Api;
 
-use Doctrine\\DBAL\\Connection;
-use Psr\\Log\\LoggerInterface;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\Routing\\Attribute\\Route;
+use Doctrine\DBAL\Connection;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
 final class DatabaseHealthController
