@@ -106,12 +106,13 @@ final class SupplierApiTest extends KernelTestCase
     public function testCreateRejectsDuplicateEmail(): void
     {
         $payload = ['name' => 'Duplicate Test Supplier', 'email' => $this->email];
-        self::assertSame(Response::HTTP_CREATED, $this->request('POST', '/api/suppliers', $payload)->getStatusCode());
+        $created = $this->request('POST', '/api/suppliers', $payload);
+        self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string) $created->getContent());
+        $createdId = (int) json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR)['id'];
 
         $duplicate = $this->request('POST', '/api/suppliers', ['name' => 'Second Supplier', 'email' => $this->email]);
         self::assertSame(Response::HTTP_CONFLICT, $duplicate->getStatusCode());
 
-        $createdId = (int) json_decode((string) $this->request('GET', '/api/suppliers?search=Duplicate%20Test%20Supplier')->getContent(), true, 512, JSON_THROW_ON_ERROR)[0]['id'];
         self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/' . $createdId)->getStatusCode());
     }
 
@@ -143,6 +144,12 @@ final class SupplierApiTest extends KernelTestCase
         ]);
         self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string) $created->getContent());
         $id = (int) json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR)['id'];
+
+        // Search indexing is asynchronous through the outbox consumer. This
+        // test owns its database transaction, so seed the projection explicitly.
+        $supplier = static::getContainer()->get(SupplierRepository::class)->findById($id);
+        self::assertNotNull($supplier);
+        static::getContainer()->get(SupplierSearchIndex::class)->index($supplier);
 
         $results = $this->request('GET', '/api/suppliers?search=Elasticsearch%20Demo');
         self::assertSame(Response::HTTP_OK, $results->getStatusCode());
