@@ -15,6 +15,9 @@ services:
             - '../src/Supplier/Application/DTO/'
             - '../src/Supplier/Infrastructure/Persistence/Doctrine/Entity/'
 
+    App\Supplier\Application\Port\SupplierBankDataCipher:
+        alias: App\Supplier\Infrastructure\Security\SupplierBankDataEncryptor
+
     App\Supplier\Domain\Repository\SupplierRepository:
         alias: App\Supplier\Infrastructure\Persistence\Doctrine\DoctrineSupplierRepository
 
