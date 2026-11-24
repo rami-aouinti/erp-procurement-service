@@ -11,10 +11,12 @@ Swagger UI is served by Symfony. Its UI assets are loaded from the Swagger UI pu
 
 ## Test strategy
 
-The Supplier module has two PHPUnit suites:
+The backend PHPUnit configuration currently defines four suites:
 
-- **Supplier Unit**: domain model validation/normalization and application use cases with a mocked repository.
+- **Supplier Unit**: domain model validation/normalization and application use cases.
 - **Supplier Functional**: real Symfony HTTP kernel, routing, JSON payload handling, Doctrine persistence and Oracle database behavior.
+- **Supplier Infrastructure**: infrastructure-level components such as event-envelope validation and encryption.
+- **Observability Unit**: Prometheus metrics formatting and exposition.
 
 Functional tests use a transaction and roll it back after each test. They require Oracle and the ERP_APP schema to be available. Seed at least one purchase order to run the foreign-key deletion test; that test is skipped when there are no purchase orders.
 
@@ -54,3 +56,41 @@ docker compose exec backend php bin/console supplier:events:dead-letter:replay -
 ```
 
 The replay command republishes each message to the main supplier exchange and acknowledges its dead-letter copy only after RabbitMQ confirms the new publication. If publication fails, the original message is requeued in the dead-letter queue. Replayed messages start a fresh consumer retry cycle.
+
+## Outbox concurrency and delivery guarantees
+
+The publisher claims one pending event inside an Oracle transaction with `FOR UPDATE SKIP LOCKED`, marks it as `PROCESSING`, and commits the claim before contacting RabbitMQ. This lets multiple publisher instances work on different rows without waiting on the same locked event.
+
+A claim has a 60-second lease. If a worker exits unexpectedly, a later publisher returns expired `PROCESSING` records to `PENDING`. Successful RabbitMQ publication uses publisher confirms before Oracle is updated to `PUBLISHED`.
+
+This is an **at-least-once** delivery design, not exactly-once delivery. If RabbitMQ confirms a message but the worker crashes before Oracle records `PUBLISHED`, the event can be published again after lease recovery. Consumers must therefore remain idempotent. The Supplier consumer reloads the current Oracle aggregate state before updating Elasticsearch, which makes duplicate and delayed change events safe for the read model.
+
+## Supplier event metrics and alerts
+
+The backend `/metrics` endpoint exposes shared Supplier worker metrics stored in Redis. The publisher and consumer update the same Redis keys even though they run in separate processes.
+
+Important Prometheus metrics:
+
+- `erp_supplier_events_published_total`
+- `erp_supplier_events_consumed_total`
+- `erp_supplier_events_failed_total`
+- `erp_supplier_events_dead_letter_total`
+- `erp_supplier_outbox_pending_events`
+- `erp_supplier_outbox_failed_events`
+- `erp_supplier_outbox_oldest_pending_age_seconds`
+
+The Grafana dashboard `ERP Procurement - Overview` includes Supplier event throughput and outbox health panels. Prometheus alerts cover a growing pending backlog, old pending events, failed outbox records and dead-lettered messages.
+
+Check the endpoint locally:
+
+```bash
+curl http://localhost:8000/metrics | grep erp_supplier
+```
+
+Run the focused test suites:
+
+```bash
+docker compose exec backend composer test
+docker compose exec backend vendor/bin/simple-phpunit --testsuite="Supplier Infrastructure"
+docker compose exec backend vendor/bin/simple-phpunit --testsuite="Observability Unit"
+```
