@@ -58,15 +58,24 @@ final class HandleSupplierEventTest extends TestCase
         $deduplication->expects(self::once())->method('markProcessed')->with('event-42', 'claim-token');
         $deduplication->expects(self::never())->method('release');
 
-        $metrics = $this->metrics();
-        $metrics->expects(self::once())->method('incrementSupplierEvent')->with('consumed');
-        $metrics->expects(self::once())->method('incrementSupplierEvent')->with('deduplicated');
+        $metricCounts = [];
+        $metrics = $this->getMockBuilder(MetricsRegistry::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['incrementSupplierEvent'])
+            ->getMock();
+        $metrics->expects(self::exactly(2))
+            ->method('incrementSupplierEvent')
+            ->willReturnCallback(static function (string $counter) use (&$metricCounts): void {
+                $metricCounts[$counter] = ($metricCounts[$counter] ?? 0) + 1;
+            });
 
         $handler = new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics);
         $event = $this->event('SupplierDeleted');
 
         $handler($event);
         $handler($event);
+
+        self::assertSame(['consumed' => 1, 'deduplicated' => 1], $metricCounts);
     }
 
     public function testUnsupportedEventIsReleasedAndNotCountedAsConsumed(): void
