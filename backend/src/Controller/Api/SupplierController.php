@@ -37,7 +37,7 @@ final class SupplierController
         try {
             $supplier = $this->service->create(SupplierInput::fromArray($this->decode($request)));
             return new JsonResponse($this->serialize($supplier), JsonResponse::HTTP_CREATED);
-        } catch (JsonException|\\InvalidArgumentException $exception) {
+        } catch (JsonException|\InvalidArgumentException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         } catch (Throwable $exception) {
             return new JsonResponse(['error' => 'Unable to create supplier.'], JsonResponse::HTTP_CONFLICT);
@@ -53,7 +53,7 @@ final class SupplierController
         try {
             $updated = $this->service->update($supplier, SupplierInput::fromArray($this->decode($request)));
             return new JsonResponse($this->serialize($updated));
-        } catch (JsonException|\\InvalidArgumentException $exception) {
+        } catch (JsonException|\InvalidArgumentException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         } catch (Throwable $exception) {
             return new JsonResponse(['error' => 'Unable to update supplier.'], JsonResponse::HTTP_CONFLICT);
@@ -79,7 +79,7 @@ final class SupplierController
     {
         $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($data)) {
-            throw new \\InvalidArgumentException('A JSON object is required.');
+            throw new \InvalidArgumentException('A JSON object is required.');
         }
         return $data;
     }
