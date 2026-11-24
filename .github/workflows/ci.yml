@@ -92,7 +92,7 @@ jobs:
             --env REDIS_PORT=6379 \
             --env ELASTICSEARCH_URL=http://127.0.0.1:9200 \
             erp-procurement-backend:ci \
-            sh -lc "composer update --no-interaction --prefer-dist && composer update --working-dir=tooling --no-interaction --prefer-dist && composer test && composer --working-dir=tooling phpcs && composer --working-dir=tooling ecs && composer --working-dir=tooling phpmd && composer --working-dir=tooling phpstan && composer --working-dir=tooling rector && composer --working-dir=tooling insights"
+            sh -lc "composer update --no-interaction --prefer-dist && composer update --working-dir=tooling --no-interaction --prefer-dist && php bin/console supplier:reindex --env=test && composer test && composer --working-dir=tooling phpcs && composer --working-dir=tooling ecs && composer --working-dir=tooling phpmd && composer --working-dir=tooling phpstan && composer --working-dir=tooling rector && composer --working-dir=tooling insights"
 
   frontend:
     name: Build React frontend
