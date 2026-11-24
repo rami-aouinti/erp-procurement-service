@@ -17,6 +17,7 @@ final class MetricsRegistry
     private const SUPPLIER_COUNTERS = [
         'published' => 'erp_supplier_events_published_total',
         'consumed' => 'erp_supplier_events_consumed_total',
+        'deduplicated' => 'erp_supplier_events_deduplicated_total',
         'failed' => 'erp_supplier_events_failed_total',
         'dead_letter' => 'erp_supplier_events_dead_letter_total',
     ];
