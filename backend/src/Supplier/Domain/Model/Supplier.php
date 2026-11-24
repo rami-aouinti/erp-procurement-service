@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Domain\\Model;
+namespace App\Supplier\Domain\Model;
 
-use App\\Supplier\\Domain\\Exception\\InvalidSupplierData;
+use App\Supplier\Domain\Exception\InvalidSupplierData;
 
 final class Supplier
 {
@@ -14,7 +14,7 @@ final class Supplier
         private ?string $email,
         private ?string $phone,
         private ?string $taxNumber,
-        private \\DateTimeImmutable $createdAt,
+        private \DateTimeImmutable $createdAt,
         private string $status = 'ACTIVE',
         private ?string $contactPerson = null,
         private ?string $street = null,
@@ -48,7 +48,7 @@ final class Supplier
         ?string $email,
         ?string $phone,
         ?string $taxNumber,
-        ?\\DateTimeImmutable $createdAt = null,
+        ?\DateTimeImmutable $createdAt = null,
         string $status = 'ACTIVE',
         ?string $contactPerson = null,
         ?string $street = null,
@@ -56,7 +56,7 @@ final class Supplier
         ?string $postalCode = null,
         ?string $country = null,
     ): self {
-        return new self(null, $name, $email, $phone, $taxNumber, $createdAt ?? new \\DateTimeImmutable(), $status, $contactPerson, $street, $city, $postalCode, $country);
+        return new self(null, $name, $email, $phone, $taxNumber, $createdAt ?? new \DateTimeImmutable(), $status, $contactPerson, $street, $city, $postalCode, $country);
     }
 
     public static function reconstitute(
@@ -65,7 +65,7 @@ final class Supplier
         ?string $email,
         ?string $phone,
         ?string $taxNumber,
-        \\DateTimeImmutable $createdAt,
+        \DateTimeImmutable $createdAt,
         string $status = 'ACTIVE',
         ?string $contactPerson = null,
         ?string $street = null,
@@ -106,7 +106,7 @@ final class Supplier
     public function email(): ?string { return $this->email; }
     public function phone(): ?string { return $this->phone; }
     public function taxNumber(): ?string { return $this->taxNumber; }
-    public function createdAt(): \\DateTimeImmutable { return $this->createdAt; }
+    public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
     public function status(): string { return $this->status; }
     public function contactPerson(): ?string { return $this->contactPerson; }
     public function street(): ?string { return $this->street; }
