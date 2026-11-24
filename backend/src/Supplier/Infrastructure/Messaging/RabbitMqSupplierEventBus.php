@@ -134,10 +134,10 @@ final readonly class RabbitMqSupplierEventBus
 
                     $queue->ack($deliveryTag);
                     error_log(sprintf(
-                        'Supplier event %s failed (retry %d): %s',
+                        'Supplier event %s failed (retry %d, error %s).',
                         $envelope->getMessageId(),
                         $retryCount + 1,
-                        $exception->getMessage(),
+                        $exception::class,
                     ));
                 }
             };
