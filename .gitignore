@@ -4,6 +4,11 @@
 /vendor/
 /var/
 /.phpunit.cache/
+/backend/vendor/
+/backend/var/
+/backend/.phpunit.cache/
+/frontend/node_modules/
+/frontend/dist/
 /.idea/
 /.vscode/
 .DS_Store
