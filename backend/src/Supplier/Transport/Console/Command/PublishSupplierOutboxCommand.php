@@ -104,9 +104,9 @@ final class PublishSupplierOutboxCommand extends Command
                          locked_until = NULL,
                          last_error = :error
                      WHERE event_id = :eventId",
-                    ['eventId' => $eventId, 'error' => substr($exception->getMessage(), 0, 2000)]
+                    ['eventId' => $eventId, 'error' => $exception::class]
                 );
-                $output->writeln(sprintf('<error>Could not publish %s: %s</error>', $eventId, $exception->getMessage()));
+                $output->writeln(sprintf('<error>Could not publish supplier event %s (%s).</error>', $eventId, $exception::class));
             }
         }
 
