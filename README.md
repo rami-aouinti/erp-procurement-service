@@ -235,9 +235,9 @@ docker compose exec oracle bash -lc 'echo "SELECT status, COUNT(*) FROM supplier
 The RabbitMQ dead-letter queue is `supplier.events.dead`; inspect it in the management UI and only requeue messages after the underlying consumer error is corrected. Outbox rows marked `FAILED` can be reset with `supplier:outbox:retry-failed`, optionally passing a specific 32-character event ID.
 
 
-## Observability (Prometheus + Grafana)
+## Observability (Prometheus + Grafana + Loki)
 
-The local Docker Compose stack includes Prometheus, Grafana, cAdvisor and Node Exporter.
+The local Docker Compose stack includes Prometheus, Grafana, Loki, Grafana Alloy, cAdvisor and Node Exporter.
 
 - Grafana dashboard: http://localhost:3000
 - Prometheus UI and alert rules: http://localhost:9090
@@ -245,9 +245,9 @@ The local Docker Compose stack includes Prometheus, Grafana, cAdvisor and Node E
 - cAdvisor container metrics: http://localhost:8088
 - Node Exporter metrics: http://localhost:9100/metrics
 
-Add \`GRAFANA_ADMIN_USER\` and a strong \`GRAFANA_ADMIN_PASSWORD\` to your local \`.env\` before starting the stack. Prometheus automatically scrapes backend HTTP metrics and infrastructure exporters. The provisioned **ERP Procurement - Overview** dashboard includes backend availability, request rate, 5xx rate, p95 latency, container CPU and memory. Prometheus also evaluates backend-down, high-error-rate and high-latency alert rules.
+Add \`GRAFANA_ADMIN_USER\` and a strong \`GRAFANA_ADMIN_PASSWORD\` to your local \`.env\` before starting the stack. Prometheus automatically scrapes backend HTTP metrics and infrastructure exporters. The provisioned **ERP Procurement - Overview** dashboard includes backend availability, request rate, 5xx rate, p95 latency, container CPU and memory. Prometheus also evaluates backend-down, high-error-rate and high-latency alert rules. Alloy collects Docker stdout/stderr logs into Loki, and the dashboard includes a centralized container-log panel. Symfony HTTP logs are structured JSON with a request ID.
 
-See [docs/observability.md](docs/observability.md) for setup, metric definitions, PromQL examples, limitations and security notes.
+See [docs/observability.md](docs/observability.md) for setup, metric definitions, LogQL/PromQL examples, limitations and security notes. The broader [project audit](docs/project-audit.md) lists fixed findings and remaining production-readiness work.
 
 
 ## Load testing with k6
