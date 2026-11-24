@@ -41,7 +41,7 @@ final readonly class RabbitMqSupplierEventBus
             $this->declareTopology($channel);
             $channel->confirmSelect();
             $exchange = $this->exchange($channel, self::EVENTS_EXCHANGE);
-            $published = $exchange->publish(
+            $exchange->publish(
                 json_encode($event, JSON_THROW_ON_ERROR),
                 self::ROUTING_KEY,
                 AMQP_NOPARAM,
@@ -51,9 +51,10 @@ final readonly class RabbitMqSupplierEventBus
                     'message_id' => (string) ($event['eventId'] ?? ''),
                 ],
             );
-            if (!$published || !$channel->waitForConfirm(5.0)) {
-                throw new RuntimeException('RabbitMQ did not confirm supplier event publication.');
-            }
+
+            // PECL ext-amqp methods return void. A failed publish or a
+            // missing publisher confirmation is reported through exceptions.
+            $channel->waitForConfirm(5.0);
         } finally {
             $connection->disconnect();
         }
@@ -67,6 +68,9 @@ final readonly class RabbitMqSupplierEventBus
         $connection = $this->connection();
         $channel = new AMQPChannel($connection);
         $this->declareTopology($channel);
+        // Retry/dead-letter republishes must be confirmed before the original
+        // delivery is acknowledged, otherwise a failed publish can lose it.
+        $channel->confirmSelect();
         $channel->qos(0, 1);
         $queue = new AMQPQueue($channel);
         $queue->setName(self::EVENTS_QUEUE);
@@ -94,10 +98,21 @@ final readonly class RabbitMqSupplierEventBus
                     'message_id' => $envelope->getMessageId(),
                     'headers' => ['x-retry-count' => $retryCount + 1, 'x-last-error' => substr($exception->getMessage(), 0, 500)],
                 ];
-                if (!$exchange->publish($envelope->getBody(), $routingKey, AMQP_NOPARAM, $properties)) {
+                try {
+                    $exchange->publish($envelope->getBody(), $routingKey, AMQP_NOPARAM, $properties);
+                    $channel->waitForConfirm(5.0);
+                } catch (Throwable $publishException) {
+                    // Keep the original delivery available if its retry/dead
+                    // letter copy was not confirmed by RabbitMQ.
                     $queue->nack($tag, AMQP_REQUEUE);
+                    error_log(sprintf(
+                        'Unable to republish supplier event %s: %s',
+                        $envelope->getMessageId(),
+                        $publishException->getMessage(),
+                    ));
                     return;
                 }
+
                 $queue->ack($tag);
                 error_log(sprintf('Supplier event %s failed (retry %d): %s', $envelope->getMessageId(), $retryCount + 1, $exception->getMessage()));
             }
