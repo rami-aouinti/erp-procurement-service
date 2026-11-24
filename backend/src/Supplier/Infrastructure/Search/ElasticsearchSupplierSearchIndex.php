@@ -157,8 +157,10 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
         $url = rtrim($this->url, '/') . $path;
 
         error_clear_last();
-        $stream = @fopen($url, 'rb', false, $context);
-        if (!is_resource($stream)) {
+        $response = @file_get_contents($url, false, $context);
+        $responseHeaders = $http_response_header ?? [];
+
+        if ($response === false) {
             $error = error_get_last();
             throw new RuntimeException(sprintf(
                 'Elasticsearch request failed (%s %s): connection error: %s',
@@ -168,13 +170,9 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
             ));
         }
 
-        $metadata = stream_get_meta_data($stream);
-        $response = stream_get_contents($stream);
-        fclose($stream);
-
         $status = 0;
-        foreach (($metadata['wrapper_data'] ?? []) as $headerLine) {
-            if (preg_match('/^HTTP\/\S+\s+(\d{3})\b/i', trim((string) $headerLine), $matches)) {
+        foreach ($responseHeaders as $headerLine) {
+            if (preg_match('/^HTTP\\/\\S+\\s+(\\d{3})\\b/i', trim((string) $headerLine), $matches)) {
                 $status = (int) $matches[1];
             }
         }
