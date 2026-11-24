@@ -28,7 +28,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
     public function findAll(): array
     {
         $records = $this->createQueryBuilder('supplier')
-            ->orderBy('supplier.name', 'ASC')
+            ->orderBy('supplier.name', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
 
