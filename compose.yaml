@@ -4,7 +4,7 @@ services:
     container_name: erp-oracle
     restart: unless-stopped
     ports:
-      - "1521:1521"
+      - "127.0.0.1:1521:1521"
     environment:
       ORACLE_PASSWORD: ${ORACLE_PASSWORD:?Set ORACLE_PASSWORD in .env}
       APP_USER: ${APP_USER:-ERP_APP}
