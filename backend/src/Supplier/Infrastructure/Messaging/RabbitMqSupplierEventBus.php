@@ -29,6 +29,7 @@ final readonly class RabbitMqSupplierEventBus
         private string $user,
         private string $password,
         private string $vhost,
+        private SupplierEventEnvelopeValidator $eventValidator,
     ) {
     }
 
@@ -147,26 +148,11 @@ final readonly class RabbitMqSupplierEventBus
 
                 try {
                     $event = json_decode($envelope->getBody(), true, 512, JSON_THROW_ON_ERROR);
-                    if (
-                        !is_array($event)
-                        || !isset($event['eventId'], $event['eventType'], $event['aggregateId'], $event['payload'])
-                        || !is_string($event['eventId'])
-                        || trim($event['eventId']) === ''
-                        || !is_string($event['eventType'])
-                        || trim($event['eventType']) === ''
-                        || !is_numeric($event['aggregateId'])
-                        || (int) $event['aggregateId'] < 1
-                        || !is_array($event['payload'])
-                    ) {
-                        throw new RuntimeException('Invalid supplier event envelope.');
-                    }
-
-                    // The event ID is also the RabbitMQ message ID. Reject mismatches
-                    // so retries and dead-letter inspection keep a stable identity.
                     $messageId = $envelope->getMessageId();
-                    if (is_string($messageId) && $messageId !== '' && $messageId !== $event['eventId']) {
-                        throw new RuntimeException('Supplier event identity does not match its message ID.');
-                    }
+                    $event = $this->eventValidator->validate(
+                        $event,
+                        is_string($messageId) ? $messageId : null,
+                    );
 
                     $handler($event);
                     $queue->ack($deliveryTag);
