@@ -30,6 +30,9 @@
     }
   },
   "scripts": {
+    "test": "vendor/bin/simple-phpunit",
+    "test:unit": "vendor/bin/simple-phpunit --testsuite='Supplier Unit'",
+    "test:functional": "vendor/bin/simple-phpunit --testsuite='Supplier Functional'",
     "auto-scripts": {
       "cache:clear": "symfony-cmd",
       "assets:install %PUBLIC_DIR%": "symfony-cmd"
