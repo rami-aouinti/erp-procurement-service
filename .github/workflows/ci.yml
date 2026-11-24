@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Install dependencies and run Symfony tests
+    runs-on: ubuntu-latest
+
+    services:
+      oracle:
+        image: gvenzl/oracle-free:23-slim
+        env:
+          ORACLE_PASSWORD: OracleRootPassword123
+          APP_USER: ERP_APP
+          APP_USER_PASSWORD: ErpAppPassword123
+        ports:
+          - 1521:1521
+        volumes:
+          - ${{ github.workspace }}/database/oracle:/container-entrypoint-initdb.d
+        options: >-
+          --health-cmd "healthcheck.sh"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+          --health-start-period 60s
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend image (PHP 8.4 + OCI8)
+        run: docker build --tag erp-procurement-backend:ci ./backend
+
+      - name: Install Composer dependencies and run tests
+        run: |
+          docker run --rm --network host \
+            --volume "${{ github.workspace }}/backend:/app" \
+            --workdir /app \
+            --env APP_ENV=test \
+            --env APP_DEBUG=1 \
+            --env APP_SECRET=ci-only-secret \
+            --env ORACLE_HOST=127.0.0.1 \
+            --env ORACLE_PORT=1521 \
+            --env ORACLE_SERVICE=FREEPDB1 \
+            --env ORACLE_USER=ERP_APP \
+            --env ORACLE_PASSWORD=ErpAppPassword123 \
+            erp-procurement-backend:ci \
+            sh -lc "composer install --no-interaction --prefer-dist && composer test"
