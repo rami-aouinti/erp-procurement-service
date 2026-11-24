@@ -40,6 +40,7 @@ final readonly class RabbitMqSupplierEventBus
         try {
             $channel = new AMQPChannel($connection);
             $this->declareTopology($channel);
+            $channel->confirmSelect();
             $exchange = $this->exchange($channel, self::EVENTS_EXCHANGE);
             $published = $exchange->publish(
                 json_encode($event, JSON_THROW_ON_ERROR),
@@ -51,7 +52,7 @@ final readonly class RabbitMqSupplierEventBus
                     'message_id' => (string) ($event['eventId'] ?? ''),
                 ],
             );
-            if (!$published) {
+            if (!$published || !$channel->waitForConfirm(5.0)) {
                 throw new RuntimeException('RabbitMQ did not confirm supplier event publication.');
             }
         } finally {
@@ -67,6 +68,7 @@ final readonly class RabbitMqSupplierEventBus
         $connection = $this->connection();
         $channel = new AMQPChannel($connection);
         $this->declareTopology($channel);
+        $channel->qos(0, 1);
         $queue = new AMQPQueue($channel);
         $queue->setName(self::EVENTS_QUEUE);
         $queue->setFlags(AMQP_DURABLE);
