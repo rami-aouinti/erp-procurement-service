@@ -36,25 +36,21 @@ final readonly class RabbitMqSupplierEventBus
     public function publish(array $event): void
     {
         $connection = $this->connection();
+
         try {
             $channel = new AMQPChannel($connection);
             $this->declareTopology($channel);
-            $channel->confirmSelect();
-            $exchange = $this->exchange($channel, self::EVENTS_EXCHANGE);
-            $exchange->publish(
+            $this->publishConfirmed(
+                $channel,
+                self::EVENTS_EXCHANGE,
                 json_encode($event, JSON_THROW_ON_ERROR),
                 self::ROUTING_KEY,
-                AMQP_NOPARAM,
                 [
                     'content_type' => 'application/json',
                     'delivery_mode' => 2,
                     'message_id' => (string) ($event['eventId'] ?? ''),
                 ],
             );
-
-            // PECL ext-amqp methods return void. A failed publish or a
-            // missing publisher confirmation is reported through exceptions.
-            $channel->waitForConfirm(5.0);
         } finally {
             $connection->disconnect();
         }
@@ -66,59 +62,136 @@ final readonly class RabbitMqSupplierEventBus
     public function consume(callable $handler): void
     {
         $connection = $this->connection();
-        $channel = new AMQPChannel($connection);
-        $this->declareTopology($channel);
-        // Retry/dead-letter republishes must be confirmed before the original
-        // delivery is acknowledged, otherwise a failed publish can lose it.
-        $channel->confirmSelect();
-        $channel->qos(0, 1);
-        $queue = new AMQPQueue($channel);
-        $queue->setName(self::EVENTS_QUEUE);
-        $queue->setFlags(AMQP_DURABLE);
-        $queue->declareQueue();
 
-        $queue->consume(function (AMQPEnvelope $envelope, AMQPQueue $queue) use ($handler, $channel): void {
-            $tag = $envelope->getDeliveryTag();
-            try {
-                $event = json_decode($envelope->getBody(), true, 512, JSON_THROW_ON_ERROR);
-                if (!is_array($event) || !isset($event['eventId'], $event['eventType'], $event['payload']) || !is_array($event['payload'])) {
-                    throw new RuntimeException('Invalid supplier event message.');
-                }
-                $handler($event);
-                $queue->ack($tag);
-            } catch (Throwable $exception) {
-                $headers = $envelope->getHeaders();
-                $retryCount = is_array($headers) ? (int) ($headers['x-retry-count'] ?? 0) : 0;
-                $targetExchange = $retryCount < self::MAX_RETRIES ? self::RETRY_EXCHANGE : self::DEAD_EXCHANGE;
-                $routingKey = $retryCount < self::MAX_RETRIES ? 'supplier.retry' : 'supplier.dead';
-                $exchange = $this->exchange($channel, $targetExchange);
-                $properties = [
-                    'content_type' => 'application/json',
-                    'delivery_mode' => 2,
-                    'message_id' => $envelope->getMessageId(),
-                    'headers' => ['x-retry-count' => $retryCount + 1, 'x-last-error' => substr($exception->getMessage(), 0, 500)],
-                ];
+        try {
+            $channel = new AMQPChannel($connection);
+            $this->declareTopology($channel);
+            $channel->qos(0, 1);
+
+            $queue = new AMQPQueue($channel);
+            $queue->setName(self::EVENTS_QUEUE);
+            $queue->setFlags(AMQP_DURABLE);
+            $queue->declareQueue();
+
+            // Register the broker consumer once. Subsequent consume() calls only
+            // drain deliveries for that registration; they must not register the
+            // same consumer tag again after an idle read timeout.
+            $consumerTag = 'supplier-read-model-consumer';
+            $queue->consume(null, AMQP_NOPARAM, $consumerTag);
+
+            $callback = function (AMQPEnvelope $envelope, AMQPQueue $queue) use ($handler, $connection): void {
+                $deliveryTag = $envelope->getDeliveryTag();
+
                 try {
-                    $exchange->publish($envelope->getBody(), $routingKey, AMQP_NOPARAM, $properties);
-                    $channel->waitForConfirm(5.0);
-                } catch (Throwable $publishException) {
-                    // Keep the original delivery available if its retry/dead
-                    // letter copy was not confirmed by RabbitMQ.
-                    $queue->nack($tag, AMQP_REQUEUE);
+                    $event = json_decode($envelope->getBody(), true, 512, JSON_THROW_ON_ERROR);
+                    if (
+                        !is_array($event)
+                        || !isset($event['eventId'], $event['eventType'], $event['payload'])
+                        || !is_array($event['payload'])
+                    ) {
+                        throw new RuntimeException('Invalid supplier event message.');
+                    }
+
+                    $handler($event);
+                    $queue->ack($deliveryTag);
+                } catch (Throwable $exception) {
+                    $headers = $envelope->getHeaders();
+                    $retryCount = is_array($headers) ? (int) ($headers['x-retry-count'] ?? 0) : 0;
+                    $isRetry = $retryCount < self::MAX_RETRIES;
+                    $targetExchange = $isRetry ? self::RETRY_EXCHANGE : self::DEAD_EXCHANGE;
+                    $routingKey = $isRetry ? 'supplier.retry' : 'supplier.dead';
+
+                    try {
+                        // Use a dedicated publisher channel: publisher confirms and
+                        // consumer acknowledgements must not share channel state.
+                        $publisherChannel = new AMQPChannel($connection);
+                        $this->publishConfirmed(
+                            $publisherChannel,
+                            $targetExchange,
+                            $envelope->getBody(),
+                            $routingKey,
+                            [
+                                'content_type' => 'application/json',
+                                'delivery_mode' => 2,
+                                'message_id' => $envelope->getMessageId(),
+                                'headers' => [
+                                    'x-retry-count' => $retryCount + 1,
+                                    'x-last-error' => substr($exception->getMessage(), 0, 500),
+                                ],
+                            ],
+                        );
+                        $publisherChannel->close();
+                    } catch (Throwable $publishException) {
+                        // Never acknowledge the original until its retry/dead-letter
+                        // copy has been confirmed by RabbitMQ.
+                        $queue->nack($deliveryTag, AMQP_REQUEUE);
+                        error_log(sprintf(
+                            'Unable to republish supplier event %s: %s',
+                            $envelope->getMessageId(),
+                            $publishException->getMessage(),
+                        ));
+
+                        return;
+                    }
+
+                    $queue->ack($deliveryTag);
                     error_log(sprintf(
-                        'Unable to republish supplier event %s: %s',
+                        'Supplier event %s failed (retry %d): %s',
                         $envelope->getMessageId(),
-                        $publishException->getMessage(),
+                        $retryCount + 1,
+                        $exception->getMessage(),
                     ));
-                    return;
                 }
+            };
 
-                $queue->ack($tag);
-                error_log(sprintf('Supplier event %s failed (retry %d): %s', $envelope->getMessageId(), $retryCount + 1, $exception->getMessage()));
+            while ($connection->isConnected()) {
+                try {
+                    // AMQP_JUST_CONSUME reuses the already registered consumer.
+                    $queue->consume($callback, AMQP_JUST_CONSUME);
+                } catch (\AMQPQueueException $exception) {
+                    // ext-amqp reports an idle read timeout as this exception.
+                    // It is expected for a long-running worker with an empty queue.
+                    if (!str_contains($exception->getMessage(), 'Consumer timeout exceed')) {
+                        throw $exception;
+                    }
+                }
             }
-        }, AMQP_NOPARAM, 'supplier-read-model-consumer');
 
-        $connection->disconnect();
+            throw new RuntimeException('RabbitMQ connection was closed while consuming supplier events.');
+        } finally {
+            if ($connection->isConnected()) {
+                $connection->disconnect();
+            }
+        }
+    }
+
+    private function publishConfirmed(
+        AMQPChannel $channel,
+        string $exchangeName,
+        string $body,
+        string $routingKey,
+        array $properties,
+    ): void {
+        $channel->confirmSelect();
+
+        // ext-amqp 2.2 dispatches basic.ack/basic.nack through these callbacks.
+        // Registering them before publish prevents the unhandled basic.ack warning.
+        $channel->setConfirmCallback(
+            static fn (int $deliveryTag, bool $multiple): bool => false,
+            static fn (int $deliveryTag, bool $multiple): bool => throw new RuntimeException(
+                sprintf('RabbitMQ negatively acknowledged supplier event (delivery tag %d).', $deliveryTag),
+            ),
+        );
+
+        $exchange = $this->exchange($channel, $exchangeName);
+        $published = $exchange->publish($body, $routingKey, AMQP_NOPARAM, $properties);
+        if (!$published) {
+            throw new RuntimeException(sprintf('RabbitMQ rejected publishing to exchange "%s".', $exchangeName));
+        }
+
+        // A timeout or nack is propagated to the outbox publisher, which leaves
+        // the event pending for a later retry instead of marking it published.
+        $channel->waitForConfirm(5.0);
     }
 
     private function connection(): AMQPConnection
@@ -130,15 +203,13 @@ final readonly class RabbitMqSupplierEventBus
             'password' => $this->password,
             'vhost' => $this->vhost,
             'connect_timeout' => 5,
-            // Consumers must be allowed to wait longer than 60 seconds when the queue is idle.
-            // Publisher confirmations already have their own bounded waitForConfirm() timeout.
-            'read_timeout' => 0,
+            // A bounded read lets the consumer periodically process idle timeouts
+            // and lets librabbitmq check heartbeats while waiting for deliveries.
+            'read_timeout' => 5,
             'write_timeout' => 5,
             'heartbeat' => 30,
         ]);
-        // AMQPConnection::connect() returns void; a successful connection is
-        // exposed through isConnected(). Checking the return value makes every
-        // successful connection look like a failure (because it is null).
+
         $connection->connect();
         if (!$connection->isConnected()) {
             throw new RuntimeException(sprintf(
