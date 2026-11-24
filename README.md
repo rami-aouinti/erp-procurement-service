@@ -204,3 +204,31 @@ Useful local endpoints:
 - Supplier index: `http://localhost:9200/suppliers/_search`
 
 The local Elasticsearch container has security disabled for development only. Its host port is bound to localhost; do not expose this configuration to a public or production network. If Elasticsearch exits with a `vm.max_map_count` bootstrap error on Linux/WSL, raise the host setting to `262144` before starting the stack.
+
+
+## Reliable supplier synchronization (Oracle + Outbox + RabbitMQ)
+
+Supplier writes append a durable event to `supplier_outbox_events` in the same Oracle transaction as the supplier row. A publisher claims pending outbox rows and publishes persistent messages to RabbitMQ. A separate consumer updates Elasticsearch and invalidates Redis. RabbitMQ uses durable exchanges and queues, a delayed retry queue (five retries), and a dead-letter queue for messages that still fail. The outbox publisher retries broker outages with exponential backoff and marks events FAILED after ten unsuccessful publish attempts.
+
+Apply the additive outbox schema once to the existing Oracle application schema:
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/008_create_supplier_outbox.sql
+```
+
+Set `RABBITMQ_USER` and `RABBITMQ_PASSWORD` in your local `.env` (copy the values from `.env.example` and choose your own password). Rebuild and start the stack:
+
+```bash
+docker compose up -d --build
+docker compose ps
+```
+
+RabbitMQ management UI: http://localhost:15672 (use the credentials from `.env`). The outbox publisher and event consumer run as separate Compose services. Useful checks:
+
+```bash
+docker compose logs -f supplier-outbox-publisher supplier-events-consumer
+docker compose exec backend php bin/console supplier:outbox:publish --limit=100
+docker compose exec oracle bash -lc 'echo "SELECT status, COUNT(*) FROM supplier_outbox_events GROUP BY status;" | sqlplus -s "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"'
+```
+
+The RabbitMQ dead-letter queue is `supplier.events.dead`; inspect it in the management UI and only requeue messages after the underlying consumer error is corrected.
