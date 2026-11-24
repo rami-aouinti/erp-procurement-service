@@ -56,7 +56,7 @@ Build a realistic procurement workflow:
 5. When the container is healthy, connect with SQL*Plus:
 
    ```bash
-   docker compose exec oracle sqlplus ${APP_USER}/${APP_USER_PASSWORD}@//localhost:1521/FREEPDB1
+   docker compose exec oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"'
    ```
 
 6. Run the verification query from [docs/oracle-setup.md](docs/oracle-setup.md).
