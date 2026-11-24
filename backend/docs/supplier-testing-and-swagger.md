@@ -35,3 +35,22 @@ docker compose exec backend composer install
 ```
 
 The tests run with APP_ENV=test. The functional suite intentionally uses the configured Oracle connection and does not create or drop schema objects.
+
+
+## Supplier asynchronous events
+
+Supplier changes are written to the Oracle transactional outbox and published to RabbitMQ. The consumer updates the Elasticsearch read model and invalidates the Redis list cache.
+
+Failed outbox records can be returned to the publisher with:
+
+```bash
+docker compose exec backend php bin/console supplier:outbox:retry-failed
+```
+
+Messages that exceed the consumer retry limit are routed to the durable `supplier.events.dead` queue. After fixing the underlying issue, replay a bounded number of messages with:
+
+```bash
+docker compose exec backend php bin/console supplier:events:dead-letter:replay --limit=100
+```
+
+The replay command republishes each message to the main supplier exchange and acknowledges its dead-letter copy only after RabbitMQ confirms the new publication. If publication fails, the original message is requeued in the dead-letter queue. Replayed messages start a fresh consumer retry cycle.
