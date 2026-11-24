@@ -30,9 +30,16 @@ final readonly class UpdateSupplier
         }
 
         $supplier->update(
-            $data->name, $data->email, $data->phone, $data->taxNumber,
-            $data->status, $data->contactPerson, $data->street,
-            $data->city, $data->postalCode, $data->country,
+            $data->name,
+            $data->email,
+            $data->phone,
+            $data->taxNumber,
+            $data->status,
+            $data->contactPerson,
+            $data->street,
+            $data->city,
+            $data->postalCode,
+            $data->country,
         );
 
         $supplier = $this->suppliers->save($supplier);

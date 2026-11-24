@@ -7,8 +7,8 @@ namespace App\Supplier\Transport\Console\Command;
 use App\Supplier\Application\DTO\SupplierData;
 use App\Supplier\Application\Exception\SupplierValidationException;
 use App\Supplier\Application\UseCase\CreateSupplier;
-use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use App\Supplier\Domain\Exception\InvalidSupplierData;
+use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -50,7 +50,7 @@ final class CreateSupplierCommand extends Command
 
         try {
             $supplier = $this->createSupplier->execute($data);
-        } catch (SupplierValidationException|InvalidSupplierData|SupplierEmailAlreadyUsed $exception) {
+        } catch (SupplierValidationException | InvalidSupplierData | SupplierEmailAlreadyUsed $exception) {
             $io->error($exception->getMessage());
 
             return Command::FAILURE;

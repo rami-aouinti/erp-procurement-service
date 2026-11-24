@@ -51,7 +51,7 @@ final class SupplierController
     {
         try {
             return new JsonResponse($this->serialize($useCase->execute($this->input($request))), 201);
-        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
+        } catch (JsonException | InvalidSupplierData | \InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
             return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
@@ -67,7 +67,7 @@ final class SupplierController
     {
         try {
             return new JsonResponse($this->serialize($useCase->execute($id, $this->input($request))));
-        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
+        } catch (JsonException | InvalidSupplierData | \InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
             return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
@@ -109,10 +109,16 @@ final class SupplierController
             throw new \InvalidArgumentException('Field "name" is required and must be a string.');
         }
         return new SupplierData(
-            $payload['name'], $payload['email'] ?? null, $payload['phone'] ?? null,
-            $payload['taxNumber'] ?? null, $payload['status'] ?? 'ACTIVE',
-            $payload['contactPerson'] ?? null, $payload['street'] ?? null,
-            $payload['city'] ?? null, $payload['postalCode'] ?? null, $payload['country'] ?? null,
+            $payload['name'],
+            $payload['email'] ?? null,
+            $payload['phone'] ?? null,
+            $payload['taxNumber'] ?? null,
+            $payload['status'] ?? 'ACTIVE',
+            $payload['contactPerson'] ?? null,
+            $payload['street'] ?? null,
+            $payload['city'] ?? null,
+            $payload['postalCode'] ?? null,
+            $payload['country'] ?? null,
         );
     }
 

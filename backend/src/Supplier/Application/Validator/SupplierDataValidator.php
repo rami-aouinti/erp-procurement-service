@@ -48,11 +48,13 @@ final class SupplierDataValidator
         $this->maxLength($data->city, 100, 'City', $violations);
         $this->maxLength($data->postalCode, 20, 'Postal code', $violations);
 
-        foreach ([
+        foreach (
+            [
             'Contact person' => $data->contactPerson,
             'Street' => $data->street,
             'City' => $data->city,
-        ] as $label => $value) {
+            ] as $label => $value
+        ) {
             if ($value !== null && $this->hasControlCharacters($value)) {
                 $violations[] = sprintf('%s contains invalid control characters.', $label);
             }

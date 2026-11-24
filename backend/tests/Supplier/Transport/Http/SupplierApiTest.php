@@ -61,11 +61,11 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame('DE', $supplier['country']);
         $id = $supplier['id'];
 
-        $fetched = $this->request('GET', '/api/suppliers/'.$id);
+        $fetched = $this->request('GET', '/api/suppliers/' . $id);
         self::assertSame(Response::HTTP_OK, $fetched->getStatusCode());
         self::assertSame($id, json_decode((string) $fetched->getContent(), true, 512, JSON_THROW_ON_ERROR)['id']);
 
-        $updated = $this->request('PUT', '/api/suppliers/'.$id, [
+        $updated = $this->request('PUT', '/api/suppliers/' . $id, [
             'name' => 'Updated Functional Supplier',
             'email' => $this->email,
             'phone' => null,
@@ -83,10 +83,10 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame('BLOCKED', $updatedSupplier['status']);
         self::assertSame('Hamburg', $updatedSupplier['city']);
 
-        $deleted = $this->request('DELETE', '/api/suppliers/'.$id);
+        $deleted = $this->request('DELETE', '/api/suppliers/' . $id);
         self::assertSame(Response::HTTP_NO_CONTENT, $deleted->getStatusCode());
 
-        self::assertSame(Response::HTTP_NOT_FOUND, $this->request('GET', '/api/suppliers/'.$id)->getStatusCode());
+        self::assertSame(Response::HTTP_NOT_FOUND, $this->request('GET', '/api/suppliers/' . $id)->getStatusCode());
     }
 
     public function testCreateRejectsInvalidPayload(): void
@@ -105,7 +105,7 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame(Response::HTTP_CONFLICT, $duplicate->getStatusCode());
 
         $createdId = (int) json_decode((string) $this->request('GET', '/api/suppliers?search=Duplicate%20Test%20Supplier')->getContent(), true, 512, JSON_THROW_ON_ERROR)[0]['id'];
-        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/'.$createdId)->getStatusCode());
+        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/' . $createdId)->getStatusCode());
     }
 
     public function testMissingSupplierReturnsNotFoundForGetAndUpdate(): void
@@ -122,7 +122,7 @@ final class SupplierApiTest extends KernelTestCase
             self::markTestSkipped('Seed a purchase order to test the supplier foreign-key restriction.');
         }
 
-        $response = $this->request('DELETE', '/api/suppliers/'.(int) $supplierId);
+        $response = $this->request('DELETE', '/api/suppliers/' . (int) $supplierId);
         self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
     }
 
@@ -142,7 +142,7 @@ final class SupplierApiTest extends KernelTestCase
         $items = json_decode((string) $results->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertContains($id, array_column($items, 'id'));
 
-        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/'.$id)->getStatusCode());
+        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/' . $id)->getStatusCode());
     }
 
     public function testCreateRejectsNonStringFields(): void

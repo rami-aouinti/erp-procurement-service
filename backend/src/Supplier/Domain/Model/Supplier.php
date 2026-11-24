@@ -101,18 +101,54 @@ final class Supplier
         $this->country = $updated->country;
     }
 
-    public function id(): ?int { return $this->id; }
-    public function name(): string { return $this->name; }
-    public function email(): ?string { return $this->email; }
-    public function phone(): ?string { return $this->phone; }
-    public function taxNumber(): ?string { return $this->taxNumber; }
-    public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function status(): string { return $this->status; }
-    public function contactPerson(): ?string { return $this->contactPerson; }
-    public function street(): ?string { return $this->street; }
-    public function city(): ?string { return $this->city; }
-    public function postalCode(): ?string { return $this->postalCode; }
-    public function country(): ?string { return $this->country; }
+    public function id(): ?int
+    {
+        return $this->id;
+    }
+    public function name(): string
+    {
+        return $this->name;
+    }
+    public function email(): ?string
+    {
+        return $this->email;
+    }
+    public function phone(): ?string
+    {
+        return $this->phone;
+    }
+    public function taxNumber(): ?string
+    {
+        return $this->taxNumber;
+    }
+    public function createdAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+    public function status(): string
+    {
+        return $this->status;
+    }
+    public function contactPerson(): ?string
+    {
+        return $this->contactPerson;
+    }
+    public function street(): ?string
+    {
+        return $this->street;
+    }
+    public function city(): ?string
+    {
+        return $this->city;
+    }
+    public function postalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+    public function country(): ?string
+    {
+        return $this->country;
+    }
 
     private static function required(string $value, int $max, string $label): string
     {

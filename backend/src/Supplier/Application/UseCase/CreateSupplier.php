@@ -28,9 +28,17 @@ final readonly class CreateSupplier
         }
 
         $supplier = $this->suppliers->save(Supplier::register(
-            $data->name, $data->email, $data->phone, $data->taxNumber,
-            null, $data->status, $data->contactPerson, $data->street,
-            $data->city, $data->postalCode, $data->country,
+            $data->name,
+            $data->email,
+            $data->phone,
+            $data->taxNumber,
+            null,
+            $data->status,
+            $data->contactPerson,
+            $data->street,
+            $data->city,
+            $data->postalCode,
+            $data->country,
         ));
         $this->readModel->upsert($supplier);
 
