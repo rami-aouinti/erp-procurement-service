@@ -32,3 +32,11 @@ services:
     App\Supplier\Infrastructure\Search\ElasticsearchSupplierSearchIndex:
         arguments:
             $url: '%env(ELASTICSEARCH_URL)%'
+
+    App\Supplier\Infrastructure\Messaging\RabbitMqSupplierEventBus:
+        arguments:
+            $host: '%env(RABBITMQ_HOST)%'
+            $port: '%env(int:RABBITMQ_PORT)%'
+            $user: '%env(RABBITMQ_USER)%'
+            $password: '%env(RABBITMQ_PASSWORD)%'
+            $vhost: '%env(RABBITMQ_VHOST)%'
