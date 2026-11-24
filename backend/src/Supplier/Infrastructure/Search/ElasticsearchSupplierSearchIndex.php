@@ -80,6 +80,9 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
     public function reindex(iterable $suppliers): int
     {
         $this->ensureIndex();
+        $this->request('POST', '/' . self::INDEX . '/_delete_by_query?refresh=true&conflicts=proceed', [
+            'query' => ['match_all' => (object) []],
+        ]);
         $count = 0;
         foreach ($suppliers as $supplier) {
             $this->index($supplier);
