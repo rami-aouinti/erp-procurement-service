@@ -11,7 +11,10 @@ async function request(path = '', options = {}) {
   });
   if (response.status === 204) return null;
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Request failed with HTTP ${response.status}`);
+  if (!response.ok) {
+    const details = Array.isArray(payload.violations) ? payload.violations.join(' ') : '';
+    throw new Error(details || payload.error || `Request failed with HTTP ${response.status}`);
+  }
   return payload;
 }
 
