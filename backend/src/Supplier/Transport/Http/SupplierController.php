@@ -11,7 +11,6 @@ use App\Supplier\Application\UseCase\DeleteSupplier;
 use App\Supplier\Application\UseCase\GetSupplier;
 use App\Supplier\Application\UseCase\ListSuppliers;
 use App\Supplier\Application\UseCase\UpdateSupplier;
-use App\Supplier\Application\Validator\SupplierDataValidator;
 use App\Supplier\Domain\Exception\InvalidSupplierData;
 use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use App\Supplier\Domain\Exception\SupplierNotFound;
@@ -65,7 +64,6 @@ final class SupplierController
         int $id,
         Request $request,
         UpdateSupplier $useCase,
-        SupplierDataValidator $validator,
     ): JsonResponse {
         try {
             $data = $this->input($request);
