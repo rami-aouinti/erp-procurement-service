@@ -93,4 +93,122 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             (int) $row['PAYMENT_TERMS_DAYS'],
         );
     }
+    
+    /** @return list<\\App\\Supplier\\Domain\\Model\\SupplierContact> */
+    public function findContacts(int $supplierId): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, supplier_id, contact_type, first_name, last_name, job_title, email, phone, is_primary
+             FROM supplier_contacts WHERE supplier_id = :supplierId ORDER BY is_primary DESC, id ASC',
+            ['supplierId' => $supplierId],
+        );
+
+        return array_map(static fn (array $row): \\App\\Supplier\\Domain\\Model\\SupplierContact => new \\App\\Supplier\\Domain\\Model\\SupplierContact(
+            (int) $row['ID'],
+            (int) $row['SUPPLIER_ID'],
+            (string) $row['CONTACT_TYPE'],
+            (string) $row['FIRST_NAME'],
+            (string) $row['LAST_NAME'],
+            $row['JOB_TITLE'] !== null ? (string) $row['JOB_TITLE'] : null,
+            $row['EMAIL'] !== null ? (string) $row['EMAIL'] : null,
+            $row['PHONE'] !== null ? (string) $row['PHONE'] : null,
+            $row['IS_PRIMARY'] === 'Y',
+        ), $rows);
+    }
+
+    public function addContact(\\App\\Supplier\\Domain\\Model\\SupplierContact $contact): \\App\\Supplier\\Domain\\Model\\SupplierContact
+    {
+        $this->connection->beginTransaction();
+        try {
+            if ($contact->primary) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_contacts SET is_primary = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND contact_type = :contactType AND is_primary = 'Y'",
+                    ['supplierId' => $contact->supplierId, 'contactType' => $contact->contactType],
+                );
+            }
+            $this->connection->insert('supplier_contacts', [
+                'supplier_id' => $contact->supplierId,
+                'contact_type' => $contact->contactType,
+                'first_name' => trim($contact->firstName),
+                'last_name' => trim($contact->lastName),
+                'job_title' => $contact->jobTitle,
+                'email' => $contact->email,
+                'phone' => $contact->phone,
+                'is_primary' => $contact->primary ? 'Y' : 'N',
+                'created_at' => new \\DateTimeImmutable(),
+                'updated_at' => new \\DateTimeImmutable(),
+            ]);
+            $this->connection->commit();
+            return $contact;
+        } catch (\\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /** @return list<\\App\\Supplier\\Domain\\Model\\SupplierAddress> */
+    public function findAddresses(int $supplierId): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT id, supplier_id, address_type, label, company_name, street, street2, postal_code,
+                    city, region, country, is_default
+             FROM supplier_addresses WHERE supplier_id = :supplierId ORDER BY is_default DESC, id ASC',
+            ['supplierId' => $supplierId],
+        );
+
+        return array_map(static fn (array $row): \\App\\Supplier\\Domain\\Model\\SupplierAddress => new \\App\\Supplier\\Domain\\Model\\SupplierAddress(
+            (int) $row['ID'],
+            (int) $row['SUPPLIER_ID'],
+            (string) $row['ADDRESS_TYPE'],
+            $row['LABEL'] !== null ? (string) $row['LABEL'] : null,
+            $row['COMPANY_NAME'] !== null ? (string) $row['COMPANY_NAME'] : null,
+            (string) $row['STREET'],
+            $row['STREET2'] !== null ? (string) $row['STREET2'] : null,
+            (string) $row['POSTAL_CODE'],
+            (string) $row['CITY'],
+            $row['REGION'] !== null ? (string) $row['REGION'] : null,
+            trim((string) $row['COUNTRY']),
+            $row['IS_DEFAULT'] === 'Y',
+        ), $rows);
+    }
+
+    public function addAddress(\\App\\Supplier\\Domain\\Model\\SupplierAddress $address): \\App\\Supplier\\Domain\\Model\\SupplierAddress
+    {
+        $this->connection->beginTransaction();
+        try {
+            if ($address->default) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_addresses SET is_default = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND address_type = :addressType AND is_default = 'Y'",
+                    ['supplierId' => $address->supplierId, 'addressType' => $address->addressType],
+                );
+            }
+            $this->connection->insert('supplier_addresses', [
+                'supplier_id' => $address->supplierId,
+                'address_type' => $address->addressType,
+                'label' => $address->label,
+                'company_name' => $address->companyName,
+                'street' => trim($address->street),
+                'street2' => $address->street2,
+                'postal_code' => trim($address->postalCode),
+                'city' => trim($address->city),
+                'region' => $address->region,
+                'country' => $address->country,
+                'is_default' => $address->default ? 'Y' : 'N',
+                'created_at' => new \\DateTimeImmutable(),
+                'updated_at' => new \\DateTimeImmutable(),
+            ]);
+            $this->connection->commit();
+            return $address;
+        } catch (\\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
 }
