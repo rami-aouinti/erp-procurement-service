@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Supplier\Application\UseCase;
 
 use App\Supplier\Application\DTO\SupplierData;
+use App\Supplier\Application\Service\SupplierReadModelSynchronizer;
 use App\Supplier\Application\Validator\SupplierDataValidator;
 use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use App\Supplier\Domain\Model\Supplier;
@@ -15,20 +16,24 @@ final readonly class CreateSupplier
     public function __construct(
         private SupplierRepository $suppliers,
         private SupplierDataValidator $validator,
+        private SupplierReadModelSynchronizer $readModel,
     ) {
     }
 
     public function execute(SupplierData $data): Supplier
     {
         $this->validator->validate($data);
-        if ($data->email !== null && $this->suppliers->emailExists(trim($data->email))) {
+        if ($data->email !== null && $this->suppliers->emailExists(mb_strtolower(trim($data->email)))) {
             throw new SupplierEmailAlreadyUsed('A supplier with this email already exists.');
         }
 
-        return $this->suppliers->save(Supplier::register(
+        $supplier = $this->suppliers->save(Supplier::register(
             $data->name, $data->email, $data->phone, $data->taxNumber,
             null, $data->status, $data->contactPerson, $data->street,
             $data->city, $data->postalCode, $data->country,
         ));
+        $this->readModel->upsert($supplier);
+
+        return $supplier;
     }
 }

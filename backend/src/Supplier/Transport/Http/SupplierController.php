@@ -9,7 +9,7 @@ use App\Supplier\Application\Exception\SupplierValidationException;
 use App\Supplier\Application\UseCase\CreateSupplier;
 use App\Supplier\Application\UseCase\DeleteSupplier;
 use App\Supplier\Application\UseCase\GetSupplier;
-use App\Supplier\Application\UseCase\ListSuppliers;
+use App\Supplier\Application\UseCase\SearchSuppliers;
 use App\Supplier\Application\UseCase\UpdateSupplier;
 use App\Supplier\Domain\Exception\InvalidSupplierData;
 use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
@@ -26,22 +26,13 @@ use Symfony\Component\Routing\Attribute\Route;
 final class SupplierController
 {
     #[Route('', name: 'api_suppliers_list', methods: ['GET'])]
-    public function list(Request $request, ListSuppliers $useCase): JsonResponse
+    public function list(Request $request, SearchSuppliers $useCase): JsonResponse
     {
-        $suppliers = $useCase->execute();
-        $search = mb_strtolower(trim((string) $request->query->get('search', '')));
-        $status = strtoupper(trim((string) $request->query->get('status', '')));
-        if ($search !== '') {
-            $suppliers = array_values(array_filter($suppliers, static fn (Supplier $supplier): bool =>
-                str_contains(mb_strtolower($supplier->name()), $search)
-                || str_contains(mb_strtolower((string) $supplier->email()), $search)
-                || str_contains(mb_strtolower((string) $supplier->city()), $search)
-            ));
-        }
-        if ($status !== '') {
-            $suppliers = array_values(array_filter($suppliers, static fn (Supplier $supplier): bool => $supplier->status() === $status));
-        }
-        return new JsonResponse(array_map($this->serialize(...), $suppliers));
+        $status = trim((string) $request->query->get('status', ''));
+        return new JsonResponse($useCase->execute(
+            (string) $request->query->get('search', ''),
+            $status !== '' && strtoupper($status) !== 'ALL' ? $status : null,
+        ));
     }
 
     #[Route('/{id<\d+>}', name: 'api_suppliers_get', methods: ['GET'])]
@@ -62,7 +53,7 @@ final class SupplierController
         } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
-            return new JsonResponse(['error' => $exception->getMessage(), 'violations' => $exception->violations()], 422);
+            return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
         } catch (SupplierEmailAlreadyUsed $exception) {
             return $this->error($exception->getMessage(), 409);
         }
@@ -76,7 +67,7 @@ final class SupplierController
         } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
-            return new JsonResponse(['error' => $exception->getMessage(), 'violations' => $exception->violations()], 422);
+            return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
         } catch (SupplierNotFound $exception) {
             return $this->error($exception->getMessage(), 404);
         } catch (SupplierEmailAlreadyUsed $exception) {
