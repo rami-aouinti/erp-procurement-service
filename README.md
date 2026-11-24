@@ -22,8 +22,9 @@ Build a realistic procurement workflow:
 - [x] Persistent database volume
 - [x] Oracle container started and reported healthy
 - [x] Initial procurement schema SQL script added
-- [ ] Execute the schema script in the local database
-- [ ] Add realistic seed data and practice SQL queries
+- [x] Add repeatable supplier, product, purchase-order and order-line seed data
+- [x] Add practical SQL queries using JOIN, LEFT JOIN, GROUP BY and aggregation
+- [ ] Execute the seed script in the local database
 - [ ] Connect the Symfony application to Oracle
 
 ## Requirements
@@ -86,6 +87,31 @@ docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//
 ```
 
 The script is intended to run once on a fresh schema. It is not idempotent: running it again after successful creation will report that the tables already exist.
+
+## Demo data and SQL exercises
+
+The repeatable seed script creates five suppliers, eight products, five purchase orders with different statuses, and their order lines. It uses Oracle `MERGE`, so you can run it again without duplicating the demo records:
+
+```bash
+git pull origin main
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/002_seed_procurement_data.sql
+```
+
+The script commits its changes at the end. It is safe to rerun to restore the example values.
+
+`database/oracle/003_practice_queries.sql` contains five exercises:
+
+1. Purchase orders with supplier names and calculated totals.
+2. Total ordered value per supplier.
+3. Purchase-order counts grouped by status.
+4. Most frequently ordered products, excluding cancelled orders.
+5. Suppliers that do not have a purchase order.
+
+Run the query file from the repository root:
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/003_practice_queries.sql
+```
 
 ## Oracle connection settings
 
