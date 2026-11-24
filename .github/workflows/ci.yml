@@ -30,8 +30,6 @@ jobs:
           --health-timeout 5s
           --health-retries 30
           --health-start-period 60s
-
-    services:
       redis:
         image: redis:7.4-alpine
         ports:
@@ -74,7 +72,7 @@ jobs:
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/007_extend_supplier_management.sql
           '
 
-      - name: Build backend image (PHP 8.4 + OCI8)
+      - name: Build backend image (PHP 8.4 + OCI8 + Redis)
         run: docker build --tag erp-procurement-backend:ci ./backend
 
       - name: Install application and tooling dependencies, run tests and quality checks
