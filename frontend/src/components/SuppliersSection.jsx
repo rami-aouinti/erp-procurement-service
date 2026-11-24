@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersApi } from '../api/suppliers.js';
+import SupplierDetails from './SupplierDetails.jsx';
 
 const emptyForm = {
   name: '', email: '', phone: '', taxNumber: '', status: 'ACTIVE',
@@ -19,6 +20,7 @@ export default function SuppliersSection({ onCountChange }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
 
   const loadSuppliers = useCallback(async () => {
     setLoading(true);
@@ -162,7 +164,7 @@ export default function SuppliersSection({ onCountChange }) {
                         <td><span>{supplier.contactPerson || supplier.email || '—'}</span><small>{supplier.email || supplier.phone || 'No contact details'}</small></td>
                         <td>{[supplier.postalCode, supplier.city, supplier.country].filter(Boolean).join(' ') || '—'}</td>
                         <td><span className={`supplier-status status-${supplier.status.toLowerCase()}`}>{supplier.status}</span></td>
-                        <td><div className="row-actions"><button className="text-button" type="button" onClick={() => startEdit(supplier)}>Edit</button><button className="text-button danger-text" type="button" onClick={() => handleDelete(supplier)}>Delete</button></div></td>
+                        <td><div className="row-actions"><button className="text-button" type="button" onClick={() => setSelectedSupplier(supplier)}>Details</button><button className="text-button" type="button" onClick={() => startEdit(supplier)}>Edit</button><button className="text-button danger-text" type="button" onClick={() => handleDelete(supplier)}>Delete</button></div></td>
                       </tr>
                     ))}
                   </tbody>
@@ -176,6 +178,7 @@ export default function SuppliersSection({ onCountChange }) {
           )}
         </div>
       </div>
+      {selectedSupplier && <SupplierDetails supplier={selectedSupplier} onClose={() => setSelectedSupplier(null)} />}
     </section>
   );
 }
