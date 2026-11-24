@@ -8,7 +8,6 @@ use App\Supplier\Application\Port\SupplierListCache;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Domain\Model\Supplier;
 use App\Supplier\Domain\Repository\SupplierRepository;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 final readonly class SearchSuppliers
@@ -17,7 +16,6 @@ final readonly class SearchSuppliers
         private SupplierSearchIndex $searchIndex,
         private SupplierListCache $cache,
         private SupplierRepository $suppliers,
-        private LoggerInterface $logger,
     ) {
     }
 
@@ -35,10 +33,17 @@ final readonly class SearchSuppliers
 
         try {
             $results = $this->searchIndex->search($query, $status);
+
+            // Bootstrap an empty index from Oracle on the first unfiltered listing.
+            if ($results === [] && $query === '' && $status === null) {
+                $allSuppliers = $this->suppliers->findAll();
+                if ($allSuppliers !== []) {
+                    $this->searchIndex->reindex($allSuppliers);
+                    $results = $this->searchIndex->search('', null);
+                }
+            }
         } catch (Throwable $exception) {
-            $this->logger->warning('Supplier search index unavailable; falling back to Oracle.', [
-                'exception' => $exception,
-            ]);
+            error_log('Elasticsearch supplier search failed; using Oracle fallback: ' . $exception->getMessage());
             $results = array_values(array_filter(
                 array_map($this->toArray(...), $this->suppliers->findAll()),
                 static function (array $supplier) use ($query, $status): bool {
