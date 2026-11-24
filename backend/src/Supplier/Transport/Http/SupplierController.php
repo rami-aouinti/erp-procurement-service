@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Transport\\Http;
+namespace App\Supplier\Transport\Http;
 
-use App\\Supplier\\Application\\DTO\\SupplierData;
-use App\\Supplier\\Application\\Exception\\SupplierValidationException;
-use App\\Supplier\\Application\\UseCase\\CreateSupplier;
-use App\\Supplier\\Application\\UseCase\\DeleteSupplier;
-use App\\Supplier\\Application\\UseCase\\GetSupplier;
-use App\\Supplier\\Application\\UseCase\\ListSuppliers;
-use App\\Supplier\\Application\\UseCase\\UpdateSupplier;
-use App\\Supplier\\Domain\\Exception\\InvalidSupplierData;
-use App\\Supplier\\Domain\\Exception\\SupplierEmailAlreadyUsed;
-use App\\Supplier\\Domain\\Exception\\SupplierNotFound;
-use App\\Supplier\\Domain\\Model\\Supplier;
-use Doctrine\\DBAL\\Exception\\ForeignKeyConstraintViolationException;
+use App\Supplier\Application\DTO\SupplierData;
+use App\Supplier\Application\Exception\SupplierValidationException;
+use App\Supplier\Application\UseCase\CreateSupplier;
+use App\Supplier\Application\UseCase\DeleteSupplier;
+use App\Supplier\Application\UseCase\GetSupplier;
+use App\Supplier\Application\UseCase\ListSuppliers;
+use App\Supplier\Application\UseCase\UpdateSupplier;
+use App\Supplier\Domain\Exception\InvalidSupplierData;
+use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
+use App\Supplier\Domain\Exception\SupplierNotFound;
+use App\Supplier\Domain\Model\Supplier;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use JsonException;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpFoundation\\Request;
-use Symfony\\Component\\HttpFoundation\\Response;
-use Symfony\\Component\\Routing\\Attribute\\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/suppliers')]
 final class SupplierController
@@ -44,7 +44,7 @@ final class SupplierController
         return new JsonResponse(array_map($this->serialize(...), $suppliers));
     }
 
-    #[Route('/{id<\\d+>}', name: 'api_suppliers_get', methods: ['GET'])]
+    #[Route('/{id<\d+>}', name: 'api_suppliers_get', methods: ['GET'])]
     public function get(int $id, GetSupplier $useCase): JsonResponse
     {
         try {
@@ -59,7 +59,7 @@ final class SupplierController
     {
         try {
             return new JsonResponse($this->serialize($useCase->execute($this->input($request))), 201);
-        } catch (JsonException|InvalidSupplierData|\\InvalidArgumentException $exception) {
+        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
             return new JsonResponse(['error' => $exception->getMessage(), 'violations' => $exception->violations()], 422);
@@ -68,12 +68,12 @@ final class SupplierController
         }
     }
 
-    #[Route('/{id<\\d+>}', name: 'api_suppliers_update', methods: ['PUT'])]
+    #[Route('/{id<\d+>}', name: 'api_suppliers_update', methods: ['PUT'])]
     public function update(int $id, Request $request, UpdateSupplier $useCase): JsonResponse
     {
         try {
             return new JsonResponse($this->serialize($useCase->execute($id, $this->input($request))));
-        } catch (JsonException|InvalidSupplierData|\\InvalidArgumentException $exception) {
+        } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 400);
         } catch (SupplierValidationException $exception) {
             return new JsonResponse(['error' => $exception->getMessage(), 'violations' => $exception->violations()], 422);
@@ -84,7 +84,7 @@ final class SupplierController
         }
     }
 
-    #[Route('/{id<\\d+>}', name: 'api_suppliers_delete', methods: ['DELETE'])]
+    #[Route('/{id<\d+>}', name: 'api_suppliers_delete', methods: ['DELETE'])]
     public function delete(int $id, DeleteSupplier $useCase): Response
     {
         try {
@@ -101,16 +101,16 @@ final class SupplierController
     {
         $payload = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($payload) || array_is_list($payload)) {
-            throw new \\InvalidArgumentException('A JSON object is required.');
+            throw new \InvalidArgumentException('A JSON object is required.');
         }
         $fields = ['name', 'email', 'phone', 'taxNumber', 'status', 'contactPerson', 'street', 'city', 'postalCode', 'country'];
         foreach ($fields as $field) {
             if (array_key_exists($field, $payload) && $payload[$field] !== null && !is_string($payload[$field])) {
-                throw new \\InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
+                throw new \InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
             }
         }
         if (!isset($payload['name']) || !is_string($payload['name'])) {
-            throw new \\InvalidArgumentException('Field "name" is required and must be a string.');
+            throw new \InvalidArgumentException('Field "name" is required and must be a string.');
         }
         return new SupplierData(
             $payload['name'], $payload['email'] ?? null, $payload['phone'] ?? null,
