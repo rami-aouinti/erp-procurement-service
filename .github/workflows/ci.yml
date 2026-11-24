@@ -135,3 +135,24 @@ jobs:
         run: npm ci --prefix frontend
       - name: Build frontend
         run: npm run build --prefix frontend
+
+  monitoring:
+    name: Validate monitoring configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Validate Docker Compose configuration
+        run: docker compose --env-file .env.example config --quiet
+      - name: Validate Prometheus configuration and alert rules
+        run: |
+          docker run --rm \
+            --volume "$PWD/monitoring/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.2.1 \
+            promtool check config /etc/prometheus/prometheus.yml
+          docker run --rm \
+            --volume "$PWD/monitoring/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.2.1 \
+            promtool check rules /etc/prometheus/alerts.yml
+      - name: Validate Grafana dashboard JSON
+        run: python -m json.tool monitoring/grafana/dashboards/erp-overview.json > /dev/null
