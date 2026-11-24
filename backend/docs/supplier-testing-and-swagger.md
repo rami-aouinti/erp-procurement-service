@@ -75,6 +75,65 @@ A claim has a 60-second lease. If a worker exits unexpectedly, a later publisher
 
 This is an **at-least-once** delivery design, not exactly-once delivery. If RabbitMQ confirms a message but the worker crashes before Oracle records `PUBLISHED`, the event can be published again after lease recovery. Consumers must therefore remain idempotent. The Supplier consumer reloads the current Oracle aggregate state before updating Elasticsearch, which makes duplicate and delayed change events safe for the read model.
 
+## Failure-injection and recovery runbook
+
+Run these checks only against a disposable development/test stack. Do not stop shared production dependencies or replay the production dead-letter queue as an experiment.
+
+### 1. RabbitMQ unavailable during outbox publication
+
+1. Create a test Supplier and record its outbox event ID.
+2. Stop RabbitMQ briefly:
+   ```bash
+   docker compose stop rabbitmq
+   docker compose exec backend php bin/console supplier:outbox:publish --limit=10
+   ```
+3. Inspect the outbox row in Oracle. The publisher must not mark the event `PUBLISHED` when it cannot obtain a broker confirm. It records a failed attempt and schedules a retry (or marks it `FAILED` after the configured attempt limit).
+4. Restore RabbitMQ and run the publisher again:
+   ```bash
+   docker compose start rabbitmq
+   docker compose exec backend php bin/console supplier:outbox:publish --limit=10
+   ```
+
+Expected guarantee: no successful broker confirm means no `PUBLISHED` transition.
+
+### 2. Crash after broker confirm, before the Oracle status update
+
+This is the unavoidable duplicate-delivery window in the outbox publisher:
+
+1. Use a disposable stack and create a test Supplier.
+2. Start one publisher process and terminate it forcibly at the narrow point after RabbitMQ confirms publication but before the Oracle `PUBLISHED` update. This requires a debugger/fault-injection breakpoint in the publisher; simply killing an arbitrary process is not deterministic.
+3. Confirm the row remains `PROCESSING` until its 60-second lease expires.
+4. Run the publisher after the lease expires. The event becomes eligible again and may be published a second time.
+5. Confirm the consumer converges Elasticsearch to the current Oracle Supplier state and does not create duplicate logical documents.
+
+Expected guarantee: at-least-once delivery. A duplicate publication is possible and is not a defect; consumers must be idempotent. Do not describe this as exactly-once delivery.
+
+### 3. Dead-letter replay while RabbitMQ is unavailable
+
+1. Put a disposable test message in `supplier.events.dead` (or cause a test event to exhaust its consumer retries).
+2. Stop RabbitMQ and invoke the replay command. The command must fail to connect; it cannot acknowledge or remove the original dead-letter message.
+3. Start RabbitMQ and inspect the DLQ depth:
+   ```bash
+   docker compose exec rabbitmq rabbitmqctl -p /erp list_queues name messages
+   ```
+4. Replay a bounded number of messages:
+   ```bash
+   docker compose exec backend php bin/console supplier:events:dead-letter:replay --limit=10
+   ```
+
+Expected guarantee: replay acknowledges a dead-letter copy only after the main-exchange publish receives a broker confirm. If publish fails after the message has been fetched, the code negatively acknowledges it with requeue.
+
+### Inspect outbox state
+
+```sql
+SELECT event_id, event_type, status, attempts, locked_until, last_error
+FROM supplier_outbox_events
+ORDER BY occurred_at DESC
+FETCH FIRST 30 ROWS ONLY;
+```
+
+These are operational fault-injection procedures, not automated PHPUnit tests. The live pipeline test covers the normal create/update/delete path; the failure windows above require controlled broker/process fault injection to test deterministically.
+
 ## Supplier event metrics and alerts
 
 The backend `/metrics` endpoint exposes shared Supplier worker metrics stored in Redis. The publisher and consumer update the same Redis keys even though they run in separate processes.
