@@ -41,6 +41,8 @@ final class MetricsRegistryTest extends TestCase
         self::assertStringContainsString('# TYPE erp_supplier_events_published_total counter', $output);
         self::assertStringContainsString('erp_supplier_events_published_total 0', $output);
         self::assertStringContainsString('# TYPE erp_supplier_events_consumed_total counter', $output);
+        self::assertStringContainsString('# TYPE erp_supplier_events_deduplicated_total counter', $output);
+        self::assertStringContainsString('erp_supplier_events_deduplicated_total 0', $output);
         self::assertStringContainsString('erp_supplier_events_failed_total 0', $output);
         self::assertStringContainsString('erp_supplier_events_dead_letter_total 0', $output);
         self::assertStringContainsString('# TYPE erp_supplier_outbox_pending_events gauge', $output);
