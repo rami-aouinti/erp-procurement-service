@@ -16,10 +16,8 @@ doctrine:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
-                alias: App
             SupplierInfrastructure:
                 type: attribute
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Supplier/Infrastructure/Persistence/Doctrine/Entity'
                 prefix: 'App\Supplier\Infrastructure\Persistence\Doctrine\Entity'
-                alias: SupplierInfrastructure
