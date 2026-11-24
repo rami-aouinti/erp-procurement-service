@@ -33,4 +33,12 @@ interface SupplierProfileRepository
     public function setPrimaryBankAccount(int $supplierId, int $accountId): bool;
 
     public function deleteBankAccount(int $supplierId, int $accountId): bool;
+
+    public function updateBankAccountEncryption(
+        int $supplierId,
+        int $accountId,
+        string $accountHolderEncrypted,
+        string $ibanEncrypted,
+        string $keyVersion,
+    ): bool;
 }
