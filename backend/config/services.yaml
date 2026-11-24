@@ -43,3 +43,8 @@ services:
             $user: '%env(RABBITMQ_USER)%'
             $password: '%env(RABBITMQ_PASSWORD)%'
             $vhost: '%env(RABBITMQ_VHOST)%'
+
+    App\Supplier\Infrastructure\Security\SupplierBankDataEncryptor:
+        arguments:
+            $base64Key: '%env(SUPPLIER_BANK_ENCRYPTION_KEY)%'
+            $keyVersion: '%env(SUPPLIER_BANK_ENCRYPTION_KEY_VERSION)%'
