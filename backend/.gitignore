@@ -8,3 +8,9 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+# Local test and static-analysis artifacts
+/.phpunit.result.cache
+/.phpunit.cache/
+/tooling/vendor/
+/tooling/composer.lock

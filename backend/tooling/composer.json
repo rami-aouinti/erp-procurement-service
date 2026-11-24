@@ -1,0 +1,32 @@
+{
+  "name": "rami-aouinti/erp-procurement-quality-tools",
+  "description": "Isolated PHP quality tooling for the ERP Procurement backend",
+  "type": "project",
+  "license": "proprietary",
+  "require-dev": {
+    "php": "^8.2",
+    "nunomaduro/phpinsights": "^2.13",
+    "phpmd/phpmd": "^2.15",
+    "phpstan/phpstan": "^2.1",
+    "rector/rector": "^2.0",
+    "squizlabs/php_codesniffer": "^3.13",
+    "symplify/easy-coding-standard": "^12.5"
+  },
+  "scripts": {
+    "phpcs": "phpcs --standard=PSR12 --extensions=php ../src ../tests",
+    "phpcbf": "phpcbf --standard=PSR12 --extensions=php ../src ../tests",
+    "ecs": "ecs check ../src ../tests --config=ecs.php",
+    "ecs:fix": "ecs check ../src ../tests --config=ecs.php --fix",
+    "phpmd": "phpmd ../src text phpmd.xml",
+    "phpstan": "phpstan analyse --configuration=phpstan.neon --no-progress",
+    "rector": "rector process ../src --config=rector.php --dry-run",
+    "rector:fix": "rector process ../src --config=rector.php",
+    "insights": "phpinsights analyse ../src --no-interaction"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {}
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   backend:
-    name: Install dependencies and run Symfony tests
+    name: Backend tests and PHP quality gates
     runs-on: ubuntu-latest
 
     services:
@@ -52,7 +52,7 @@ jobs:
       - name: Build backend image (PHP 8.4 + OCI8)
         run: docker build --tag erp-procurement-backend:ci ./backend
 
-      - name: Install Composer dependencies and run tests
+      - name: Install application and tooling dependencies, run tests and quality checks
         run: |
           docker run --rm --network host \
             --volume "${{ github.workspace }}/backend:/app" \
@@ -66,7 +66,7 @@ jobs:
             --env ORACLE_USER=ERP_APP \
             --env ORACLE_PASSWORD=ErpAppPassword123 \
             erp-procurement-backend:ci \
-            sh -lc "composer install --no-interaction --prefer-dist && composer test"
+            sh -lc "composer install --no-interaction --prefer-dist && composer update --working-dir=tooling --no-interaction --prefer-dist && composer test && composer --working-dir=tooling phpcs && composer --working-dir=tooling ecs && composer --working-dir=tooling phpmd && composer --working-dir=tooling phpstan && composer --working-dir=tooling rector && composer --working-dir=tooling insights"
 
   frontend:
     name: Build React frontend

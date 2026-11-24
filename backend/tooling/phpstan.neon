@@ -1,0 +1,9 @@
+parameters:
+    level: 5
+    phpVersion: 80400
+    paths:
+        - ../src
+    bootstrapFiles:
+        - ../vendor/autoload.php
+    tmpDir: ../var/phpstan
+    treatPhpDocTypesAsCertain: false
