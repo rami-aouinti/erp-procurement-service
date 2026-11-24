@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Application\\DTO;
+namespace App\Supplier\Application\DTO;
 
 final readonly class SupplierData
 {
