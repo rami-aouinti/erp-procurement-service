@@ -11,11 +11,12 @@ Swagger UI is served by Symfony. Its UI assets are loaded from the Swagger UI pu
 
 ## Test strategy
 
-The backend PHPUnit configuration currently defines four suites:
+The backend PHPUnit configuration defines a default suite for CI and five focused suites:
 
 - **Supplier Unit**: domain model validation/normalization and application use cases.
 - **Supplier Functional**: real Symfony HTTP kernel, routing, JSON payload handling, Doctrine persistence and Oracle database behavior.
 - **Supplier Infrastructure**: infrastructure-level components such as event-envelope validation and encryption.
+- **Supplier Integration**: a live end-to-end test that requires Oracle, Redis, Elasticsearch, RabbitMQ, the outbox publisher and the Supplier consumer.
 - **Observability Unit**: Prometheus metrics formatting and exposition.
 
 Functional tests use a transaction and roll it back after each test. They require Oracle and the ERP_APP schema to be available. Seed at least one purchase order to run the foreign-key deletion test; that test is skipped when there are no purchase orders.
@@ -29,6 +30,15 @@ docker compose exec backend composer test
 docker compose exec backend composer test:unit
 docker compose exec backend composer test:functional
 ```
+
+The default `composer test` command runs the Default suite and does not require the background workers. To run the real event pipeline test, first start the complete stack:
+
+```bash
+docker compose up -d --build
+docker compose exec backend composer test:integration
+```
+
+The integration test creates, updates and deletes a Supplier through the HTTP kernel. It waits for each committed Oracle outbox event to reach `PUBLISHED`, then verifies that the RabbitMQ consumer has updated or removed the corresponding Elasticsearch document. It has a 30-second timeout per asynchronous assertion and uses a unique email address. It deliberately does not wrap the test in a database transaction, so the independent worker processes can see the committed rows.
 
 If the PHPUnit bridge has not downloaded its PHPUnit runner yet, run:
 
@@ -92,5 +102,6 @@ Run the focused test suites:
 ```bash
 docker compose exec backend composer test
 docker compose exec backend vendor/bin/simple-phpunit --testsuite="Supplier Infrastructure"
+docker compose exec backend composer test:integration
 docker compose exec backend vendor/bin/simple-phpunit --testsuite="Observability Unit"
 ```
