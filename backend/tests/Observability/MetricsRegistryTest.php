@@ -18,8 +18,8 @@ final class MetricsRegistryTest extends TestCase
 
         $output = $metrics->render();
 
-        self::assertStringContainsString('erp_http_requests_total{method="GET"|route="supplier_list"|status="200"} 1', $output);
-        self::assertStringContainsString('erp_http_requests_total{method="GET"|route="supplier_list"|status="500"} 1', $output);
+        self::assertStringContainsString('erp_http_requests_total{method="GET",route="supplier_list",status="200"} 1', $output);
+        self::assertStringContainsString('erp_http_requests_total{method="GET",route="supplier_list",status="500"} 1', $output);
         self::assertStringContainsString('erp_http_request_duration_seconds_bucket{method="GET"|route="supplier_list"|status="200",le="0.025"} 0', $output);
         self::assertStringContainsString('erp_http_request_duration_seconds_bucket{method="GET"|route="supplier_list"|status="200",le="0.050"} 1', $output);
         self::assertStringContainsString('erp_http_request_duration_seconds_count{method="GET"|route="supplier_list"|status="200"} 1', $output);
