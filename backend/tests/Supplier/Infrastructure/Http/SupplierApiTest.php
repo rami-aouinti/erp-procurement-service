@@ -6,8 +6,8 @@ namespace App\Tests\Supplier\Infrastructure\Http;
 
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\HttpFoundationRequest;
-use Symfony\Component\HttpFoundationResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 final class SupplierApiTest extends KernelTestCase
