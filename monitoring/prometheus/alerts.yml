@@ -1,0 +1,38 @@
+groups:
+  - name: erp-procurement-alerts
+    rules:
+      - alert: ErpBackendDown
+        expr: up{job="erp-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: ERP backend is unreachable
+          description: Prometheus cannot scrape the Symfony backend metrics endpoint.
+
+      - alert: ErpBackendHigh5xxRate
+        expr: |
+          (
+            sum(rate(erp_http_requests_total{status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(erp_http_requests_total[5m])), 0.001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: ERP backend has an elevated 5xx response rate
+          description: More than 5 percent of backend responses have been 5xx over five minutes.
+
+      - alert: ErpBackendHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(erp_http_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: ERP backend p95 latency is above one second
+          description: The 95th percentile HTTP response time exceeded one second for five minutes.
