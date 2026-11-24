@@ -50,6 +50,35 @@ final class SupplierBankDataEncryptorTest extends TestCase
         $encryptor->decrypt(implode('.', $parts));
     }
 
+
+    public function testItDecryptsDataWithItsRecordedPreviousKeyVersion(): void
+    {
+        $oldKey = base64_encode(random_bytes(32));
+        $newKey = base64_encode(random_bytes(32));
+        $oldEncryptor = new SupplierBankDataEncryptor($oldKey, 'v1');
+        $encrypted = $oldEncryptor->encrypt('DE89370400440532013000');
+
+        $rotatingEncryptor = new SupplierBankDataEncryptor(
+            $newKey,
+            'v2',
+            json_encode(['v1' => $oldKey], JSON_THROW_ON_ERROR),
+        );
+
+        self::assertSame('DE89370400440532013000', $rotatingEncryptor->decrypt($encrypted, 'v1'));
+        self::assertSame('v2', $rotatingEncryptor->keyVersion());
+
+        $reEncrypted = $rotatingEncryptor->encrypt($rotatingEncryptor->decrypt($encrypted, 'v1'));
+        self::assertSame('DE89370400440532013000', $rotatingEncryptor->decrypt($reEncrypted, 'v2'));
+    }
+
+    public function testItRejectsUnknownKeyVersion(): void
+    {
+        $encryptor = new SupplierBankDataEncryptor(self::KEY, 'v2');
+
+        $this->expectException(RuntimeException::class);
+        $encryptor->decrypt('invalid.payload.value', 'v1');
+    }
+
     public function testItMasksIban(): void
     {
         self::assertSame('DE••••••••••••••••1300', (new SupplierBankDataEncryptor(self::KEY, 'v1'))->maskIban('DE89 3704 0044 0532 0130 00'));
