@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Application\\Validator;
+namespace App\Supplier\Application\Validator;
 
-use App\\Supplier\\Application\\DTO\\SupplierData;
-use App\\Supplier\\Application\\Exception\\SupplierValidationException;
+use App\Supplier\Application\DTO\SupplierData;
+use App\Supplier\Application\Exception\SupplierValidationException;
 
 final class SupplierDataValidator
 {
