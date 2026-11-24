@@ -11,6 +11,7 @@ export default function SuppliersSection({ onCountChange }) {
   const [suppliers, setSuppliers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -33,6 +34,11 @@ export default function SuppliersSection({ onCountChange }) {
       setLoading(false);
     }
   }, [onCountChange, search, statusFilter]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
 
   useEffect(() => { loadSuppliers(); }, [loadSuppliers]);
 
@@ -112,9 +118,9 @@ export default function SuppliersSection({ onCountChange }) {
             <h3>{editingId !== null ? 'Edit supplier' : 'New supplier'}</h3>
             {editingId !== null && <button className="text-button" type="button" onClick={resetForm}>Cancel</button>}
           </div>
-          <label>Company name <span>*</span><input name="name" value={form.name} onChange={updateField} maxLength="150" required placeholder="Acme GmbH" /></label>
+          <label>Company name <span>*</span><input name="name" value={form.name} onChange={updateField} maxLength="150" minLength="2" required placeholder="Acme GmbH" /></label>
           <label>Email<input name="email" type="email" value={form.email} onChange={updateField} maxLength="150" placeholder="contact@company.de" /></label>
-          <label>Phone<input name="phone" value={form.phone} onChange={updateField} maxLength="30" placeholder="+49 30 123456" /></label>
+          <label>Phone<input name="phone" value={form.phone} onChange={updateField} maxLength="30" pattern="[+0-9 ().-]{7,30}" title="Use at least 7 digits and common phone characters." placeholder="+49 30 123456" /></label>
           <label>Tax number<input name="taxNumber" value={form.taxNumber} onChange={updateField} maxLength="50" placeholder="DE123456789" /></label>
           <label>Primary contact<input name="contactPerson" value={form.contactPerson} onChange={updateField} maxLength="150" placeholder="Jane Smith" /></label>
           <label>Status
@@ -125,10 +131,10 @@ export default function SuppliersSection({ onCountChange }) {
           <div className="form-subheading">Business address</div>
           <label>Street<input name="street" value={form.street} onChange={updateField} maxLength="180" placeholder="Hafenstraße 12" /></label>
           <div className="form-row">
-            <label>Postal code<input name="postalCode" value={form.postalCode} onChange={updateField} maxLength="20" placeholder="28195" /></label>
+            <label>Postal code<input name="postalCode" value={form.postalCode} onChange={updateField} maxLength="20" pattern="[A-Za-z0-9][A-Za-z0-9 -]{1,19}" placeholder="28195" /></label>
             <label>City<input name="city" value={form.city} onChange={updateField} maxLength="100" placeholder="Bremen" /></label>
           </div>
-          <label>Country code<input name="country" value={form.country} onChange={updateField} maxLength="2" placeholder="DE" /></label>
+          <label>Country code<input name="country" value={form.country} onChange={updateField} maxLength="2" pattern="[A-Za-z]{2}" title="Enter a two-letter ISO country code, for example DE." placeholder="DE" /></label>
           <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : editingId !== null ? 'Save changes' : 'Create supplier'}</button>
         </form>
 
@@ -137,7 +143,7 @@ export default function SuppliersSection({ onCountChange }) {
             <div><h3>All suppliers</h3><span>{suppliers.length} matching suppliers</span></div>
           </div>
           <div className="supplier-filters">
-            <input aria-label="Search suppliers" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email or city..." />
+            <input aria-label="Search suppliers" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search name, email, tax ID, contact or city..." />
             <select aria-label="Filter by status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
               <option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option>
             </select>
