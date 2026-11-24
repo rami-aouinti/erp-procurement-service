@@ -1,0 +1,56 @@
+{
+  "name": "rami-aouinti/erp-procurement-backend",
+  "description": "Symfony backend for the ERP procurement and inventory learning project",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.2",
+    "ext-ctype": "*",
+    "ext-iconv": "*",
+    "symfony/console": "7.4.*",
+    "symfony/dotenv": "7.4.*",
+    "symfony/framework-bundle": "7.4.*",
+    "symfony/runtime": "7.4.*",
+    "symfony/yaml": "7.4.*"
+  },
+  "require-dev": {
+    "symfony/phpunit-bridge": "^7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "App\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "auto-scripts": {
+      "cache:clear": "symfony-cmd",
+      "assets:install %PUBLIC_DIR%": "symfony-cmd"
+    },
+    "post-install-cmd": [
+      "@auto-scripts"
+    ],
+    "post-update-cmd": [
+      "@auto-scripts"
+    ]
+  },
+  "config": {
+    "allow-plugins": {
+      "symfony/flex": true,
+      "php-http/discovery": true
+    },
+    "sort-packages": true
+  },
+  "extra": {
+    "symfony": {
+      "allow-contrib": false,
+      "require": "7.4.*"
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
