@@ -145,7 +145,7 @@ final class MetricsRegistry
         }
 
         if ($this->redisHost === '') {
-            throw new \\RuntimeException('Redis metrics storage is not configured.');
+            throw new \RuntimeException('Redis metrics storage is not configured.');
         }
 
         $redis = new Redis();
@@ -169,7 +169,7 @@ final class MetricsRegistry
 
     private function escape(string $value): string
     {
-        return str_replace(["\\", "\n", '"'], ["\\\\", "\\n", '\\"'], $value);
+        return str_replace(["\", "\n", '"'], ["\\", "\n", '\"'], $value);
     }
 
     private function format(float $value): string
