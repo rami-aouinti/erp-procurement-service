@@ -45,6 +45,27 @@ The response never contains the full IBAN or encrypted payload:
 
 The response contains masked IBANs only. The API does not expose ciphertext, account-holder plaintext, or the encryption key version.
 
+
+### Change the primary bank account
+
+`POST /api/suppliers/{supplierId}/bank-accounts/{accountId}/primary`
+
+The selected account becomes the supplier's primary bank account. Any previously primary account is unset in the same database transaction. The account must belong to the supplier in the URL.
+
+Success response:
+
+```json
+{
+  "success": true
+}
+```
+
+### Delete a bank account
+
+`DELETE /api/suppliers/{supplierId}/bank-accounts/{accountId}`
+
+Deletes only the account matching both IDs. Returns HTTP 204 on success and HTTP 404 if the supplier or account does not exist. Deleting the primary account does not automatically promote another account.
+
 ## Encryption key setup
 
 Generate a 32-byte key encoded as base64:
