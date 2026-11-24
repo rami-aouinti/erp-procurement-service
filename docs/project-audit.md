@@ -16,7 +16,7 @@ It is **not yet production-ready**. The main remaining gaps are operational hard
 3. **High — application logs were not structured for aggregation.** Added an HTTP subscriber that emits JSON to stderr with request ID, route, method, status and duration. It avoids raw URLs, query strings, request bodies and business data.
 4. **High — worker logs could expose exception details.** RabbitMQ failure logs now record exception classes instead of raw exception messages.
 5. **High — readiness and liveness used the same shallow endpoint.** Backend readiness now checks Oracle through `/api/database/health`; startup and liveness remain on lightweight `/api/health`.
-6. **Medium — backend CI used `composer update`.** Changed it to `composer install` so the committed lock file is used. The separate tooling directory has no lock file yet and remains non-reproducible.
+6. **High — the Prometheus validation command used the image's default Prometheus entrypoint, so Docker interpreted `promtool` as an unexpected Prometheus argument.** Corrected the container entrypoint to `promtool`.\n7. **Medium — the IBAN masking test expected the wrong suffix.** The sample IBAN ends in `3000`; updated the assertion to the actual last four characters (the masking implementation was correct).\n8. **Medium — backend CI used `composer update`.** Changed it to `composer install` so the committed lock file is used. The separate tooling directory has no lock file yet and remains non-reproducible.
 
 ## Added
 

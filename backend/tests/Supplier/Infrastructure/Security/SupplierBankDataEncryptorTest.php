@@ -81,6 +81,6 @@ final class SupplierBankDataEncryptorTest extends TestCase
 
     public function testItMasksIban(): void
     {
-        self::assertSame('DE••••••••••••••••1300', (new SupplierBankDataEncryptor(self::KEY, 'v1'))->maskIban('DE89 3704 0044 0532 0130 00'));
+        self::assertSame('DE••••••••••••••••3000', (new SupplierBankDataEncryptor(self::KEY, 'v1'))->maskIban('DE89 3704 0044 0532 0130 00'));
     }
 }
