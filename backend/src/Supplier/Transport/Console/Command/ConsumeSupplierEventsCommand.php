@@ -56,7 +56,7 @@ final class ConsumeSupplierEventsCommand extends Command
                 }
 
                 $this->metrics->incrementSupplierEvent('consumed');
-            } catch (\\Throwable $exception) {
+            } catch (\Throwable $exception) {
                 $this->metrics->incrementSupplierEvent('failed');
                 throw $exception;
             }
