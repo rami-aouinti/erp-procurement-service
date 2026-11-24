@@ -203,4 +203,4 @@ Useful local endpoints:
 - Elasticsearch health: `http://localhost:9200/_cluster/health`
 - Supplier index: `http://localhost:9200/suppliers/_search`
 
-The local Elasticsearch container has security disabled for development only. Do not expose this configuration to a public or production network.
+The local Elasticsearch container has security disabled for development only. Its host port is bound to localhost; do not expose this configuration to a public or production network. If Elasticsearch exits with a `vm.max_map_count` bootstrap error on Linux/WSL, raise the host setting to `262144` before starting the stack.
