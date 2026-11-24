@@ -50,6 +50,37 @@ final class SearchSuppliersTest extends TestCase
         self::assertSame($expected, (new SearchSuppliers($search, $cache, $repository))->execute('Acme', 'ACTIVE'));
     }
 
+    public function testOracleFallbackSearchIncludesCountry(): void
+    {
+        $cache = $this->createMock(SupplierListCache::class);
+        $cache->method('get')->willReturn(null);
+
+        $search = $this->createMock(SupplierSearchIndex::class);
+        $search->method('search')->willThrowException(new RuntimeException('Elasticsearch unavailable'));
+
+        $supplier = Supplier::reconstitute(
+            9,
+            'European Supplier',
+            null,
+            null,
+            null,
+            new \\DateTimeImmutable(),
+            'ACTIVE',
+            null,
+            null,
+            'Berlin',
+            null,
+            'DE',
+        );
+        $repository = $this->createMock(SupplierRepository::class);
+        $repository->method('findAll')->willReturn([$supplier]);
+
+        $results = (new SearchSuppliers($search, $cache, $repository))->execute('DE');
+
+        self::assertCount(1, $results);
+        self::assertSame('DE', $results[0]['country']);
+    }
+
     public function testFallsBackToOracleWhenElasticsearchIsUnavailable(): void
     {
         $cache = $this->createMock(SupplierListCache::class);
