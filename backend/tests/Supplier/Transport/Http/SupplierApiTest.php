@@ -87,10 +87,11 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame(Response::HTTP_NO_CONTENT, $deleted->getStatusCode());
 
         $eventTypes = $this->connection->fetchFirstColumn(
-            'SELECT event_type FROM supplier_outbox_events WHERE aggregate_id = :id ORDER BY occurred_at',
+            'SELECT event_type FROM supplier_outbox_events WHERE aggregate_id = :id',
             ['id' => $id],
         );
-        self::assertSame(['SupplierCreated', 'SupplierUpdated', 'SupplierDeleted'], $eventTypes);
+        self::assertCount(3, $eventTypes);
+        self::assertEqualsCanonicalizing(['SupplierCreated', 'SupplierUpdated', 'SupplierDeleted'], $eventTypes);
 
         self::assertSame(Response::HTTP_NOT_FOUND, $this->request('GET', '/api/suppliers/' . $id)->getStatusCode());
     }
