@@ -68,7 +68,8 @@ final class SupplierUseCasesTest extends TestCase
 
     public function testListReturnsRepositoryCollection(): void
     {
-        $suppliers = [Supplier::register('A', null, null, null), Supplier::register('B', null, null, null)];
+        // Names must satisfy the same domain invariants as persisted suppliers.
+        $suppliers = [Supplier::register('Alpha', null, null, null), Supplier::register('Beta', null, null, null)];
         $repository = $this->createMock(SupplierRepository::class);
         $repository->expects(self::once())->method('findAll')->willReturn($suppliers);
         self::assertSame($suppliers, (new ListSuppliers($repository))->execute());
