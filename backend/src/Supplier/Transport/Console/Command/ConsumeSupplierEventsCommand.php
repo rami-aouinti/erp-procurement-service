@@ -32,32 +32,29 @@ final class ConsumeSupplierEventsCommand extends Command
     {
         $output->writeln('<info>Supplier event consumer connected. Waiting for messages...</info>');
         $this->eventBus->consume(function (array $event): void {
-                $type = (string) $event['eventType'];
-                $supplierId = (int) $event['aggregateId'];
+            $type = (string) $event['eventType'];
+            $supplierId = (int) $event['aggregateId'];
 
-                if ($type === 'SupplierDeleted') {
-                    $this->searchIndex->delete($supplierId);
-                    $this->cache->invalidate();
-                } else {
-                    if (!in_array($type, ['SupplierCreated', 'SupplierUpdated'], true)) {
-                        throw new RuntimeException(sprintf('Unsupported supplier event type "%s".', $type));
-                    }
-
-                    // Reload current Oracle state: duplicates and delayed messages cannot
-                    // overwrite newer data or recreate a supplier that has been deleted.
-                    $supplier = $this->suppliers->findById($supplierId);
-                    if ($supplier === null) {
-                        $this->searchIndex->delete($supplierId);
-                    } else {
-                        $this->searchIndex->index($supplier);
-                    }
-                    $this->cache->invalidate();
+            if ($type === 'SupplierDeleted') {
+                $this->searchIndex->delete($supplierId);
+                $this->cache->invalidate();
+            } else {
+                if (!in_array($type, ['SupplierCreated', 'SupplierUpdated'], true)) {
+                    throw new RuntimeException(sprintf('Unsupported supplier event type "%s".', $type));
                 }
 
-                $this->metrics->incrementSupplierEvent('consumed');
-            } catch (\Throwable $exception) {
-                throw $exception;
+                // Reload current Oracle state: duplicates and delayed messages cannot
+                // overwrite newer data or recreate a supplier that has been deleted.
+                $supplier = $this->suppliers->findById($supplierId);
+                if ($supplier === null) {
+                    $this->searchIndex->delete($supplierId);
+                } else {
+                    $this->searchIndex->index($supplier);
+                }
+                $this->cache->invalidate();
             }
+
+            $this->metrics->incrementSupplierEvent('consumed');
         });
 
         return Command::SUCCESS;
