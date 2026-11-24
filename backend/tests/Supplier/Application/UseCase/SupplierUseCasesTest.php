@@ -55,10 +55,10 @@ final class SupplierUseCasesTest extends TestCase
     {
         $supplier = Supplier::reconstitute(7, 'Acme', null, null, null, new \DateTimeImmutable());
         $repository = $this->createMock(SupplierRepository::class);
-        $repository->method('findById')->with(7)->willReturn($supplier);
+        $repository->method('findById')->willReturnMap([[7, $supplier], [99, null]]);
         self::assertSame($supplier, (new GetSupplier($repository))->execute(7));
 
-        $repository->method('findById')->with(99)->willReturn(null);
+
         try {
             (new GetSupplier($repository))->execute(99);
             self::fail('Expected SupplierNotFound.');
