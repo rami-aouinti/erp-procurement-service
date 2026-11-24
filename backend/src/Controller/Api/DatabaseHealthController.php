@@ -1,10 +1,10 @@
 <?php
 
-namespace App\\Controller\\Api;
+namespace App\Controller\Api;
 
-use Doctrine\\DBAL\\Connection;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\Routing\\Attribute\\Route;
+use Doctrine\DBAL\Connection;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
 final class DatabaseHealthController
@@ -22,7 +22,7 @@ final class DatabaseHealthController
                 'service' => 'FREEPDB1',
                 'connected' => true,
             ]);
-        } catch (Throwable $exception) {
+        } catch (Throwable) {
             return new JsonResponse([
                 'status' => 'error',
                 'database' => 'oracle',
