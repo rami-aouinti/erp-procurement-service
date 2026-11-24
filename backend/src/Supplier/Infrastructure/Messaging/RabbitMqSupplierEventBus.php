@@ -174,6 +174,7 @@ final readonly class RabbitMqSupplierEventBus
                     $targetExchange = $isRetry ? self::RETRY_EXCHANGE : self::DEAD_EXCHANGE;
                     $routingKey = $isRetry ? 'supplier.retry' : 'supplier.dead';
 
+                    $publisherChannel = null;
                     try {
                         // Use a dedicated publisher channel: publisher confirms and
                         // consumer acknowledgements must not share channel state.
@@ -193,7 +194,6 @@ final readonly class RabbitMqSupplierEventBus
                                 ],
                             ],
                         );
-                        $publisherChannel->close();
                     } catch (Throwable $publishException) {
                         // Never acknowledge the original until its retry/dead-letter
                         // copy has been confirmed by RabbitMQ.
@@ -205,6 +205,14 @@ final readonly class RabbitMqSupplierEventBus
                         ));
 
                         return;
+                    } finally {
+                        if ($publisherChannel instanceof AMQPChannel) {
+                            try {
+                                $publisherChannel->close();
+                            } catch (Throwable) {
+                                // The consumer connection cleanup remains authoritative.
+                            }
+                        }
                     }
 
                     $this->metrics->incrementSupplierEvent('failed');
