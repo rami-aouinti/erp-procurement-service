@@ -73,11 +73,9 @@ final readonly class RabbitMqSupplierEventBus
             $queue->setFlags(AMQP_DURABLE);
             $queue->declareQueue();
 
-            // Register the broker consumer once. Subsequent consume() calls only
-            // drain deliveries for that registration; they must not register the
-            // same consumer tag again after an idle read timeout.
+            // Register and start consuming in the same call. consume(null)
+            // still blocks and can time out before the processing loop starts.
             $consumerTag = 'supplier-read-model-consumer';
-            $queue->consume(null, AMQP_NOPARAM, $consumerTag);
 
             $callback = function (AMQPEnvelope $envelope, AMQPQueue $queue) use ($handler, $connection): void {
                 $deliveryTag = $envelope->getDeliveryTag();
@@ -144,13 +142,22 @@ final readonly class RabbitMqSupplierEventBus
                 }
             };
 
+            $consumerRegistered = false;
+
             while ($connection->isConnected()) {
                 try {
-                    // AMQP_JUST_CONSUME reuses the already registered consumer.
+                    if (!$consumerRegistered) {
+                        // The first call registers the broker consumer and starts
+                        // dispatching deliveries to the callback.
+                        $consumerRegistered = true;
+                        $queue->consume($callback, AMQP_NOPARAM, $consumerTag);
+
+                        continue;
+                    }
+
+                    // Reuse the registered consumer after an expected idle timeout.
                     $queue->consume($callback, AMQP_JUST_CONSUME);
-                } catch (\AMQPQueueException $exception) {
-                    // ext-amqp reports an idle read timeout as this exception.
-                    // It is expected for a long-running worker with an empty queue.
+                } catch (\\AMQPQueueException $exception) {
                     if (!str_contains($exception->getMessage(), 'Consumer timeout exceed')) {
                         throw $exception;
                     }
