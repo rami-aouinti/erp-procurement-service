@@ -103,6 +103,16 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
 
     private function ensureIndex(): void
     {
+        try {
+            $this->request('GET', '/' . self::INDEX);
+
+            return;
+        } catch (RuntimeException $exception) {
+            if (!str_contains($exception->getMessage(), 'HTTP 404')) {
+                throw $exception;
+            }
+        }
+
         $this->request('PUT', '/' . self::INDEX, [
             'settings' => ['number_of_shards' => 1, 'number_of_replicas' => 0],
             'mappings' => [
@@ -121,7 +131,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
                     'createdAt' => ['type' => 'date'],
                 ],
             ],
-        ], [200, 400]);
+        ]);
     }
 
     /** @param array<string, mixed>|null $payload
@@ -144,10 +154,30 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
         }
 
         $context = stream_context_create($options);
-        $response = @file_get_contents(rtrim($this->url, '/') . $path, false, $context);
-        $statusLine = $http_response_header[0] ?? '';
-        preg_match('/\s(\d{3})\s/', $statusLine, $matches);
-        $status = isset($matches[1]) ? (int) $matches[1] : 0;
+        $url = rtrim($this->url, '/') . $path;
+
+        error_clear_last();
+        $stream = @fopen($url, 'rb', false, $context);
+        if (!is_resource($stream)) {
+            $error = error_get_last();
+            throw new RuntimeException(sprintf(
+                'Elasticsearch request failed (%s %s): connection error: %s',
+                $method,
+                $path,
+                $error['message'] ?? 'no response',
+            ));
+        }
+
+        $metadata = stream_get_meta_data($stream);
+        $response = stream_get_contents($stream);
+        fclose($stream);
+
+        $status = 0;
+        foreach (($metadata['wrapper_data'] ?? []) as $headerLine) {
+            if (preg_match('/^HTTP\/\S+\s+(\d{3})\b/i', trim((string) $headerLine), $matches)) {
+                $status = (int) $matches[1];
+            }
+        }
 
         if ($response === false || !in_array($status, $acceptedStatuses, true)) {
             throw new RuntimeException(sprintf('Elasticsearch request failed (%s %s): HTTP %d %s', $method, $path, $status, is_string($response) ? $response : 'no response'));
