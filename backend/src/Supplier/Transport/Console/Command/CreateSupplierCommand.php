@@ -26,7 +26,6 @@ final class CreateSupplierCommand extends Command
 {
     public function __construct(
         private readonly CreateSupplier $createSupplier,
-        private readonly SupplierDataValidator $validator,
     ) {
         parent::__construct();
     }
@@ -51,7 +50,6 @@ final class CreateSupplierCommand extends Command
         );
 
         try {
-            $this->validator->validate($data);
             $supplier = $this->createSupplier->execute($data);
         } catch (SupplierValidationException|InvalidSupplierData|SupplierEmailAlreadyUsed $exception) {
             $io->error($exception->getMessage());
