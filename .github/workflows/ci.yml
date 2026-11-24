@@ -46,6 +46,7 @@ jobs:
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/002_seed_procurement_data.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/004_create_goods_receiving.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/006_create_suppliers_sequence.sql
+            sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/007_extend_supplier_management.sql
           '
 
       - name: Build backend image (PHP 8.4 + OCI8)
