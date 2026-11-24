@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Supplier\Domain\Repository;
 
 use App\Supplier\Domain\Model\SupplierAddress;
+use App\Supplier\Domain\Model\SupplierBankAccount;
 use App\Supplier\Domain\Model\SupplierContact;
 use App\Supplier\Domain\Model\SupplierProfile;
 
@@ -23,4 +24,9 @@ interface SupplierProfileRepository
     public function findAddresses(int $supplierId): array;
 
     public function addAddress(SupplierAddress $address): SupplierAddress;
+
+    /** @return list<SupplierBankAccount> */
+    public function findBankAccounts(int $supplierId): array;
+
+    public function addBankAccount(SupplierBankAccount $account): SupplierBankAccount;
 }
