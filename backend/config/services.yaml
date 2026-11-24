@@ -1,3 +1,6 @@
+parameters:
+    empty_json: '{}'
+
 services:
     _defaults:
         autowire: true
@@ -51,4 +54,4 @@ services:
         arguments:
             $base64Key: '%env(SUPPLIER_BANK_ENCRYPTION_KEY)%'
             $keyVersion: '%env(SUPPLIER_BANK_ENCRYPTION_KEY_VERSION)%'
-            $previousKeysJson: '%env(default:SUPPLIER_BANK_PREVIOUS_ENCRYPTION_KEYS:SUPPLIER_BANK_PREVIOUS_ENCRYPTION_KEYS)%'
+            $previousKeysJson: '%env(default:empty_json:SUPPLIER_BANK_PREVIOUS_ENCRYPTION_KEYS)%'
