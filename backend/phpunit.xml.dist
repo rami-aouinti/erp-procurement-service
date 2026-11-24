@@ -11,6 +11,13 @@
         <env name="KERNEL_CLASS" value="App\Kernel"/>
     </php>
     <testsuites>
+        <testsuite name="Default">
+            <directory>tests/Observability</directory>
+            <directory>tests/Supplier/Domain</directory>
+            <directory>tests/Supplier/Application</directory>
+            <directory>tests/Supplier/Transport</directory>
+            <directory>tests/Supplier/Infrastructure</directory>
+        </testsuite>
         <testsuite name="Observability Unit">
             <directory>tests/Observability</directory>
         </testsuite>
