@@ -9,8 +9,8 @@ use App\Supplier\Application\Port\SupplierEventDeduplication;
 use App\Supplier\Application\Port\SupplierListCache;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Domain\Repository\SupplierRepository;
-use Throwable;
 use RuntimeException;
+use Throwable;
 
 final readonly class HandleSupplierEvent
 {
