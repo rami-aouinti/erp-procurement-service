@@ -30,6 +30,7 @@ final class RedisSupplierListCache implements SupplierListCache
             $decoded = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
             return is_array($decoded) ? $decoded : null;
         } catch (Throwable) {
+            $this->redis = null;
             return null;
         }
     }
@@ -43,6 +44,7 @@ final class RedisSupplierListCache implements SupplierListCache
                 json_encode($suppliers, JSON_THROW_ON_ERROR),
             );
         } catch (Throwable) {
+            $this->redis = null;
             // Redis is an optimization; Oracle remains available when cache is down.
         }
     }
@@ -59,6 +61,7 @@ final class RedisSupplierListCache implements SupplierListCache
                 }
             } while ($iterator !== 0 && $iterator !== false);
         } catch (Throwable) {
+            $this->redis = null;
             // Expiring keys will self-heal if Redis is temporarily unavailable.
         }
     }
