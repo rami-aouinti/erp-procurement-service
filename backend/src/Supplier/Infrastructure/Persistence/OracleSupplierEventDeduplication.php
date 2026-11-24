@@ -70,11 +70,14 @@ final readonly class OracleSupplierEventDeduplication implements SupplierEventDe
             ['eventId' => $eventId],
         );
 
-        if ($status === 'PROCESSED') {
+        if (in_array($status, ['PROCESSED', 'PROCESSING'], true)) {
+            // A second delivery must not exhaust the short RabbitMQ retry
+            // cycle while the original, still-unacked delivery is processing.
+            // If that worker crashes, RabbitMQ requeues its original delivery.
             return null;
         }
 
-        throw new SupplierEventAlreadyProcessing();
+        throw new RuntimeException('Supplier event could not be claimed for processing.');
     }
 
     public function markProcessed(string $eventId, string $claimToken): void
