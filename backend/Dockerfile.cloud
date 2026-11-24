@@ -29,6 +29,7 @@ RUN mkdir -p /opt/oracle \
 
 RUN docker-php-ext-install opcache \
     && sed -i 's/^listen = 9000/listen = 127.0.0.1:9000/' /usr/local/etc/php-fpm.d/zz-docker.conf \
+    && printf '\\npid = /tmp/php-fpm.pid\\n' >> /usr/local/etc/php-fpm.conf \
     && apt-get purge -y --auto-remove curl ${PHPIZE_DEPS} \
     && rm -rf /var/lib/apt/lists/*
 

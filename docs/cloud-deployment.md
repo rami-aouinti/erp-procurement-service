@@ -81,6 +81,8 @@ Install an NGINX Ingress Controller and configure DNS/TLS (for example with cert
 
 ## Important production follow-ups
 
+The current Symfony adapters connect to Redis by host/port and to Elasticsearch by URL; they do not yet configure Redis AUTH or Elasticsearch API-key/basic authentication. For this first cloud-learning deployment, use private network endpoints with access restricted to the cluster. Before exposing this as a production system, implement and test the provider credentials/TLS settings in the adapters and source secrets from the cloud secret manager.
+
 - Replace mutable `latest` tags with immutable commit-SHA tags and update the manifests.
 - Add TLS, WAF/rate limiting, network policies, Pod security standards and least-privilege RBAC.
 - Use a managed Oracle-compatible database/network, managed Redis, Elasticsearch and RabbitMQ.
