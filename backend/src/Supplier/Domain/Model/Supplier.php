@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Supplier\Domain\Model;
+namespace App\\Supplier\\Domain\\Model;
 
-use App\Supplier\Domain\Exception\InvalidSupplierData;
+use App\\Supplier\\Domain\\Exception\\InvalidSupplierData;
 
 final class Supplier
 {
@@ -14,26 +14,91 @@ final class Supplier
         private ?string $email,
         private ?string $phone,
         private ?string $taxNumber,
-        private \DateTimeImmutable $createdAt,
+        private \\DateTimeImmutable $createdAt,
+        private string $status = 'ACTIVE',
+        private ?string $contactPerson = null,
+        private ?string $street = null,
+        private ?string $city = null,
+        private ?string $postalCode = null,
+        private ?string $country = null,
     ) {
-        $this->name = self::normalizeName($name);
-        [$this->email, $this->phone, $this->taxNumber] = self::normalizeContact($email, $phone, $taxNumber);
+        $this->name = self::required($name, 150, 'Supplier name');
+        $this->email = self::optional($email, 150, 'Supplier email');
+        if ($this->email !== null && !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidSupplierData('Supplier email must be valid.');
+        }
+        $this->phone = self::optional($phone, 30, 'Supplier phone');
+        $this->taxNumber = self::optional($taxNumber, 50, 'Supplier tax number');
+        $this->status = strtoupper(trim($status));
+        if (!in_array($this->status, ['ACTIVE', 'INACTIVE', 'BLOCKED'], true)) {
+            throw new InvalidSupplierData('Supplier status must be ACTIVE, INACTIVE or BLOCKED.');
+        }
+        $this->contactPerson = self::optional($contactPerson, 150, 'Contact person');
+        $this->street = self::optional($street, 180, 'Street');
+        $this->city = self::optional($city, 100, 'City');
+        $this->postalCode = self::optional($postalCode, 20, 'Postal code');
+        $this->country = self::optional($country, 2, 'Country code');
+        if ($this->country !== null) {
+            $this->country = strtoupper($this->country);
+        }
     }
 
-    public static function register(string $name, ?string $email, ?string $phone, ?string $taxNumber, ?\DateTimeImmutable $createdAt = null): self
-    {
-        return new self(null, $name, $email, $phone, $taxNumber, $createdAt ?? new \DateTimeImmutable());
+    public static function register(
+        string $name,
+        ?string $email,
+        ?string $phone,
+        ?string $taxNumber,
+        ?\\DateTimeImmutable $createdAt = null,
+        string $status = 'ACTIVE',
+        ?string $contactPerson = null,
+        ?string $street = null,
+        ?string $city = null,
+        ?string $postalCode = null,
+        ?string $country = null,
+    ): self {
+        return new self(null, $name, $email, $phone, $taxNumber, $createdAt ?? new \\DateTimeImmutable(), $status, $contactPerson, $street, $city, $postalCode, $country);
     }
 
-    public static function reconstitute(int $id, string $name, ?string $email, ?string $phone, ?string $taxNumber, \DateTimeImmutable $createdAt): self
-    {
-        return new self($id, $name, $email, $phone, $taxNumber, $createdAt);
+    public static function reconstitute(
+        int $id,
+        string $name,
+        ?string $email,
+        ?string $phone,
+        ?string $taxNumber,
+        \\DateTimeImmutable $createdAt,
+        string $status = 'ACTIVE',
+        ?string $contactPerson = null,
+        ?string $street = null,
+        ?string $city = null,
+        ?string $postalCode = null,
+        ?string $country = null,
+    ): self {
+        return new self($id, $name, $email, $phone, $taxNumber, $createdAt, $status, $contactPerson, $street, $city, $postalCode, $country);
     }
 
-    public function update(string $name, ?string $email, ?string $phone, ?string $taxNumber): void
-    {
-        $this->name = self::normalizeName($name);
-        [$this->email, $this->phone, $this->taxNumber] = self::normalizeContact($email, $phone, $taxNumber);
+    public function update(
+        string $name,
+        ?string $email,
+        ?string $phone,
+        ?string $taxNumber,
+        string $status = 'ACTIVE',
+        ?string $contactPerson = null,
+        ?string $street = null,
+        ?string $city = null,
+        ?string $postalCode = null,
+        ?string $country = null,
+    ): void {
+        $updated = new self($this->id, $name, $email, $phone, $taxNumber, $this->createdAt, $status, $contactPerson, $street, $city, $postalCode, $country);
+        $this->name = $updated->name;
+        $this->email = $updated->email;
+        $this->phone = $updated->phone;
+        $this->taxNumber = $updated->taxNumber;
+        $this->status = $updated->status;
+        $this->contactPerson = $updated->contactPerson;
+        $this->street = $updated->street;
+        $this->city = $updated->city;
+        $this->postalCode = $updated->postalCode;
+        $this->country = $updated->country;
     }
 
     public function id(): ?int { return $this->id; }
@@ -41,39 +106,33 @@ final class Supplier
     public function email(): ?string { return $this->email; }
     public function phone(): ?string { return $this->phone; }
     public function taxNumber(): ?string { return $this->taxNumber; }
-    public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function createdAt(): \\DateTimeImmutable { return $this->createdAt; }
+    public function status(): string { return $this->status; }
+    public function contactPerson(): ?string { return $this->contactPerson; }
+    public function street(): ?string { return $this->street; }
+    public function city(): ?string { return $this->city; }
+    public function postalCode(): ?string { return $this->postalCode; }
+    public function country(): ?string { return $this->country; }
 
-    private static function normalizeName(string $name): string
+    private static function required(string $value, int $max, string $label): string
     {
-        $name = trim($name);
-        if ($name === '' || self::length($name) > 150) {
-            throw new InvalidSupplierData('Supplier name is required and must not exceed 150 characters.');
+        $value = trim($value);
+        if ($value === '' || self::length($value) > $max) {
+            throw new InvalidSupplierData(sprintf('%s is required and must not exceed %d characters.', $label, $max));
         }
-        return $name;
+        return $value;
     }
 
-    /** @return array{?string, ?string, ?string} */
-    private static function normalizeContact(?string $email, ?string $phone, ?string $taxNumber): array
-    {
-        $email = self::nullableTrim($email);
-        $phone = self::nullableTrim($phone);
-        $taxNumber = self::nullableTrim($taxNumber);
-        if ($email !== null && (!filter_var($email, FILTER_VALIDATE_EMAIL) || self::length($email) > 150)) {
-            throw new InvalidSupplierData('A valid supplier email of at most 150 characters is required.');
-        }
-        if ($phone !== null && self::length($phone) > 30) {
-            throw new InvalidSupplierData('Supplier phone must not exceed 30 characters.');
-        }
-        if ($taxNumber !== null && self::length($taxNumber) > 50) {
-            throw new InvalidSupplierData('Supplier tax number must not exceed 50 characters.');
-        }
-        return [$email, $phone, $taxNumber];
-    }
-
-    private static function nullableTrim(?string $value): ?string
+    private static function optional(?string $value, int $max, string $label): ?string
     {
         $value = $value !== null ? trim($value) : null;
-        return $value === '' ? null : $value;
+        if ($value === '') {
+            return null;
+        }
+        if ($value !== null && self::length($value) > $max) {
+            throw new InvalidSupplierData(sprintf('%s must not exceed %d characters.', $label, $max));
+        }
+        return $value;
     }
 
     private static function length(string $value): int
