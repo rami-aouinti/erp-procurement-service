@@ -57,6 +57,39 @@ final readonly class SupplierBankAccountController
         }
     }
 
+
+    #[Route('/{accountId<\\d+>}/primary', name: 'api_supplier_bank_accounts_set_primary', methods: ['POST'])]
+    public function setPrimary(int $id, int $accountId): JsonResponse
+    {
+        try {
+            if (!$this->accounts->setPrimary($id, $accountId)) {
+                return new JsonResponse(['error' => 'Bank account not found.'], 404);
+            }
+
+            return new JsonResponse(['success' => true]);
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
+        } catch (InvalidArgumentException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], 400);
+        }
+    }
+
+    #[Route('/{accountId<\\d+>}', name: 'api_supplier_bank_accounts_delete', methods: ['DELETE'])]
+    public function delete(int $id, int $accountId): JsonResponse
+    {
+        try {
+            if (!$this->accounts->delete($id, $accountId)) {
+                return new JsonResponse(['error' => 'Bank account not found.'], 404);
+            }
+
+            return new JsonResponse(null, 204);
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
+        } catch (InvalidArgumentException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], 400);
+        }
+    }
+
     /** @param array<string, mixed> $data */
     private static function requiredString(array $data, string $key): string
     {
