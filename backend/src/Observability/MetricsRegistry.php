@@ -20,7 +20,7 @@ final class MetricsRegistry
     public function observeRequest(string $method, string $route, int $status, float $duration): void
     {
         $labels = $this->labels($method, $route, $status);
-        $key = implode('|', $labels);
+        $key = implode("\x1F", $labels);
         $this->requests[$key] = ($this->requests[$key] ?? 0) + 1;
 
         if (!isset($this->histograms[$key])) {
@@ -60,14 +60,14 @@ final class MetricsRegistry
         ];
 
         foreach ($this->requests as $key => $count) {
-            $output[] = 'erp_http_requests_total{' . $key . '} ' . $count;
+            $output[] = 'erp_http_requests_total{' . implode(',', explode("\x1F", $key)) . '} ' . $count;
         }
 
         $output[] = '# HELP erp_http_request_duration_seconds HTTP response duration in seconds.';
         $output[] = '# TYPE erp_http_request_duration_seconds histogram';
 
         foreach ($this->histograms as $histogram) {
-            $labels = implode('|', $histogram['labels']);
+            $labels = implode(',', $histogram['labels']);
             foreach (self::BUCKETS as $bucket) {
                 $output[] = 'erp_http_request_duration_seconds_bucket{' . $labels . ',le="' . $bucket . '"} ' . $histogram['buckets'][sprintf('%.3F', $bucket)];
             }
