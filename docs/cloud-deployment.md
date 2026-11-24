@@ -36,7 +36,9 @@ Oracle, Redis, Elasticsearch and RabbitMQ are expected to be cloud-managed servi
 
 ## Build and publish images
 
-The repository provides a cloud-oriented backend Dockerfile and a multi-stage frontend Dockerfile. Build and push images to a registry reachable by your Kubernetes cluster (replace the registry/tag with your own):
+The repository provides a cloud-oriented backend Dockerfile and a multi-stage frontend Dockerfile. The GitHub Actions workflow `.github/workflows/container-images.yml` builds both images on pushes to `main` (when relevant files change) and publishes `latest` plus an immutable commit-SHA tag to GHCR. It uses the repository's `GITHUB_TOKEN` with package-write permission. Ensure GitHub Actions is allowed to publish packages for this repository.
+
+You can also build and push images manually to a registry reachable by your Kubernetes cluster (replace the registry/tag with your own):
 
 ```bash
 docker build -f backend/Dockerfile.cloud -t ghcr.io/rami-aouinti/erp-procurement-backend:latest ./backend

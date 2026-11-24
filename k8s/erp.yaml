@@ -11,6 +11,8 @@ metadata:
 data:
   APP_ENV: "prod"
   APP_DEBUG: "0"
+  DEFAULT_URI: "https://erp.example.com"
+  SUPPLIER_BANK_ENCRYPTION_KEY_VERSION: "v1"
   ORACLE_HOST: "REPLACE_WITH_MANAGED_ORACLE_HOST"
   ORACLE_PORT: "1521"
   ORACLE_SERVICE: "FREEPDB1"
@@ -205,7 +207,8 @@ spec:
             httpGet:
               path: /
               port: http
-              initialDelaySeconds: 10
+            initialDelaySeconds: 10
+            periodSeconds: 20
           resources:
             requests:
               cpu: 50m
