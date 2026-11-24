@@ -117,7 +117,32 @@ jobs:
             --env RABBITMQ_PASSWORD=ErpRabbitPassword123 \
             --env RABBITMQ_VHOST=/erp \
             erp-procurement-backend:ci \
-            sh -lc "composer install --no-interaction --prefer-dist && composer update --working-dir=tooling --no-interaction --prefer-dist && php bin/console supplier:reindex --env=test && composer test && composer --working-dir=tooling phpcs && composer --working-dir=tooling ecs && composer --working-dir=tooling phpmd && composer --working-dir=tooling phpstan && composer --working-dir=tooling rector && composer --working-dir=tooling insights"
+            sh -lc '
+              set -e
+              composer install --no-interaction --prefer-dist
+              composer update --working-dir=tooling --no-interaction --prefer-dist
+              php bin/console supplier:reindex --env=test
+              composer test
+
+              php bin/console supplier:events:consume --env=test > /tmp/supplier-consumer.log 2>&1 &
+              CONSUMER_PID=$!
+              (
+                while true; do
+                  php bin/console supplier:outbox:publish --limit=100 --env=test || true
+                  sleep 2
+                done
+              ) > /tmp/supplier-publisher.log 2>&1 &
+              PUBLISHER_PID=$!
+              trap "kill $CONSUMER_PID $PUBLISHER_PID 2>/dev/null || true" EXIT
+
+              composer test:integration
+              composer --working-dir=tooling phpcs
+              composer --working-dir=tooling ecs
+              composer --working-dir=tooling phpmd
+              composer --working-dir=tooling phpstan
+              composer --working-dir=tooling rector
+              composer --working-dir=tooling insights
+            '
 
   frontend:
     name: Build React frontend
