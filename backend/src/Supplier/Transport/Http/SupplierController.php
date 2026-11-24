@@ -46,11 +46,9 @@ final class SupplierController
     public function create(
         Request $request,
         CreateSupplier $useCase,
-        SupplierDataValidator $validator,
     ): JsonResponse {
         try {
             $data = $this->input($request);
-            $validator->validate($data);
 
             return new JsonResponse($this->serialize($useCase->execute($data)), 201);
         } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
@@ -71,7 +69,6 @@ final class SupplierController
     ): JsonResponse {
         try {
             $data = $this->input($request);
-            $validator->validate($data);
 
             return new JsonResponse($this->serialize($useCase->execute($id, $data)));
         } catch (JsonException|InvalidSupplierData|\InvalidArgumentException $exception) {
