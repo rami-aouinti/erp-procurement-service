@@ -88,14 +88,6 @@ final class PublishSupplierOutboxCommand extends Command
                     'aggregateId' => (int) ($event['AGGREGATE_ID'] ?? $event['aggregate_id']),
                     'payload' => json_decode((string) $payload, true, 512, JSON_THROW_ON_ERROR),
                 ]);
-                $this->connection->executeStatement(
-                    "UPDATE supplier_outbox_events
-                     SET status = 'PUBLISHED', published_at = SYSTIMESTAMP, locked_until = NULL, last_error = NULL
-                     WHERE event_id = :eventId
-                       AND status = 'PROCESSING'
-                       AND locked_until >= SYSTIMESTAMP",
-                    ['eventId' => $eventId]
-                );
                 if ($this->connection->executeStatement(
                     "UPDATE supplier_outbox_events
                      SET status = 'PUBLISHED', published_at = SYSTIMESTAMP, locked_until = NULL, last_error = NULL
