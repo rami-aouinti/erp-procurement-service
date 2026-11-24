@@ -44,11 +44,21 @@ final class SupplierApiTest extends KernelTestCase
             'email' => $this->email,
             'phone' => '+49 421 123456',
             'taxNumber' => 'DE-TEST-123',
+            'status' => 'ACTIVE',
+            'contactPerson' => 'Jane Smith',
+            'street' => 'Hafenstraße 12',
+            'city' => 'Bremen',
+            'postalCode' => '28195',
+            'country' => 'DE',
         ]);
         self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string) $created->getContent());
         $supplier = json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertIsInt($supplier['id']);
         self::assertSame($this->email, $supplier['email']);
+        self::assertSame('ACTIVE', $supplier['status']);
+        self::assertSame('Jane Smith', $supplier['contactPerson']);
+        self::assertSame('Bremen', $supplier['city']);
+        self::assertSame('DE', $supplier['country']);
         $id = $supplier['id'];
 
         $fetched = $this->request('GET', '/api/suppliers/'.$id);
@@ -60,9 +70,18 @@ final class SupplierApiTest extends KernelTestCase
             'email' => $this->email,
             'phone' => null,
             'taxNumber' => 'DE-UPDATED',
+            'status' => 'BLOCKED',
+            'contactPerson' => 'John Smith',
+            'street' => 'Neue Straße 5',
+            'city' => 'Hamburg',
+            'postalCode' => '20095',
+            'country' => 'DE',
         ]);
         self::assertSame(Response::HTTP_OK, $updated->getStatusCode(), (string) $updated->getContent());
-        self::assertSame('Updated Functional Supplier', json_decode((string) $updated->getContent(), true, 512, JSON_THROW_ON_ERROR)['name']);
+        $updatedSupplier = json_decode((string) $updated->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('Updated Functional Supplier', $updatedSupplier['name']);
+        self::assertSame('BLOCKED', $updatedSupplier['status']);
+        self::assertSame('Hamburg', $updatedSupplier['city']);
 
         $deleted = $this->request('DELETE', '/api/suppliers/'.$id);
         self::assertSame(Response::HTTP_NO_CONTENT, $deleted->getStatusCode());
