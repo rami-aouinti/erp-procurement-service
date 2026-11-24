@@ -30,13 +30,29 @@ final readonly class SupplierProfile
         if (!preg_match('/^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $preferredLanguage)) {
             throw new InvalidArgumentException('Preferred language must be a valid language tag.');
         }
-        if ($website !== null && filter_var($website, FILTER_VALIDATE_URL) === false) {
-            throw new InvalidArgumentException('Website must be a valid URL.');
+
+        if ($website !== null) {
+            $scheme = strtolower((string) parse_url($website, PHP_URL_SCHEME));
+            if (
+                filter_var($website, FILTER_VALIDATE_URL) === false
+                || !in_array($scheme, ['http', 'https'], true)
+                || parse_url($website, PHP_URL_HOST) === null
+            ) {
+                throw new InvalidArgumentException('Website must be a valid HTTP or HTTPS URL.');
+            }
         }
 
-        foreach ([[$legalName, 200], [$registrationNumber, 80], [$vatNumber, 50], [$website, 255]] as [$value, $max]) {
-            if ($value !== null && mb_strlen($value) > $max) {
-                throw new InvalidArgumentException(sprintf('Profile fields must not exceed %d characters.', $max));
+        foreach ([
+            'Legal name' => [$legalName, 200],
+            'Registration number' => [$registrationNumber, 80],
+            'VAT number' => [$vatNumber, 50],
+            'Website' => [$website, 255],
+        ] as $label => [$value, $max]) {
+            if ($value !== null && (trim($value) === '' || mb_strlen($value) > $max)) {
+                throw new InvalidArgumentException(sprintf('%s must not be empty and must not exceed %d characters.', $label, $max));
+            }
+            if ($value !== null && preg_match('/[\x00-\x1F\x7F]/', $value)) {
+                throw new InvalidArgumentException(sprintf('%s contains invalid control characters.', $label));
             }
         }
     }
