@@ -351,4 +351,31 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         return $deleted > 0;
     }
 
+
+    public function updateBankAccountEncryption(
+        int $supplierId,
+        int $accountId,
+        string $accountHolderEncrypted,
+        string $ibanEncrypted,
+        string $keyVersion,
+    ): bool {
+        $updated = $this->connection->executeStatement(
+            'UPDATE supplier_bank_accounts
+             SET account_holder_encrypted = :holderEncrypted,
+                 iban_encrypted = :ibanEncrypted,
+                 encryption_key_version = :keyVersion,
+                 updated_at = SYSTIMESTAMP
+             WHERE supplier_id = :supplierId AND id = :accountId',
+            [
+                'holderEncrypted' => $accountHolderEncrypted,
+                'ibanEncrypted' => $ibanEncrypted,
+                'keyVersion' => $keyVersion,
+                'supplierId' => $supplierId,
+                'accountId' => $accountId,
+            ],
+        );
+
+        return $updated > 0;
+    }
+
 }
