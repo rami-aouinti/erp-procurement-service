@@ -28,6 +28,7 @@ services:
     environment:
       APP_ENV: dev
       APP_SECRET: ${APP_SECRET:-local-development-secret-change-me}
+      DEFAULT_URI: http://localhost
       ORACLE_HOST: oracle
       ORACLE_PORT: 1521
       ORACLE_SERVICE: FREEPDB1
