@@ -16,3 +16,18 @@ services:
 
     App\Supplier\Domain\Repository\SupplierRepository:
         alias: App\Supplier\Infrastructure\Persistence\Doctrine\DoctrineSupplierRepository
+
+    App\Supplier\Application\Port\SupplierSearchIndex:
+        alias: App\Supplier\Infrastructure\Search\ElasticsearchSupplierSearchIndex
+
+    App\Supplier\Application\Port\SupplierListCache:
+        alias: App\Supplier\Infrastructure\Cache\RedisSupplierListCache
+
+    App\Supplier\Infrastructure\Cache\RedisSupplierListCache:
+        arguments:
+            $host: '%env(REDIS_HOST)%'
+            $port: '%env(int:REDIS_PORT)%'
+
+    App\Supplier\Infrastructure\Search\ElasticsearchSupplierSearchIndex:
+        arguments:
+            $url: '%env(ELASTICSEARCH_URL)%'
