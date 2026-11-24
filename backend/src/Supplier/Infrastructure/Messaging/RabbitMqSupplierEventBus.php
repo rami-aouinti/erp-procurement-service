@@ -157,7 +157,7 @@ final readonly class RabbitMqSupplierEventBus
 
                     // Reuse the registered consumer after an expected idle timeout.
                     $queue->consume($callback, AMQP_JUST_CONSUME);
-                } catch (\\AMQPQueueException $exception) {
+                } catch (\AMQPQueueException $exception) {
                     if (!str_contains($exception->getMessage(), 'Consumer timeout exceed')) {
                         throw $exception;
                     }
