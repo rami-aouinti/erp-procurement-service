@@ -178,3 +178,29 @@ Vite proxies requests beginning with `/api` to the Symfony backend, so browser c
 ## Learning approach
 
 This is an educational project. We will implement business rules incrementally and document the enterprise concepts used by each workflow. Credentials in this repository are examples only; use local secrets in `.env`.
+
+
+## Supplier search infrastructure
+
+The supplier module uses three complementary storage systems:
+
+- **Oracle** remains the source of truth for supplier data and relationships.
+- **Redis** caches supplier search/list responses for 60 seconds. Supplier writes invalidate the supplier cache.
+- **Elasticsearch** provides multi-field supplier search over name, email, tax number, contact person, phone and address.
+
+Redis and Elasticsearch run as Docker Compose services with persistent named volumes and health checks. The backend image includes the PHP Redis extension. If Redis is unavailable, requests bypass the cache. If Elasticsearch is unavailable, supplier search falls back to Oracle.
+
+After starting the stack for the first time, populate the search index from Oracle:
+
+```bash
+docker compose exec backend php bin/console supplier:reindex
+```
+
+Useful local endpoints:
+
+- Redis: `localhost:6379`
+- Elasticsearch: `http://localhost:9200`
+- Elasticsearch health: `http://localhost:9200/_cluster/health`
+- Supplier index: `http://localhost:9200/suppliers/_search`
+
+The local Elasticsearch container has security disabled for development only. Do not expose this configuration to a public or production network.
