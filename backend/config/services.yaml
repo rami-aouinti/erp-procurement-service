@@ -3,7 +3,7 @@ services:
         autowire: true
         autoconfigure: true
 
-    App\\:
+    App\:
         resource: '../src/'
         exclude:
             - '../src/DependencyInjection/'
@@ -15,28 +15,28 @@ services:
             - '../src/Supplier/Application/DTO/'
             - '../src/Supplier/Infrastructure/Persistence/Doctrine/Entity/'
 
-    App\\Supplier\\Domain\\Repository\\SupplierRepository:
-        alias: App\\Supplier\\Infrastructure\\Persistence\\Doctrine\\DoctrineSupplierRepository
+    App\Supplier\Domain\Repository\SupplierRepository:
+        alias: App\Supplier\Infrastructure\Persistence\Doctrine\DoctrineSupplierRepository
 
-    App\\Supplier\\Domain\\Repository\\SupplierProfileRepository:
-        alias: App\\Supplier\\Infrastructure\\Persistence\\Doctrine\\DoctrineSupplierProfileRepository
+    App\Supplier\Domain\Repository\SupplierProfileRepository:
+        alias: App\Supplier\Infrastructure\Persistence\Doctrine\DoctrineSupplierProfileRepository
 
-    App\\Supplier\\Application\\Port\\SupplierSearchIndex:
-        alias: App\\Supplier\\Infrastructure\\Search\\ElasticsearchSupplierSearchIndex
+    App\Supplier\Application\Port\SupplierSearchIndex:
+        alias: App\Supplier\Infrastructure\Search\ElasticsearchSupplierSearchIndex
 
-    App\\Supplier\\Application\\Port\\SupplierListCache:
-        alias: App\\Supplier\\Infrastructure\\Cache\\RedisSupplierListCache
+    App\Supplier\Application\Port\SupplierListCache:
+        alias: App\Supplier\Infrastructure\Cache\RedisSupplierListCache
 
-    App\\Supplier\\Infrastructure\\Cache\\RedisSupplierListCache:
+    App\Supplier\Infrastructure\Cache\RedisSupplierListCache:
         arguments:
             $host: '%env(REDIS_HOST)%'
             $port: '%env(int:REDIS_PORT)%'
 
-    App\\Supplier\\Infrastructure\\Search\\ElasticsearchSupplierSearchIndex:
+    App\Supplier\Infrastructure\Search\ElasticsearchSupplierSearchIndex:
         arguments:
             $url: '%env(ELASTICSEARCH_URL)%'
 
-    App\\Supplier\\Infrastructure\\Messaging\\RabbitMqSupplierEventBus:
+    App\Supplier\Infrastructure\Messaging\RabbitMqSupplierEventBus:
         arguments:
             $host: '%env(RABBITMQ_HOST)%'
             $port: '%env(int:RABBITMQ_PORT)%'
