@@ -15,12 +15,15 @@ Build a realistic procurement workflow:
 
 ## Current status
 
-**Phase 1 — Oracle infrastructure**
+**Phase 1 — Oracle infrastructure and initial schema**
 
 - [x] Docker Compose definition for Oracle Database Free
 - [x] Environment variable template
 - [x] Persistent database volume
-- [ ] Start Oracle locally and verify the connection
+- [x] Oracle container started and reported healthy
+- [x] Initial procurement schema SQL script added
+- [ ] Execute the schema script in the local database
+- [ ] Add realistic seed data and practice SQL queries
 - [ ] Connect the Symfony application to Oracle
 
 ## Requirements
@@ -59,7 +62,30 @@ Build a realistic procurement workflow:
    docker compose exec oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"'
    ```
 
-6. Run the verification query from [docs/oracle-setup.md](docs/oracle-setup.md).
+## Initial Oracle schema
+
+The first database migration creates these tables:
+
+- `SUPPLIERS` — supplier master data
+- `PRODUCTS` — product catalogue and SKU
+- `PURCHASE_ORDERS` — purchase order header and supplier relationship
+- `PURCHASE_ORDER_LINES` — products, quantities and prices per order
+
+It also defines primary keys, foreign keys, unique constraints, check constraints, indexes for foreign-key lookups and table comments.
+
+Run it from the repository root while connected as the application user:
+
+```sql
+@database/oracle/001_create_procurement_schema.sql
+```
+
+Or run it directly from your terminal:
+
+```bash
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/001_create_procurement_schema.sql
+```
+
+The script is intended to run once on a fresh schema. It is not idempotent: running it again after successful creation will report that the tables already exist.
 
 ## Oracle connection settings
 
