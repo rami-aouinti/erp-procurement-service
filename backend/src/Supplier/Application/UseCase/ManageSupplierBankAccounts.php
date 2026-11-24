@@ -9,6 +9,7 @@ use App\Supplier\Domain\Exception\SupplierNotFound;
 use App\Supplier\Domain\Model\SupplierBankAccount;
 use App\Supplier\Domain\Repository\SupplierProfileRepository;
 use App\Supplier\Domain\Repository\SupplierRepository;
+use App\Supplier\Domain\ValueObject\Iban;
 use InvalidArgumentException;
 
 final readonly class ManageSupplierBankAccounts
@@ -55,15 +56,12 @@ final readonly class ManageSupplierBankAccounts
         $this->assertSupplierExists($supplierId);
 
         $accountHolder = trim($accountHolder);
-        $iban = strtoupper((string) preg_replace('/\s+/', '', $iban));
+        $iban = (new Iban($iban))->value;
         $bic = $bic !== null ? strtoupper(trim($bic)) : null;
         $currency = strtoupper(trim($currency));
 
         if ($accountHolder === '' || mb_strlen($accountHolder) > 200) {
             throw new InvalidArgumentException('Account holder is required and must not exceed 200 characters.');
-        }
-        if (!self::isValidIban($iban)) {
-            throw new InvalidArgumentException('IBAN is invalid. Please check its format and checksum.');
         }
         if ($bic !== null && !preg_match('/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/', $bic)) {
             throw new InvalidArgumentException('BIC must be a valid 8- or 11-character code.');
@@ -98,23 +96,4 @@ final readonly class ManageSupplierBankAccounts
         }
     }
 
-    private static function isValidIban(string $iban): bool
-    {
-        if (!preg_match('/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/', $iban)) {
-            return false;
-        }
-
-        $rearranged = substr($iban, 4) . substr($iban, 0, 4);
-        $remainder = 0;
-        foreach (str_split($rearranged) as $character) {
-            $digits = ctype_alpha($character)
-                ? (string) (ord($character) - 55)
-                : $character;
-            foreach (str_split($digits) as $digit) {
-                $remainder = (($remainder * 10) + (int) $digit) % 97;
-            }
-        }
-
-        return $remainder === 1;
-    }
 }
