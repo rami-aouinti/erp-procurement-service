@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Supplier\Transport\Console\Command;
 
-use App\Supplier\Application\Service\SupplierReadModelSynchronizer;
+use App\Supplier\Application\Port\SupplierListCache;
+use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Domain\Repository\SupplierRepository;
 use App\Supplier\Infrastructure\Messaging\RabbitMqSupplierEventBus;
 use RuntimeException;
@@ -18,8 +19,9 @@ final class ConsumeSupplierEventsCommand extends Command
 {
     public function __construct(
         private readonly RabbitMqSupplierEventBus $eventBus,
-        private readonly SupplierReadModelSynchronizer $readModel,
         private readonly SupplierRepository $suppliers,
+        private readonly SupplierSearchIndex $searchIndex,
+        private readonly SupplierListCache $cache,
     ) {
         parent::__construct();
     }
@@ -32,7 +34,8 @@ final class ConsumeSupplierEventsCommand extends Command
             $supplierId = (int) $event['aggregateId'];
 
             if ($type === 'SupplierDeleted') {
-                $this->readModel->remove($supplierId);
+                $this->searchIndex->delete($supplierId);
+                $this->cache->invalidate();
                 return;
             }
 
@@ -40,15 +43,15 @@ final class ConsumeSupplierEventsCommand extends Command
                 throw new RuntimeException(sprintf('Unsupported supplier event type "%s".', $type));
             }
 
-            // Always reload the current Oracle state. Delayed or duplicated events
-            // therefore cannot overwrite newer supplier data or resurrect deletions.
+            // Reload current Oracle state: duplicates and delayed messages cannot
+            // overwrite newer data or recreate a supplier that has been deleted.
             $supplier = $this->suppliers->findById($supplierId);
             if ($supplier === null) {
-                $this->readModel->remove($supplierId);
-                return;
+                $this->searchIndex->delete($supplierId);
+            } else {
+                $this->searchIndex->index($supplier);
             }
-
-            $this->readModel->upsert($supplier);
+            $this->cache->invalidate();
         });
 
         return Command::SUCCESS;
