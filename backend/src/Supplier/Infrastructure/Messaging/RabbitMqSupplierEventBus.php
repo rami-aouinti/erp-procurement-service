@@ -72,6 +72,7 @@ final readonly class RabbitMqSupplierEventBus
 
         $connection = $this->connection();
         $replayed = 0;
+        $publisherChannel = null;
 
         try {
             $channel = new AMQPChannel($connection);
@@ -118,6 +119,14 @@ final readonly class RabbitMqSupplierEventBus
 
             return $replayed;
         } finally {
+            if ($publisherChannel instanceof AMQPChannel) {
+                try {
+                    $publisherChannel->close();
+                } catch (Throwable) {
+                    // The connection cleanup below remains authoritative.
+                }
+            }
+
             if ($connection->isConnected()) {
                 $connection->disconnect();
             }
