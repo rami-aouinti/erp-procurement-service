@@ -78,6 +78,7 @@ final readonly class RabbitMqSupplierEventBus
             $dead->setName(self::DEAD_QUEUE);
             $dead->setFlags(AMQP_DURABLE);
             $dead->declareQueue();
+            $publisherChannel = new AMQPChannel($connection);
 
             while ($replayed < $limit) {
                 $envelope = $dead->get(AMQP_NOPARAM);
@@ -89,9 +90,8 @@ final readonly class RabbitMqSupplierEventBus
 
                 try {
                     $messageId = $envelope->getMessageId();
-                    $headers = $envelope->getHeaders();
                     $this->publishConfirmed(
-                        $channel,
+                        $publisherChannel,
                         self::EVENTS_EXCHANGE,
                         $envelope->getBody(),
                         self::ROUTING_KEY,
