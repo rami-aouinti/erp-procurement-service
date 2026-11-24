@@ -25,6 +25,7 @@ final class SupplierEventPipelineTest extends KernelTestCase
     private Connection $connection;
     private HttpKernelInterface $httpKernel;
     private string $email;
+    private string $marker;
     private ?int $supplierId = null;
 
     protected function setUp(): void
@@ -32,7 +33,9 @@ final class SupplierEventPipelineTest extends KernelTestCase
         self::bootKernel();
         $this->connection = static::getContainer()->get(Connection::class);
         $this->httpKernel = static::getContainer()->get('http_kernel');
-        $this->email = sprintf('supplier-pipeline-%s@example.test', bin2hex(random_bytes(6)));
+        $token = bin2hex(random_bytes(6));
+        $this->email = sprintf('supplier-pipeline-%s@example.test', $token);
+        $this->marker = 'PipelineIntegration' . $token;
     }
 
     protected function tearDown(): void
@@ -51,7 +54,7 @@ final class SupplierEventPipelineTest extends KernelTestCase
     public function testCommittedSupplierEventsReachElasticsearchThroughRabbitMq(): void
     {
         $created = $this->request('POST', '/api/suppliers', [
-            'name' => 'Pipeline Integration ' . $this->email,
+            'name' => 'Pipeline Integration ' . $this->marker,
             'email' => $this->email,
             'city' => 'Köln',
             'status' => 'ACTIVE',
@@ -62,10 +65,10 @@ final class SupplierEventPipelineTest extends KernelTestCase
         $this->supplierId = (int) $supplier['id'];
 
         $this->waitForOutboxStatus('SupplierCreated', 'PUBLISHED');
-        $this->waitForSearchResult($this->email, true);
+        $this->waitForSearchResult($this->marker, true);
 
         $updated = $this->request('PUT', '/api/suppliers/' . $this->supplierId, [
-            'name' => 'Pipeline Updated ' . $this->email,
+            'name' => 'Pipeline Updated ' . $this->marker,
             'email' => $this->email,
             'city' => 'Bonn',
             'status' => 'BLOCKED',
@@ -73,13 +76,13 @@ final class SupplierEventPipelineTest extends KernelTestCase
         self::assertSame(Response::HTTP_OK, $updated->getStatusCode(), (string) $updated->getContent());
 
         $this->waitForOutboxStatus('SupplierUpdated', 'PUBLISHED');
-        $this->waitForSearchResult('Pipeline Updated ' . $this->email, true);
+        $this->waitForSearchResult('Pipeline Updated ' . $this->marker, true);
 
         $deleted = $this->request('DELETE', '/api/suppliers/' . $this->supplierId);
         self::assertSame(Response::HTTP_NO_CONTENT, $deleted->getStatusCode());
         $this->waitForOutboxStatus('SupplierDeleted', 'PUBLISHED');
+        $this->waitForSearchResult($this->marker, false);
         $this->supplierId = null;
-        $this->waitForSearchResult($this->email, false);
     }
 
     private function waitForOutboxStatus(string $eventType, string $expectedStatus): void
