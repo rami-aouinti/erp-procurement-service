@@ -40,7 +40,9 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
                     ]],
                     'filter' => $filters,
                 ]],
-            'sort' => [['name.keyword' => ['order' => 'asc']]],
+            'sort' => $query === ''
+                ? [['name.keyword' => ['order' => 'asc']]]
+                : [['_score' => ['order' => 'desc']], ['name.keyword' => ['order' => 'asc']]],
         ];
 
         $response = $this->request('POST', '/' . self::INDEX . '/_search', $body);
