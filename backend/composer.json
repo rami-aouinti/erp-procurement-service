@@ -7,10 +7,12 @@
     "php": ">=8.2",
     "ext-ctype": "*",
     "ext-iconv": "*",
+    "ext-oci8": "*",
     "symfony/console": "7.4.*",
     "symfony/dotenv": "7.4.*",
     "symfony/flex": "^2.6",
     "symfony/framework-bundle": "7.4.*",
+    "symfony/orm-pack": "^2.4",
     "symfony/runtime": "7.4.*",
     "symfony/yaml": "7.4.*"
   },
@@ -19,12 +21,12 @@
   },
   "autoload": {
     "psr-4": {
-      "App\\": "src/"
+      "App\\\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "App\\Tests\\": "tests/"
+      "App\\\\Tests\\\\": "tests/"
     }
   },
   "scripts": {
@@ -32,12 +34,8 @@
       "cache:clear": "symfony-cmd",
       "assets:install %PUBLIC_DIR%": "symfony-cmd"
     },
-    "post-install-cmd": [
-      "@auto-scripts"
-    ],
-    "post-update-cmd": [
-      "@auto-scripts"
-    ]
+    "post-install-cmd": ["@auto-scripts"],
+    "post-update-cmd": ["@auto-scripts"]
   },
   "config": {
     "allow-plugins": {
