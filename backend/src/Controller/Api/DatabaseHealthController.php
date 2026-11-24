@@ -14,7 +14,8 @@ final class DatabaseHealthController
     public function __invoke(Connection $connection, LoggerInterface $logger): JsonResponse
     {
         try {
-            $connection->connect();
+            // DBAL opens the connection lazily when the query is executed.
+            // Connection::connect() is protected and must not be called here.
             $connection->fetchOne('SELECT 1 FROM DUAL');
 
             return new JsonResponse([
