@@ -18,6 +18,35 @@ services:
       retries: 20
       start_period: 60s
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp-backend
+    working_dir: /app
+    restart: unless-stopped
+    environment:
+      APP_ENV: dev
+      APP_SECRET: ${APP_SECRET:-local-development-secret-change-me}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: node:22-alpine
+    container_name: erp-frontend
+    working_dir: /app
+    restart: unless-stopped
+    command: sh -lc "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
 volumes:
   oracle_data:
     name: erp_oracle_data
