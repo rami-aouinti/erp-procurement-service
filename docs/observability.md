@@ -109,3 +109,44 @@ Explore logs in Grafana → Explore → Loki. Useful LogQL:
 The local Alloy collector mounts `/var/run/docker.sock`. Access to this socket is effectively privileged access to the Docker host: keep this collector on a trusted developer machine and do not expose the Docker API or Alloy UI publicly. Loki is unauthenticated and bound to loopback for local development only.
 
 For Kubernetes, apply `k8s/observability.yaml`. It deploys single-replica Loki with a 10 GiB PVC and an Alloy DaemonSet that tails pod logs using Kubernetes metadata. Loki is ClusterIP-only. This is a learning/small-cluster setup, not HA production. Production needs object storage, authentication/tenant isolation, network policies, backup/retention policy and scalable Loki or a managed logging service.
+
+## Troubleshooting Docker image credential errors
+
+If `docker compose up` or `docker compose pull` fails with an error such as
+`error getting credentials - err: exit status 1`, this is usually a local Docker
+credential-helper problem, not an application or Loki configuration error. On
+Docker Desktop with WSL, the configured helper (often
+`docker-credential-desktop.exe`) may be unavailable or unable to access the
+Windows credential store.
+
+Inspect the Docker client configuration without sharing its contents (it may
+contain credential-related settings):
+
+```bash
+docker context show
+docker version
+command -v docker-credential-desktop.exe || true
+command -v docker-credential-wincred.exe || true
+cat ~/.docker/config.json
+```
+
+If the configured helper is missing, restart Docker Desktop and its WSL
+integration first. Then sign in again using Docker Desktop or
+`docker login`. Do not delete `~/.docker/config.json` blindly and do not
+paste its contents into an issue or chat. If the helper configuration is stale,
+back up the file and follow Docker Desktop's credential-store repair guidance
+for your installed version before changing the `credsStore` setting.
+
+After repairing credentials, retry:
+
+```bash
+docker compose config --quiet
+docker compose pull loki alloy
+docker compose up -d loki alloy
+docker compose ps loki alloy
+docker compose logs --tail=100 loki alloy
+```
+
+Oracle's host port is bound to `127.0.0.1:1521` in this Compose stack so the
+development database is not exposed on every host network interface. Other
+services should connect to Oracle using the Compose hostname `oracle:1521`.
