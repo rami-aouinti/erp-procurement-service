@@ -1,63 +1,15 @@
 # Supplier module architecture
 
-The Supplier module keeps transport adapters separate from technical infrastructure.
+The Supplier module follows Clean Architecture with a pragmatic CQRS split:
 
-```text
-Supplier/
-├── Domain/
-│   ├── Model/
-│   ├── Repository/                 # Repository contracts
-│   └── Exception/
-├── Application/
-│   ├── DTO/
-│   ├── Exception/
-│   ├── UseCase/
-│   └── Validator/                  # Application input validation
-├── Transport/
-│   ├── Http/                       # REST controllers and Swagger
-│   └── Console/Command/            # Symfony CLI commands
-└── Infrastructure/
-    └── Persistence/Doctrine/       # Oracle/Doctrine adapter and ORM entity
-```
+- **Commands / write use cases:** `CreateSupplier`, `UpdateSupplier`, and `DeleteSupplier`.
+- **Queries / read use cases:** `GetSupplier`, `ListSuppliers`, and `SearchSuppliers`.
+- **Domain:** `Supplier`, `SupplierStatus`, value objects, domain exceptions, and supplier domain events.
+- **Infrastructure:** Oracle persistence, transactional outbox, RabbitMQ transport, Redis cache, and Elasticsearch projection.
+- **Transport:** HTTP controllers and Symfony Console commands.
 
-## Responsibilities
+Writes persist the Supplier aggregate and its outbox event in the same Oracle transaction. The outbox publisher forwards events to RabbitMQ. The consumer delegates to `SupplierProjectionEventHandler`, which reloads current Oracle state before updating Elasticsearch and invalidating Redis. This makes duplicate and delayed deliveries safe and avoids synchronous Elasticsearch writes in command handlers.
 
-- **Domain** owns supplier business rules and the repository contract.
-- **Application** coordinates use cases and validates input DTOs.
-- **Transport** adapts HTTP requests and CLI arguments to application use cases.
-- **Infrastructure** implements persistence and database-specific behavior.
+The current command/query use cases are intentionally direct PHP application handlers; a Messenger bus is not required for this module yet. A Symfony EventSubscriber is also not a substitute for domain-event handling: add one only when the module needs to react to a real Symfony kernel/framework event. RabbitMQ integration events remain handled by the dedicated application event handler.
 
-The Domain repository interface is implemented by
-`Infrastructure/Persistence/Doctrine/DoctrineSupplierRepository` and wired in
-`config/services.yaml`.
-
-## Console commands
-
-List suppliers:
-
-```bash
-docker compose exec backend php bin/console supplier:list
-```
-
-Create a supplier:
-
-```bash
-docker compose exec backend php bin/console supplier:create "Acme GmbH" \
-  --email="contact@acme.de" \
-  --phone="+49 421 123456" \
-  --tax-number="DE123456789"
-```
-
-## Validation
-
-`Application/Validator/SupplierDataValidator` validates the SupplierData DTO.
-`CreateSupplier` and `UpdateSupplier` invoke the validator before running business
-operations. HTTP and Console transports therefore share the same application
-validation. Invalid business input is reported as HTTP 422 or a failed CLI command.
-
-## Continuous integration
-
-`.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`.
-It builds the PHP 8.4 + OCI8 backend image, starts Oracle Free with the SQL
-initialization scripts, installs Composer dependencies, and runs the PHPUnit
-suite against Oracle.
+Supplier status is persisted and exposed as the existing string values (`ACTIVE`, `INACTIVE`, `BLOCKED`) to preserve Oracle and API compatibility.
