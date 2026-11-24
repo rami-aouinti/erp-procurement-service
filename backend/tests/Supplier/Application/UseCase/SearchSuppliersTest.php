@@ -64,7 +64,7 @@ final class SearchSuppliersTest extends TestCase
             null,
             null,
             null,
-            new \\DateTimeImmutable(),
+            new \DateTimeImmutable(),
             'ACTIVE',
             null,
             null,
