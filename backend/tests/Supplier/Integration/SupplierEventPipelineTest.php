@@ -66,6 +66,7 @@ final class SupplierEventPipelineTest extends KernelTestCase
 
         $this->waitForOutboxStatus('SupplierCreated', 'PUBLISHED');
         $this->waitForSearchResult($this->marker, true);
+        $this->waitForConsumedEvent('SupplierCreated');
 
         $updated = $this->request('PUT', '/api/suppliers/' . $this->supplierId, [
             'name' => 'Pipeline Updated ' . $this->marker,
@@ -77,11 +78,13 @@ final class SupplierEventPipelineTest extends KernelTestCase
 
         $this->waitForOutboxStatus('SupplierUpdated', 'PUBLISHED');
         $this->waitForSearchResult('Pipeline Updated ' . $this->marker, true);
+        $this->waitForConsumedEvent('SupplierUpdated');
 
         $deleted = $this->request('DELETE', '/api/suppliers/' . $this->supplierId);
         self::assertSame(Response::HTTP_NO_CONTENT, $deleted->getStatusCode());
         $this->waitForOutboxStatus('SupplierDeleted', 'PUBLISHED');
         $this->waitForSearchResult($this->marker, false);
+        $this->waitForConsumedEvent('SupplierDeleted');
         $this->supplierId = null;
     }
 
@@ -105,6 +108,34 @@ final class SupplierEventPipelineTest extends KernelTestCase
             'Supplier outbox event %s did not reach status %s within 30 seconds; last status: %s.',
             $eventType,
             $expectedStatus,
+            is_string($status) ? $status : 'not found',
+        ));
+    }
+
+    private function waitForConsumedEvent(string $eventType): void
+    {
+        $deadline = microtime(true) + 30;
+        do {
+            $status = $this->connection->fetchOne(
+                'SELECT consumed.status
+                 FROM supplier_consumed_events consumed
+                 INNER JOIN supplier_outbox_events outbox ON outbox.event_id = consumed.event_id
+                 WHERE outbox.aggregate_id = :id AND outbox.event_type = :type
+                 ORDER BY outbox.occurred_at DESC
+                 FETCH FIRST 1 ROWS ONLY',
+                ['id' => $this->supplierId, 'type' => $eventType],
+            );
+
+            if ($status === 'PROCESSED') {
+                return;
+            }
+
+            usleep(250_000);
+        } while (microtime(true) < $deadline);
+
+        self::fail(sprintf(
+            'Supplier event %s did not reach PROCESSED in the idempotency ledger within 30 seconds; last status: %s.',
+            $eventType,
             is_string($status) ? $status : 'not found',
         ));
     }
