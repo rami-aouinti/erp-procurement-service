@@ -120,8 +120,17 @@ final readonly class RabbitMqSupplierEventBus
             'write_timeout' => 5,
             'heartbeat' => 30,
         ]);
-        if (!$connection->connect()) {
-            throw new RuntimeException('Unable to connect to RabbitMQ.');
+        // AMQPConnection::connect() returns void; a successful connection is
+        // exposed through isConnected(). Checking the return value makes every
+        // successful connection look like a failure (because it is null).
+        $connection->connect();
+        if (!$connection->isConnected()) {
+            throw new RuntimeException(sprintf(
+                'Unable to connect to RabbitMQ at %s:%d (vhost: %s).',
+                $this->host,
+                $this->port,
+                $this->vhost,
+            ));
         }
 
         return $connection;
