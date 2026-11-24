@@ -26,7 +26,7 @@ final class SupplierUseCasesTest extends TestCase
             return Supplier::reconstitute(42, $supplier->name(), $supplier->email(), $supplier->phone(), $supplier->taxNumber(), $supplier->createdAt());
         });
 
-        $created = (new CreateSupplier($repository))->execute(new SupplierData('New Supplier', 'new@example.com'));
+        $created = (new CreateSupplier($repository, new SupplierDataValidator()))->execute(new SupplierData('New Supplier', 'new@example.com'));
 
         self::assertSame(42, $created->id());
         self::assertSame('New Supplier', $created->name());
@@ -83,7 +83,7 @@ final class SupplierUseCasesTest extends TestCase
         $repository->expects(self::once())->method('emailExists')->with('new@example.com', 5)->willReturn(false);
         $repository->expects(self::once())->method('save')->willReturnArgument(0);
 
-        $updated = (new UpdateSupplier($repository))->execute(5, new SupplierData('New name', 'new@example.com'));
+        $updated = (new UpdateSupplier($repository, new SupplierDataValidator()))->execute(5, new SupplierData('New name', 'new@example.com'));
         self::assertSame('New name', $updated->name());
         self::assertSame('new@example.com', $updated->email());
     }
