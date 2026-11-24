@@ -29,4 +29,8 @@ interface SupplierProfileRepository
     public function findBankAccounts(int $supplierId): array;
 
     public function addBankAccount(SupplierBankAccount $account): SupplierBankAccount;
+
+    public function setPrimaryBankAccount(int $supplierId, int $accountId): bool;
+
+    public function deleteBankAccount(int $supplierId, int $accountId): bool;
 }
