@@ -114,7 +114,7 @@ final readonly class RabbitMqSupplierEventBus
                                 'message_id' => $envelope->getMessageId(),
                                 'headers' => [
                                     'x-retry-count' => $retryCount + 1,
-                                    'x-last-error' => substr($exception->getMessage(), 0, 500),
+                                    'x-last-error' => substr($exception::class, 0, 500),
                                 ],
                             ],
                         );
@@ -126,7 +126,7 @@ final readonly class RabbitMqSupplierEventBus
                         error_log(sprintf(
                             'Unable to republish supplier event %s: %s',
                             $envelope->getMessageId(),
-                            $publishException->getMessage(),
+                            $publishException::class,
                         ));
 
                         return;

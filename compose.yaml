@@ -274,6 +274,35 @@ services:
     ports:
       - "127.0.0.1:9100:9100"
 
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: erp-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+
+  alloy:
+    image: grafana/alloy:v1.8.3
+    container_name: erp-alloy
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      - loki
+
   k6:
     image: grafana/k6:0.57.0
     container_name: erp-k6
@@ -302,3 +331,7 @@ volumes:
     name: erp_prometheus_data
   grafana_data:
     name: erp_grafana_data
+  loki_data:
+    name: erp_loki_data
+  alloy_data:
+    name: erp_alloy_data

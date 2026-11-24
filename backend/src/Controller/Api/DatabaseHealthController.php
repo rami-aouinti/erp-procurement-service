@@ -25,10 +25,9 @@ final class DatabaseHealthController
                 'connected' => true,
             ]);
         } catch (Throwable $exception) {
-            $detail = $exception::class . ': ' . $exception->getMessage();
-            $logger->error('Oracle database health check failed: {detail}', [
-                'detail' => $detail,
-                'exception' => $exception,
+            $logger->error('Oracle database health check failed.', [
+                'database' => 'oracle',
+                'exception_class' => $exception::class,
             ]);
 
             return new JsonResponse([
@@ -36,7 +35,6 @@ final class DatabaseHealthController
                 'database' => 'oracle',
                 'connected' => false,
                 'message' => 'Oracle connection failed.',
-                'detail' => $detail,
             ], JsonResponse::HTTP_SERVICE_UNAVAILABLE);
         }
     }
