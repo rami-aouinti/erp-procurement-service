@@ -32,7 +32,7 @@
     }
   },
   "scripts": {
-    "test": "vendor/bin/simple-phpunit",
+    "test": "vendor/bin/simple-phpunit --testsuite='Default'",
     "test:unit": "vendor/bin/simple-phpunit --testsuite='Supplier Unit'",
     "test:functional": "vendor/bin/simple-phpunit --testsuite='Supplier Functional'",
     "auto-scripts": {
@@ -44,7 +44,8 @@
     ],
     "post-update-cmd": [
       "@auto-scripts"
-    ]
+    ],
+    "test:integration": "vendor/bin/simple-phpunit --testsuite='Supplier Integration'"
   },
   "config": {
     "allow-plugins": {
