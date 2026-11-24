@@ -3,7 +3,6 @@
 
 SET PAGESIZE 100;
 SET LINESIZE 220;
-SET SQLFORMAT DEFAULT;
 
 PROMPT 1. Purchase orders with supplier and calculated order total
 
