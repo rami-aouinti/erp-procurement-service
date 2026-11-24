@@ -6,6 +6,6 @@ controllers:
 
 supplier_controllers:
     resource:
-        path: ../src/Supplier/Infrastructure/Http/
+        path: ../src/Supplier/Transport/Http/
         namespace: App\Supplier\Infrastructure\Http
     type: attribute
