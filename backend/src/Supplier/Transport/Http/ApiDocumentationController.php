@@ -27,7 +27,7 @@ final class ApiDocumentationController
                     'get' => [
                         'tags' => ['Suppliers'], 'summary' => 'List suppliers', 'operationId' => 'listSuppliers',
                         'parameters' => [
-                            ['name' => 'search', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string'], 'description' => 'Search supplier name, email or city.'],
+                            ['name' => 'search', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string'], 'description' => 'Full-text search across supplier name, email, tax number, contact person, phone and address fields.'],
                             ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['ACTIVE', 'INACTIVE', 'BLOCKED']]],
                         ],
                         'responses' => ['200' => ['description' => 'Supplier collection', 'content' => ['application/json' => ['schema' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Supplier']]]]]],
@@ -84,11 +84,11 @@ final class ApiDocumentationController
                             ]],
                         ],
                     ],
-                    'Error' => ['type' => 'object', 'required' => ['error'], 'properties' => ['error' => ['type' => 'string']]],
+                    'Error' => ['type' => 'object', 'required' => ['error'], 'properties' => ['error' => ['type' => 'string'], 'violations' => ['type' => 'array', 'items' => ['type' => 'string']]]],
                 ],
                 'responses' => [
                     'BadRequest' => ['description' => 'Invalid request payload', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
-                    'ValidationError' => ['description' => 'Supplier data failed validation', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
+                    'ValidationError' => ['description' => 'Supplier data failed validation. Response includes a list of field violations.', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
                     'NotFound' => ['description' => 'Resource not found', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
                     'Conflict' => ['description' => 'Email already exists or supplier is referenced by another record', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
                 ],
