@@ -2,54 +2,54 @@
 
 declare(strict_types=1);
 
-namespace App\\Supplier\\Infrastructure\\Persistence\\Doctrine\\Entity;
+namespace App\Supplier\Infrastructure\Persistence\Doctrine\Entity;
 
-use App\\Supplier\\Domain\\Model\\Supplier;
-use Doctrine\\ORM\\Mapping as ORM;
+use App\Supplier\Domain\Model\Supplier;
+use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\\Entity]
-#[ORM\\Table(name: 'suppliers')]
-#[ORM\\UniqueConstraint(name: 'uq_suppliers_email', columns: ['email'])]
+#[ORM\Entity]
+#[ORM\Table(name: 'suppliers')]
+#[ORM\UniqueConstraint(name: 'uq_suppliers_email', columns: ['email'])]
 class SupplierRecord
 {
-    #[ORM\\Id]
-    #[ORM\\GeneratedValue(strategy: 'SEQUENCE')]
-    #[ORM\\SequenceGenerator(sequenceName: 'SUPPLIERS_SEQ', allocationSize: 1)]
-    #[ORM\\Column(name: 'id', type: 'integer')]
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'SEQUENCE')]
+    #[ORM\SequenceGenerator(sequenceName: 'SUPPLIERS_SEQ', allocationSize: 1)]
+    #[ORM\Column(name: 'id', type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\\Column(name: 'name', length: 150)]
+    #[ORM\Column(name: 'name', length: 150)]
     private string $name;
 
-    #[ORM\\Column(name: 'email', length: 150, nullable: true)]
+    #[ORM\Column(name: 'email', length: 150, nullable: true)]
     private ?string $email = null;
 
-    #[ORM\\Column(name: 'phone', length: 30, nullable: true)]
+    #[ORM\Column(name: 'phone', length: 30, nullable: true)]
     private ?string $phone = null;
 
-    #[ORM\\Column(name: 'tax_number', length: 50, nullable: true)]
+    #[ORM\Column(name: 'tax_number', length: 50, nullable: true)]
     private ?string $taxNumber = null;
 
-    #[ORM\\Column(name: 'status', length: 20, options: ['default' => 'ACTIVE'])]
+    #[ORM\Column(name: 'status', length: 20, options: ['default' => 'ACTIVE'])]
     private string $status = 'ACTIVE';
 
-    #[ORM\\Column(name: 'contact_person', length: 150, nullable: true)]
+    #[ORM\Column(name: 'contact_person', length: 150, nullable: true)]
     private ?string $contactPerson = null;
 
-    #[ORM\\Column(name: 'street', length: 180, nullable: true)]
+    #[ORM\Column(name: 'street', length: 180, nullable: true)]
     private ?string $street = null;
 
-    #[ORM\\Column(name: 'city', length: 100, nullable: true)]
+    #[ORM\Column(name: 'city', length: 100, nullable: true)]
     private ?string $city = null;
 
-    #[ORM\\Column(name: 'postal_code', length: 20, nullable: true)]
+    #[ORM\Column(name: 'postal_code', length: 20, nullable: true)]
     private ?string $postalCode = null;
 
-    #[ORM\\Column(name: 'country', length: 2, nullable: true)]
+    #[ORM\Column(name: 'country', length: 2, nullable: true)]
     private ?string $country = null;
 
-    #[ORM\\Column(name: 'created_at', type: 'datetime_immutable', options: ['default' => 'CURRENT_TIMESTAMP'])]
-    private \\DateTimeImmutable $createdAt;
+    #[ORM\Column(name: 'created_at', type: 'datetime_immutable', options: ['default' => 'CURRENT_TIMESTAMP'])]
+    private \DateTimeImmutable $createdAt;
 
     public function __construct(Supplier $supplier)
     {
@@ -68,7 +68,7 @@ class SupplierRecord
     public function city(): ?string { return $this->city; }
     public function postalCode(): ?string { return $this->postalCode; }
     public function country(): ?string { return $this->country; }
-    public function createdAt(): \\DateTimeImmutable { return $this->createdAt; }
+    public function createdAt(): \DateTimeImmutable { return $this->createdAt; }
 
     public function updateFrom(Supplier $supplier): void
     {
