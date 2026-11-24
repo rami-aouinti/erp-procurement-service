@@ -51,3 +51,4 @@ services:
         arguments:
             $base64Key: '%env(SUPPLIER_BANK_ENCRYPTION_KEY)%'
             $keyVersion: '%env(SUPPLIER_BANK_ENCRYPTION_KEY_VERSION)%'
+            $previousKeysJson: '%env(default:SUPPLIER_BANK_PREVIOUS_ENCRYPTION_KEYS:SUPPLIER_BANK_PREVIOUS_ENCRYPTION_KEYS)%'
