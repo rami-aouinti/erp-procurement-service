@@ -91,10 +91,21 @@ final class PublishSupplierOutboxCommand extends Command
                 $this->connection->executeStatement(
                     "UPDATE supplier_outbox_events
                      SET status = 'PUBLISHED', published_at = SYSTIMESTAMP, locked_until = NULL, last_error = NULL
-                     WHERE event_id = :eventId",
+                     WHERE event_id = :eventId
+                       AND status = 'PROCESSING'
+                       AND locked_until >= SYSTIMESTAMP",
                     ['eventId' => $eventId]
                 );
-                ++$published;
+                if ($this->connection->executeStatement(
+                    "UPDATE supplier_outbox_events
+                     SET status = 'PUBLISHED', published_at = SYSTIMESTAMP, locked_until = NULL, last_error = NULL
+                     WHERE event_id = :eventId
+                       AND status = 'PROCESSING'
+                       AND locked_until >= SYSTIMESTAMP",
+                    ['eventId' => $eventId]
+                ) > 0) {
+                    ++$published;
+                }
             } catch (Throwable $exception) {
                 $this->connection->executeStatement(
                     "UPDATE supplier_outbox_events
@@ -103,7 +114,9 @@ final class PublishSupplierOutboxCommand extends Command
                          next_attempt_at = SYSTIMESTAMP + NUMTODSINTERVAL(LEAST(POWER(2, attempts + 1), 300), 'SECOND'),
                          locked_until = NULL,
                          last_error = :error
-                     WHERE event_id = :eventId",
+                     WHERE event_id = :eventId
+                       AND status = 'PROCESSING'
+                       AND locked_until >= SYSTIMESTAMP",
                     ['eventId' => $eventId, 'error' => $exception::class]
                 );
                 $output->writeln(sprintf('<error>Could not publish supplier event %s (%s).</error>', $eventId, $exception::class));
