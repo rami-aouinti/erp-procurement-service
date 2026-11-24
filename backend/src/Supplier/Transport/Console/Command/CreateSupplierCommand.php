@@ -7,7 +7,6 @@ namespace App\Supplier\Transport\Console\Command;
 use App\Supplier\Application\DTO\SupplierData;
 use App\Supplier\Application\Exception\SupplierValidationException;
 use App\Supplier\Application\UseCase\CreateSupplier;
-use App\Supplier\Application\Validator\SupplierDataValidator;
 use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use App\Supplier\Domain\Exception\InvalidSupplierData;
 use Symfony\Component\Console\Attribute\AsCommand;
