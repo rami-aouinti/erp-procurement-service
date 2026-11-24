@@ -53,7 +53,7 @@ final readonly class SearchSuppliers
                     if ($query === '') {
                         return true;
                     }
-                    foreach (['name', 'email', 'phone', 'taxNumber', 'contactPerson', 'city', 'street', 'postalCode'] as $field) {
+                    foreach (['name', 'email', 'phone', 'taxNumber', 'contactPerson', 'city', 'street', 'postalCode', 'country'] as $field) {
                         if (str_contains(mb_strtolower((string) ($supplier[$field] ?? '')), mb_strtolower($query))) {
                             return true;
                         }
