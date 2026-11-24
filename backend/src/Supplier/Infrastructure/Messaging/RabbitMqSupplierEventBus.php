@@ -177,10 +177,8 @@ final readonly class RabbitMqSupplierEventBus
         // ext-amqp 2.2 dispatches basic.ack/basic.nack through these callbacks.
         // Registering them before publish prevents the unhandled basic.ack warning.
         $channel->setConfirmCallback(
-            static fn (int $deliveryTag, bool $multiple): bool => false,
-            static fn (int $deliveryTag, bool $multiple): bool => throw new RuntimeException(
-                sprintf('RabbitMQ negatively acknowledged supplier event (delivery tag %d).', $deliveryTag),
-            ),
+            static fn (): bool => false,
+            static fn (): bool => throw new RuntimeException('RabbitMQ negatively acknowledged a supplier event.'),
         );
 
         $exchange = $this->exchange($channel, $exchangeName);
