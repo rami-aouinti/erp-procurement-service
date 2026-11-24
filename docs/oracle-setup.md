@@ -63,10 +63,10 @@ Verify that `FREEPDB1` is open.
 Use the credentials from your local `.env` file:
 
 ```bash
-docker compose exec oracle sqlplus ERP_APP/YourAppPassword@//localhost:1521/FREEPDB1
+docker compose exec oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"'
 ```
 
-Replace `ERP_APP` and `YourAppPassword` if you changed the corresponding environment variables.
+The command reads the configured values from the Oracle container environment, so it also works if you changed the username.
 
 Run:
 
