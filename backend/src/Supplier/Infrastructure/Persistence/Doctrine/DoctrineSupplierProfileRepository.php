@@ -261,8 +261,8 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 'currency' => $account->currency,
                 'encryption_key_version' => $account->encryptionKeyVersion,
                 'is_primary' => $account->primary ? 'Y' : 'N',
-                'created_at' => new \\DateTimeImmutable(),
-                'updated_at' => new \\DateTimeImmutable(),
+                'created_at' => new \DateTimeImmutable(),
+                'updated_at' => new \DateTimeImmutable(),
             ]);
 
             $id = $this->connection->fetchOne(
@@ -277,7 +277,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             );
 
             if ($id === false) {
-                throw new \\RuntimeException('Unable to retrieve the created supplier bank account.');
+                throw new \RuntimeException('Unable to retrieve the created supplier bank account.');
             }
 
             $this->connection->commit();
@@ -294,7 +294,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 $account->encryptionKeyVersion,
                 $account->primary,
             );
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
             }
