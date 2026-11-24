@@ -70,7 +70,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
 
         $record = $this->find($supplier->id());
         if (!$record instanceof SupplierRecord) {
-            throw new \\RuntimeException('Supplier persistence record disappeared during update.');
+            throw new \RuntimeException('Supplier persistence record disappeared during update.');
         }
 
         $record->updateFrom($supplier);
