@@ -1,0 +1,23 @@
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    container_name: erp-oracle
+    restart: unless-stopped
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?Set ORACLE_PASSWORD in .env}
+      APP_USER: ${APP_USER:-ERP_APP}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?Set APP_USER_PASSWORD in .env}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+volumes:
+  oracle_data:
+    name: erp_oracle_data
