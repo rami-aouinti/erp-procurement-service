@@ -274,6 +274,19 @@ services:
     ports:
       - "127.0.0.1:9100:9100"
 
+  k6:
+    image: grafana/k6:0.57.0
+    container_name: erp-k6
+    profiles: ["loadtest"]
+    working_dir: /scripts
+    volumes:
+      - ./k6:/scripts:ro
+    environment:
+      BASE_URL: http://backend:8000
+    command: ["run", "/scripts/health.js"]
+    depends_on:
+      - backend
+
 volumes:
   oracle_data:
     name: erp_oracle_data

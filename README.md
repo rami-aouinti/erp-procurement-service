@@ -248,3 +248,18 @@ The local Docker Compose stack includes Prometheus, Grafana, cAdvisor and Node E
 Add \`GRAFANA_ADMIN_USER\` and a strong \`GRAFANA_ADMIN_PASSWORD\` to your local \`.env\` before starting the stack. Prometheus automatically scrapes backend HTTP metrics and infrastructure exporters. The provisioned **ERP Procurement - Overview** dashboard includes backend availability, request rate, 5xx rate, p95 latency, container CPU and memory. Prometheus also evaluates backend-down, high-error-rate and high-latency alert rules.
 
 See [docs/observability.md](docs/observability.md) for setup, metric definitions, PromQL examples, limitations and security notes.
+
+
+## Load testing with k6
+
+A fixed-load k6 scenario with 20 virtual users is available in `k6/health.js`. Run it with:
+
+```bash
+docker compose --profile loadtest run --rm k6
+```
+
+See [Cloud deployment and load testing](docs/cloud-deployment.md) for thresholds and Kubernetes instructions.
+
+## Kubernetes cloud deployment
+
+Cloud-oriented Dockerfiles and starter Kubernetes manifests are provided in `backend/Dockerfile.cloud`, `frontend/Dockerfile` and `k8s/erp.yaml`. The manifests assume managed Oracle, Redis, Elasticsearch and RabbitMQ endpoints; configure the ConfigMap and Kubernetes Secret before deploying. See [docs/cloud-deployment.md](docs/cloud-deployment.md).

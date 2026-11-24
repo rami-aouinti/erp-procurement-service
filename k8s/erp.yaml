@@ -1,0 +1,281 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: erp-procurement
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: erp-config
+  namespace: erp-procurement
+data:
+  APP_ENV: "prod"
+  APP_DEBUG: "0"
+  ORACLE_HOST: "REPLACE_WITH_MANAGED_ORACLE_HOST"
+  ORACLE_PORT: "1521"
+  ORACLE_SERVICE: "FREEPDB1"
+  ORACLE_USER: "ERP_APP"
+  REDIS_HOST: "REPLACE_WITH_MANAGED_REDIS_HOST"
+  REDIS_PORT: "6379"
+  ELASTICSEARCH_URL: "https://REPLACE_WITH_MANAGED_ELASTICSEARCH_ENDPOINT"
+  RABBITMQ_HOST: "REPLACE_WITH_MANAGED_RABBITMQ_HOST"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "erp_app"
+  RABBITMQ_VHOST: "/erp"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: erp-backend
+  namespace: erp-procurement
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-backend
+  namespace: erp-procurement
+  labels:
+    app.kubernetes.io/name: erp-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: erp-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: erp-backend
+    spec:
+      serviceAccountName: erp-backend
+      containers:
+        - name: backend
+          image: ghcr.io/rami-aouinti/erp-procurement-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: erp-config
+            - secretRef:
+                name: erp-runtime-secrets
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 150m
+              memory: 192Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 33
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-backend
+  namespace: erp-procurement
+spec:
+  selector:
+    app.kubernetes.io/name: erp-backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-supplier-outbox-publisher
+  namespace: erp-procurement
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: erp-supplier-outbox-publisher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: erp-supplier-outbox-publisher
+    spec:
+      serviceAccountName: erp-backend
+      containers:
+        - name: publisher
+          image: ghcr.io/rami-aouinti/erp-procurement-backend:latest
+          command: ["sh", "-lc"]
+          args:
+            - 'until php bin/console about >/dev/null 2>&1; do sleep 5; done; while true; do php bin/console supplier:outbox:publish --limit=100 || true; sleep 2; done'
+          envFrom:
+            - configMapRef:
+                name: erp-config
+            - secretRef:
+                name: erp-runtime-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-supplier-events-consumer
+  namespace: erp-procurement
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: erp-supplier-events-consumer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: erp-supplier-events-consumer
+    spec:
+      serviceAccountName: erp-backend
+      containers:
+        - name: consumer
+          image: ghcr.io/rami-aouinti/erp-procurement-backend:latest
+          command: ["php", "bin/console", "supplier:events:consume"]
+          envFrom:
+            - configMapRef:
+                name: erp-config
+            - secretRef:
+                name: erp-runtime-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-frontend
+  namespace: erp-procurement
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: erp-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: erp-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/rami-aouinti/erp-procurement-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+              initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 300m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-frontend
+  namespace: erp-procurement
+spec:
+  selector:
+    app.kubernetes.io/name: erp-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: erp-backend
+  namespace: erp-procurement
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: erp-backend
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: erp-backend
+  namespace: erp-procurement
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: erp-backend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: erp-procurement
+  namespace: erp-procurement
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: erp.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: erp-frontend
+                port:
+                  number: 80
