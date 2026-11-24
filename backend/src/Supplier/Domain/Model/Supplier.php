@@ -23,7 +23,7 @@ final class Supplier
         private ?string $country = null,
     ) {
         $this->name = self::required($name, 150, 'Supplier name');
-        $this->email = self::optional($email, 150, 'Supplier email');
+        $this->email = self::optional($email !== null ? mb_strtolower($email) : null, 150, 'Supplier email');
         if ($this->email !== null && !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
             throw new InvalidSupplierData('Supplier email must be valid.');
         }
