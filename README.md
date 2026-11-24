@@ -126,6 +126,7 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `006_create_suppliers_sequence.sql` — sequence used by Doctrine with the OCI8 driver.
 - `007_extend_supplier_management.sql` — additive supplier status, contact and address columns. Existing data is preserved.
 - `008_create_supplier_outbox.sql` — transactional outbox for reliable Supplier events.
+- `009_supplier_profile_management.sql` — supplier profile tables and constraints.
 - `010_create_supplier_consumed_events.sql` — persistent consumer idempotency ledger.
 
 Run a script from the repository root, for example:
