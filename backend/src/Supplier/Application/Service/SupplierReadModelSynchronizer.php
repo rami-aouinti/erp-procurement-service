@@ -23,7 +23,7 @@ final readonly class SupplierReadModelSynchronizer
         try {
             $this->searchIndex->index($supplier);
         } catch (Throwable $exception) {
-            error_log(sprintf('Supplier %s was saved in Oracle but Elasticsearch indexing failed: %s. Run supplier:reindex.', $supplier->id(), $exception->getMessage()));
+            error_log(sprintf('Supplier %s was saved in Oracle but immediate Elasticsearch indexing failed: %s. The transactional outbox will retry.', $supplier->id(), $exception->getMessage()));
         }
     }
 
@@ -33,7 +33,7 @@ final readonly class SupplierReadModelSynchronizer
         try {
             $this->searchIndex->delete($supplierId);
         } catch (Throwable $exception) {
-            error_log(sprintf('Supplier %d was deleted in Oracle but Elasticsearch removal failed: %s. Run supplier:reindex.', $supplierId, $exception->getMessage()));
+            error_log(sprintf('Supplier %d was deleted in Oracle but immediate Elasticsearch removal failed: %s. The transactional outbox will retry.', $supplierId, $exception->getMessage()));
         }
     }
 }
