@@ -181,6 +181,78 @@ final class SupplierApiTest extends KernelTestCase
         self::assertStringContainsString('swagger-ui', (string) $ui->getContent());
     }
 
+    public function testSupplierContactsAndAddressesReturnPersistedIdsAndMaintainSinglePrimary(): void
+    {
+        $created = $this->request('POST', '/api/suppliers', [
+            'name' => 'Profile Relations Supplier',
+            'email' => $this->email,
+        ]);
+        self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string) $created->getContent());
+        $supplierId = (int) json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR)['id'];
+
+        $firstContact = $this->request('POST', '/api/suppliers/' . $supplierId . '/contacts', [
+            'contactType' => 'GENERAL',
+            'firstName' => 'Ada',
+            'lastName' => 'Lovelace',
+            'email' => 'ada@example.test',
+            'primary' => true,
+        ]);
+        self::assertSame(Response::HTTP_CREATED, $firstContact->getStatusCode(), (string) $firstContact->getContent());
+        $firstContactData = json_decode((string) $firstContact->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsInt($firstContactData['id']);
+        self::assertSame($supplierId, $firstContactData['supplierId']);
+
+        $secondContact = $this->request('POST', '/api/suppliers/' . $supplierId . '/contacts', [
+            'contactType' => 'GENERAL',
+            'firstName' => 'Grace',
+            'lastName' => 'Hopper',
+            'primary' => true,
+        ]);
+        self::assertSame(Response::HTTP_CREATED, $secondContact->getStatusCode(), (string) $secondContact->getContent());
+        $secondContactData = json_decode((string) $secondContact->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsInt($secondContactData['id']);
+
+        $contacts = $this->request('GET', '/api/suppliers/' . $supplierId . '/contacts');
+        self::assertSame(Response::HTTP_OK, $contacts->getStatusCode());
+        $contactItems = json_decode((string) $contacts->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertCount(2, $contactItems);
+        self::assertSame(1, count(array_filter($contactItems, static fn (array $item): bool => $item['primary'] === true)));
+        self::assertSame($secondContactData['id'], $contactItems[0]['id']);
+
+        $firstAddress = $this->request('POST', '/api/suppliers/' . $supplierId . '/addresses', [
+            'addressType' => 'BILLING',
+            'street' => 'Hauptstraße 1',
+            'postalCode' => '10115',
+            'city' => 'Berlin',
+            'country' => 'DE',
+            'default' => true,
+        ]);
+        self::assertSame(Response::HTTP_CREATED, $firstAddress->getStatusCode(), (string) $firstAddress->getContent());
+        $firstAddressData = json_decode((string) $firstAddress->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsInt($firstAddressData['id']);
+
+        $secondAddress = $this->request('POST', '/api/suppliers/' . $supplierId . '/addresses', [
+            'addressType' => 'BILLING',
+            'street' => 'Alexanderplatz 2',
+            'postalCode' => '10178',
+            'city' => 'Berlin',
+            'country' => 'DE',
+            'default' => true,
+        ]);
+        self::assertSame(Response::HTTP_CREATED, $secondAddress->getStatusCode(), (string) $secondAddress->getContent());
+        $secondAddressData = json_decode((string) $secondAddress->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsInt($secondAddressData['id']);
+
+        $addresses = $this->request('GET', '/api/suppliers/' . $supplierId . '/addresses');
+        self::assertSame(Response::HTTP_OK, $addresses->getStatusCode());
+        $addressItems = json_decode((string) $addresses->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertCount(2, $addressItems);
+        self::assertSame(1, count(array_filter($addressItems, static fn (array $item): bool => $item['default'] === true)));
+        self::assertSame($secondAddressData['id'], $addressItems[0]['id']);
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/' . $supplierId)->getStatusCode());
+    }
+
     /** @param array<string, mixed>|null $payload */
     private function request(string $method, string $uri, ?array $payload = null): Response
     {
