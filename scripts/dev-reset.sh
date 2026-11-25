@@ -74,7 +74,7 @@ for queue in supplier.events.queue supplier.events.retry supplier.events.dead; d
 done
 
 echo "Starting Supplier workers again..."
-docker compose start supplier-outbox-publisher supplier-events-consumer
+docker compose up -d supplier-outbox-publisher supplier-events-consumer
 
 echo "Waiting for the backend health endpoint..."
 HEALTHY=0
