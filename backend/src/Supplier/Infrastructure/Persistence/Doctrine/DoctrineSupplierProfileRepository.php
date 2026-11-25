@@ -265,6 +265,82 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
 
 
 
+
+    public function updateContact(\\App\\Supplier\\Domain\\Model\\SupplierContact $contact): bool
+    {
+        if ($contact->id === null) return false;
+        $this->connection->beginTransaction();
+        try {
+            $this->lockSupplierForProfileWrite($contact->supplierId);
+            $existing = $this->connection->fetchAssociative(
+                'SELECT id FROM supplier_contacts WHERE supplier_id = :supplierId AND id = :contactId FOR UPDATE',
+                ['supplierId' => $contact->supplierId, 'contactId' => $contact->id],
+            );
+            if ($existing === false) { $this->connection->commit(); return false; }
+            if ($contact->primary) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_contacts SET is_primary = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND contact_type = :contactType AND id <> :contactId AND is_primary = 'Y'",
+                    ['supplierId' => $contact->supplierId, 'contactType' => $contact->contactType, 'contactId' => $contact->id],
+                );
+            }
+            $updated = $this->connection->executeStatement(
+                'UPDATE supplier_contacts SET contact_type = :contactType, first_name = :firstName,
+                 last_name = :lastName, job_title = :jobTitle, email = :email, phone = :phone,
+                 is_primary = :isPrimary, updated_at = SYSTIMESTAMP
+                 WHERE supplier_id = :supplierId AND id = :contactId',
+                ['contactType' => $contact->contactType, 'firstName' => trim($contact->firstName),
+                 'lastName' => trim($contact->lastName), 'jobTitle' => $contact->jobTitle,
+                 'email' => $contact->email, 'phone' => $contact->phone,
+                 'isPrimary' => $contact->primary ? 'Y' : 'N',
+                 'supplierId' => $contact->supplierId, 'contactId' => $contact->id],
+            );
+            $this->connection->commit();
+            return $updated > 0;
+        } catch (\\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) $this->connection->rollBack();
+            throw $exception;
+        }
+    }
+
+    public function deleteContact(int $supplierId, int $contactId): bool
+    {
+        $this->connection->beginTransaction();
+        try {
+            $this->lockSupplierForProfileWrite($supplierId);
+            $contact = $this->connection->fetchAssociative(
+                'SELECT contact_type, is_primary FROM supplier_contacts
+                 WHERE supplier_id = :supplierId AND id = :contactId FOR UPDATE',
+                ['supplierId' => $supplierId, 'contactId' => $contactId],
+            );
+            if ($contact === false) { $this->connection->commit(); return false; }
+            if ($contact['IS_PRIMARY'] === 'Y') {
+                $replacementId = $this->connection->fetchOne(
+                    'SELECT id FROM supplier_contacts WHERE supplier_id = :supplierId
+                     AND contact_type = :contactType AND id <> :contactId
+                     ORDER BY id ASC FETCH FIRST 1 ROWS ONLY',
+                    ['supplierId' => $supplierId, 'contactType' => $contact['CONTACT_TYPE'], 'contactId' => $contactId],
+                );
+                if ($replacementId !== false && $replacementId !== null) {
+                    $this->connection->executeStatement(
+                        "UPDATE supplier_contacts SET is_primary = 'Y', updated_at = SYSTIMESTAMP
+                         WHERE supplier_id = :supplierId AND id = :replacementId",
+                        ['supplierId' => $supplierId, 'replacementId' => $replacementId],
+                    );
+                }
+            }
+            $deleted = $this->connection->executeStatement(
+                'DELETE FROM supplier_contacts WHERE supplier_id = :supplierId AND id = :contactId',
+                ['supplierId' => $supplierId, 'contactId' => $contactId],
+            );
+            $this->connection->commit();
+            return $deleted > 0;
+        } catch (\\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) $this->connection->rollBack();
+            throw $exception;
+        }
+    }
+
     /**
      * Serialize profile writes per supplier. This prevents concurrent requests
      * from racing while replacing a primary contact, default address or
