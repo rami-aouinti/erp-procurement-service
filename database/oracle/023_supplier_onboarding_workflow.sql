@@ -11,6 +11,7 @@ BEGIN
             submitted_at TIMESTAMP,
             decided_at TIMESTAMP,
             decided_by VARCHAR2(255),
+            previous_supplier_status VARCHAR2(20),
             decision_reason VARCHAR2(1000),
             version NUMBER(10) DEFAULT 1 NOT NULL,
             created_at TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
@@ -60,6 +61,15 @@ SELECT s.id, 'APPROVED'
 FROM suppliers s
 WHERE NOT EXISTS (
     SELECT 1 FROM supplier_onboarding o WHERE o.supplier_id = s.id
+);
+
+ALTER TABLE supplier_audit_logs DROP CONSTRAINT chk_supplier_audit_action;
+ALTER TABLE supplier_audit_logs ADD CONSTRAINT chk_supplier_audit_action CHECK (
+    action IN (
+        'CREATED', 'UPDATED', 'DELETED', 'SECURITY_ROTATED',
+        'ONBOARDING_SUBMITTED', 'ONBOARDING_APPROVED',
+        'ONBOARDING_REJECTED', 'ONBOARDING_CHANGES_REQUESTED'
+    )
 );
 
 PROMPT Supplier onboarding workflow schema is ready.
