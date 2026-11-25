@@ -24,13 +24,16 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
   const [form, setForm] = useState(blank);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const data = await suppliersApi.list({ search: query, status, ...classificationFilters });
-      setItems(Array.isArray(data) ? data : []);
-      onCountChange(data.length);
+      const records = Array.isArray(data) ? data : [];
+      setItems(records);
+      setSelectedIds((current) => current.filter((id) => records.some((item) => String(item.id) === String(id))));
+      onCountChange(records.length);
       setPage(1);
     } catch (err) { setError(err.message || 'Unable to load suppliers.'); }
     finally { setLoading(false); }
@@ -51,20 +54,24 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
     const comparison = String(value(a)).localeCompare(String(value(b)), undefined, { numeric: true, sensitivity: 'base' });
     return sortDirection === 'asc' ? comparison : -comparison;
   }), [filteredItems, sortField, sortDirection]);
-  const visible = useMemo(() => sortedItems.slice((page - 1) * pageSize, page * pageSize), [sortedItems, page]);
+  const visible = useMemo(() => sortedItems.slice((page - 1) * pageSize, page * pageSize), [sortedItems, page, pageSize]);
+  const selectedItems = useMemo(() => sortedItems.filter((item) => selectedIds.includes(String(item.id))), [sortedItems, selectedIds]);
+  const allVisibleSelected = visible.length > 0 && visible.every((item) => selectedIds.includes(String(item.id)));
+  const toggleSelection = (id) => setSelectedIds((current) => current.includes(String(id)) ? current.filter((value) => value !== String(id)) : [...current, String(id)]);
+  const toggleVisibleSelection = () => setSelectedIds((current) => allVisibleSelected ? current.filter((id) => !visible.some((item) => String(item.id) === id)) : [...new Set([...current, ...visible.map((item) => String(item.id))])]);
   const resetFilters = () => { onSearchChange(''); setStatus('ALL'); setLocation('ALL'); setClassificationFilters({ categoryId: '', commodityId: '', tagId: '', businessUnitId: '', strategicTier: '' }); setPage(1); };
   const toggleSort = (field) => {
     if (sortField === field) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDirection('asc'); }
   };
   const sortLabel = (field, label) => <button type="button" className="table-sort" onClick={() => toggleSort(field)}>{label}<span>{sortField === field ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span></button>;
-  const exportCsv = () => {
+  const exportCsv = (records = sortedItems, filename = 'suppliers.csv') => {
     const columns = [['Supplier', 'name'], ['Tax / VAT number', 'taxNumber'], ['Contact person', 'contactPerson'], ['Email', 'email'], ['Phone', 'phone'], ['Street', 'street'], ['Postal code', 'postalCode'], ['City', 'city'], ['Country', 'country'], ['Status', 'status']];
     const escapeCsv = (value) => '"' + String(value ?? '').replace(/"/g, '""') + '"';
-    const csv = [columns.map(([label]) => escapeCsv(label)).join(','), ...sortedItems.map((item) => columns.map(([, key]) => escapeCsv(item[key])).join(','))].join('\r\n');
+    const csv = [columns.map(([label]) => escapeCsv(label)).join(','), ...records.map((item) => columns.map(([, key]) => escapeCsv(item[key])).join(','))].join('\r\n');
     const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' }));
     const link = document.createElement('a');
-    link.href = url; link.download = 'suppliers.csv'; link.click();
+    link.href = url; link.download = filename; link.click();
     URL.revokeObjectURL(url);
   };
   const change = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -108,7 +115,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
           <div className="directory-action-group">
             {canCreate && <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>}
             <button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button>
-            <button className="secondary-button" onClick={exportCsv} disabled={filteredItems.length === 0}>↓ Export CSV</button>
+            <button className="secondary-button" onClick={() => exportCsv(selectedItems.length ? selectedItems : sortedItems, selectedItems.length ? 'selected-suppliers.csv' : 'suppliers.csv')} disabled={filteredItems.length === 0}>↓ {selectedItems.length ? `Export selected (${selectedItems.length})` : 'Export CSV'}</button>
             <select className="directory-filter" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select>
             <select className="directory-filter" value={location} onChange={(event) => { setLocation(event.target.value); setPage(1); }} aria-label="Filter suppliers by location"><option value="ALL">All locations</option>{locations.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select>
             <select className="directory-filter" aria-label="Filter by category" value={classificationFilters.categoryId} onChange={(e) => setClassificationFilters((v) => ({ ...v, categoryId: e.target.value }))}><option value="">All categories</option>{taxonomy.categories.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
@@ -119,10 +126,11 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
             <button className="secondary-button reset-filters-button" onClick={resetFilters} disabled={!searchValue && status === 'ALL' && location === 'ALL' && Object.values(classificationFilters).every((value) => !value)}>↺ Reset filters</button>
           </div>
         </div>
+        {selectedIds.length > 0 && <div className="selection-toolbar" role="status"><span><strong>{selectedItems.length}</strong> supplier{selectedItems.length === 1 ? '' : 's'} selected</span><button type="button" className="text-action" onClick={() => setSelectedIds([])}>Clear selection</button></div>}
         {notice && <div className="alert alert-success" role="status">{notice}</div>}
         {error && !modal && <div className="alert alert-error" role="alert">{error}</div>}
         {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : filteredItems.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span>{canCreate && <button className="primary-button" onClick={openCreate}>Create supplier</button>}</div> : <>
-          <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th>{sortLabel('name', 'SUPPLIER')}</th><th>{sortLabel('contactPerson', 'CONTACT INFORMATION')}</th><th>{sortLabel('location', 'LOCATION')}</th><th>{sortLabel('status', 'STATUS')}</th><th className="actions-heading">ACTIONS</th></tr></thead>
+          <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th className="selection-column"><input type="checkbox" aria-label="Select all suppliers on this page" checked={allVisibleSelected} onChange={toggleVisibleSelection} /></th><th>{sortLabel('name', 'SUPPLIER')}</th><th>{sortLabel('contactPerson', 'CONTACT INFORMATION')}</th><th>{sortLabel('location', 'LOCATION')}</th><th>{sortLabel('status', 'STATUS')}</th><th className="actions-heading">ACTIONS</th></tr></thead>
             <tbody>{visible.map((supplier) => <tr key={supplier.id}>
               <td><button className="supplier-name-link" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}`)}>{supplier.name}</button><small>SUP-{String(supplier.id).padStart(4, '0')} · {supplier.taxNumber || 'No tax number'}</small></td>
               <td><span className="cell-primary">{supplier.contactPerson || '—'}</span><small>{supplier.email || supplier.phone || 'No contact details'}</small></td>
