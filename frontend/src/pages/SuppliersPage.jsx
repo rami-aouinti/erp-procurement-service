@@ -5,7 +5,7 @@ const PAGE_SIZE = 5;
 const blank = { name: '', email: '', phone: '', taxNumber: '', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
 const steps = ['Company', 'Contact', 'Address'];
 
-export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange }) {
+export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange, canCreate = false }) {
   const [items, setItems] = useState([]);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -95,7 +95,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
       <section className="supplier-table-card directory-card">
         <div className="directory-heading directory-actions">
           <div className="directory-action-group">
-            <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>
+            {canCreate && <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>}
             <button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button>
             <button className="secondary-button" onClick={exportCsv} disabled={filteredItems.length === 0}>↓ Export CSV</button>
             <select className="directory-filter" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select>
@@ -105,7 +105,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
         </div>
         {notice && <div className="alert alert-success" role="status">{notice}</div>}
         {error && !modal && <div className="alert alert-error" role="alert">{error}</div>}
-        {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : filteredItems.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span><button className="primary-button" onClick={openCreate}>Create supplier</button></div> : <>
+        {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : filteredItems.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span>{canCreate && <button className="primary-button" onClick={openCreate}>Create supplier</button>}</div> : <>
           <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th>{sortLabel('name', 'SUPPLIER')}</th><th>{sortLabel('contactPerson', 'CONTACT INFORMATION')}</th><th>{sortLabel('location', 'LOCATION')}</th><th>{sortLabel('status', 'STATUS')}</th><th className="actions-heading">ACTIONS</th></tr></thead>
             <tbody>{visible.map((supplier) => <tr key={supplier.id}>
               <td><button className="supplier-name-link" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}`)}>{supplier.name}</button><small>SUP-{String(supplier.id).padStart(4, '0')} · {supplier.taxNumber || 'No tax number'}</small></td>
