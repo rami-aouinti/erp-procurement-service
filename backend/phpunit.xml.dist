@@ -26,6 +26,7 @@
         <testsuite name="Supplier Unit">
             <directory>tests/Supplier/Domain</directory>
             <directory>tests/Supplier/Application</directory>
+            <directory>tests/Configuration</directory>
             <directory>tests/Security</directory>
         </testsuite>
         <testsuite name="Supplier Functional">
