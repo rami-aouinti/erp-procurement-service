@@ -61,7 +61,7 @@ final readonly class SupplierOnboardingController
                 $payload['postalCode'] ?? null,
                 $payload['country'] ?? null,
             ));
-            $state = $this->onboarding->submit((int) $supplier->id());
+            $state = $this->onboarding->submit((int) $supplier->id(), true);
 
             return new JsonResponse([
                 'supplierId' => $supplier->id(),
