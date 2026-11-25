@@ -10,10 +10,10 @@ use RuntimeException;
 
 final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchIndex
 {
-    private const INDEX = 'suppliers';
-
-    public function __construct(private string $url)
-    {
+    public function __construct(
+        private string $url,
+        private string $index = 'suppliers',
+    ) {
     }
 
     public function search(string $query, ?string $status = null, int $limit = 500): array
@@ -45,7 +45,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
                 : [['_score' => ['order' => 'desc']], ['name.keyword' => ['order' => 'asc']]],
         ];
 
-        $response = $this->request('POST', '/' . self::INDEX . '/_search', $body);
+        $response = $this->request('POST', '/' . $this->index . '/_search', $body);
         $hits = $response['hits']['hits'] ?? [];
         if (!is_array($hits)) {
             return [];
