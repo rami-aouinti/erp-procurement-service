@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Observability;
+namespace App\\Tests\\Observability;
 
-use App\Observability\MetricsRegistry;
-use PHPUnit\Framework\TestCase;
+use App\\Observability\\MetricsRegistry;
+use PHPUnit\\Framework\\TestCase;
 
 final class MetricsRegistryTest extends TestCase
 {
@@ -33,6 +33,7 @@ final class MetricsRegistryTest extends TestCase
 
         self::assertStringContainsString('route="route\\\\with\\nnewline"', $metrics->render());
     }
+
     public function testExposesSupplierEventMetricsEvenWhenRedisIsUnavailable(): void
     {
         $metrics = new MetricsRegistry('', 6379);
@@ -50,5 +51,4 @@ final class MetricsRegistryTest extends TestCase
         self::assertStringContainsString('erp_supplier_outbox_failed_events 0', $output);
         self::assertStringContainsString('erp_supplier_outbox_oldest_pending_age_seconds 0', $output);
     }
-
 }
