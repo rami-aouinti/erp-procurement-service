@@ -93,7 +93,7 @@ fi
 echo "Rebuilding the Supplier Elasticsearch index from Oracle..."
 curl -fsS http://localhost:8000/api/suppliers >/dev/null
 INDEX_COUNT="$(docker compose exec -T elasticsearch sh -lc \
-  "curl -fsS http://localhost:9200/suppliers/_count | grep -oE 'count[^0-9]*[0-9]+' | grep -oE '[0-9]+'")"
+  'curl -fsS http://localhost:9200/suppliers/_count | grep -oE "count[^0-9]*[0-9]+" | grep -oE "[0-9]+"')"
 if [[ "$INDEX_COUNT" != "5" ]]; then
   echo "Expected 5 Supplier documents in Elasticsearch, found: ${INDEX_COUNT:-unknown}." >&2
   exit 1
