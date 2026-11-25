@@ -107,6 +107,8 @@ jobs:
             --env APP_ENV=test \
             --env APP_DEBUG=1 \
             --env APP_SECRET=ci-only-secret \
+            --env SUPPLIER_BANK_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY= \
+            --env SUPPLIER_BANK_ENCRYPTION_KEY_VERSION=v1 \
             --env DEFAULT_URI=http://localhost \
             --env ORACLE_HOST=127.0.0.1 \
             --env ORACLE_PORT=1521 \
