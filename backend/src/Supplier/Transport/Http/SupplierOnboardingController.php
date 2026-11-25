@@ -11,6 +11,7 @@ use App\Supplier\Application\UseCase\CreateSupplier;
 use App\Supplier\Application\UseCase\ManageSupplierOnboarding;
 use App\Supplier\Domain\Exception\InvalidSupplierData;
 use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
