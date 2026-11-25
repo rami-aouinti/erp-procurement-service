@@ -21,6 +21,7 @@ Build a realistic procurement workflow:
 - **Backend:** Symfony 7.4 on PHP 8.4, port 8000.
 - **Database:** Oracle Database Free, service `FREEPDB1`, port 1521.
 - **Communication:** HTTP/JSON. Vite proxies `/api` requests to Symfony during development.
+- **Identity:** Keycloak 26 / OpenID Connect. Supplier onboarding endpoints validate RS256 access tokens and enforce realm roles.
 
 The application starts as one modular Symfony backend. We will keep clear boundaries inside the application instead of prematurely splitting it into microservices.
 
@@ -134,6 +135,7 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `014`–`018` — isolated two-session concurrency test fixture, session scripts, verification and cleanup.
 - `019_fix_supplier_profile_conditional_unique_indexes.sql` — repairs Oracle function-based unique indexes for primary contacts and default addresses.
 - `020_create_supplier_audit_trail.sql` — creates the append-only, privacy-safe Supplier audit log.
+- `023_supplier_onboarding_workflow.sql` — adds supplier onboarding state, decision history and legacy-approved backfill.
 - `021_seed_supplier_profile_fixtures.sql` and `022_seed_goods_receiving_fixtures.sql` — repeatable supplier profile, contact, address, receipt and inventory fixtures.
 - `030_reset_dev_data.sql` — development-only Oracle business-data cleanup; run through the guarded `scripts/dev-reset.sh` orchestrator.
 - `031_verify_dev_fixtures.sql` — asserts expected entity counts and partial/complete receiving scenarios after seeding.
@@ -183,6 +185,24 @@ GET /api/health
 It returns a small JSON response and is used by the React starter screen.
 
 **Oracle integration is intentionally a separate next step.** Before installing Doctrine ORM or choosing a DBAL driver, we will validate the available PHP Oracle extension (OCI8 or PDO_OCI) with PHP 8.4. The PL/SQL receiving procedure currently manages its own COMMIT/ROLLBACK, so we will preserve that transaction boundary when calling it from PHP.
+
+## Keycloak and Supplier onboarding
+
+The local Keycloak realm is available at http://localhost:8081 and is imported from
+`infra/keycloak/erp-procurement-realm.json`. Start it with:
+
+```bash
+docker compose up -d keycloak
+```
+
+See [Keycloak and Supplier onboarding](backend/docs/keycloak-and-supplier-onboarding.md)
+for the realm clients, local test client, role assignment, JWT validation rules, Oracle
+migration and secured onboarding API examples. The onboarding endpoints require a
+Keycloak access token with the `erp-procurement-api` audience and the relevant realm role.
+
+The initial security rollout protects the onboarding endpoints. Legacy Supplier CRUD
+and profile routes have not yet been migrated to Keycloak and must not be exposed publicly
+until that migration and the frontend OIDC login are completed.
 
 ## React frontend
 
