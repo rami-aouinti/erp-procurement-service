@@ -45,7 +45,8 @@
     "post-update-cmd": [
       "@auto-scripts"
     ],
-    "test:integration": "vendor/bin/simple-phpunit --testsuite='Supplier Integration'"
+    "test:integration": "vendor/bin/simple-phpunit --testsuite='Supplier Integration'",
+    "test:configuration": "vendor/bin/simple-phpunit --testsuite='Configuration Unit'"
   },
   "config": {
     "allow-plugins": {
