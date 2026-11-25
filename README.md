@@ -130,6 +130,7 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `010_create_supplier_consumed_events.sql` — persistent consumer idempotency ledger.
 - `011_harden_goods_receiving.sql` — additive hardening for existing databases: indexes receipt-line lookups and switches receipt numbers to an Oracle sequence.
 - `012_enforce_receipt_order_consistency.sql` — adds composite foreign keys so each receipt line must belong to the same order as its receipt document and purchase-order line.
+- `013_test_goods_receiving_guards.sql` — non-destructive negative-path tests for invalid quantities, invalid order statuses and unknown SKUs; it must run in a dedicated SQL*Plus session.
 
 Run a script from the repository root, for example:
 
@@ -147,6 +148,9 @@ docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//
 
 # Apply once after 011 to enforce receipt/order consistency
 docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/012_enforce_receipt_order_consistency.sql
+
+# Run non-destructive rejection tests in a dedicated SQL*Plus session
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/013_test_goods_receiving_guards.sql
 ```
 
 ## Symfony backend
