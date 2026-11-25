@@ -121,6 +121,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
     {
         $this->connection->beginTransaction();
         try {
+            $this->lockSupplierForProfileWrite($contact->supplierId);
             if ($contact->primary) {
                 $this->connection->executeStatement(
                     "UPDATE supplier_contacts SET is_primary = 'N', updated_at = SYSTIMESTAMP
@@ -140,8 +141,26 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 'created_at' => new \DateTimeImmutable(),
                 'updated_at' => new \DateTimeImmutable(),
             ]);
+            $id = $this->connection->fetchOne(
+                'SELECT MAX(id) FROM supplier_contacts WHERE supplier_id = :supplierId',
+                ['supplierId' => $contact->supplierId],
+            );
+            if ($id === false || $id === null) {
+                throw new \\RuntimeException('Unable to retrieve the created supplier contact.');
+            }
             $this->connection->commit();
-            return $contact;
+
+            return new \\App\\Supplier\\Domain\\Model\\SupplierContact(
+                (int) $id,
+                $contact->supplierId,
+                $contact->contactType,
+                trim($contact->firstName),
+                trim($contact->lastName),
+                $contact->jobTitle,
+                $contact->email,
+                $contact->phone,
+                $contact->primary,
+            );
         } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
@@ -180,6 +199,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
     {
         $this->connection->beginTransaction();
         try {
+            $this->lockSupplierForProfileWrite($address->supplierId);
             if ($address->default) {
                 $this->connection->executeStatement(
                     "UPDATE supplier_addresses SET is_default = 'N', updated_at = SYSTIMESTAMP
@@ -202,8 +222,29 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 'created_at' => new \DateTimeImmutable(),
                 'updated_at' => new \DateTimeImmutable(),
             ]);
+            $id = $this->connection->fetchOne(
+                'SELECT MAX(id) FROM supplier_addresses WHERE supplier_id = :supplierId',
+                ['supplierId' => $address->supplierId],
+            );
+            if ($id === false || $id === null) {
+                throw new \\RuntimeException('Unable to retrieve the created supplier address.');
+            }
             $this->connection->commit();
-            return $address;
+
+            return new \\App\\Supplier\\Domain\\Model\\SupplierAddress(
+                (int) $id,
+                $address->supplierId,
+                $address->addressType,
+                $address->label,
+                $address->companyName,
+                trim($address->street),
+                $address->street2,
+                trim($address->postalCode),
+                trim($address->city),
+                $address->region,
+                $address->country,
+                $address->default,
+            );
         } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
@@ -212,6 +253,24 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         }
     }
 
+
+
+    /**
+     * Serialize profile writes per supplier. This prevents concurrent requests
+     * from racing while replacing a primary contact, default address or
+     * primary bank account.
+     */
+    private function lockSupplierForProfileWrite(int $supplierId): void
+    {
+        $lockedId = $this->connection->fetchOne(
+            'SELECT id FROM suppliers WHERE id = :supplierId FOR UPDATE',
+            ['supplierId' => $supplierId],
+        );
+
+        if ($lockedId === false || $lockedId === null) {
+            throw new \\RuntimeException('Supplier no longer exists while updating its profile.');
+        }
+    }
 
     /** @return list<SupplierBankAccount> */
     public function findBankAccounts(int $supplierId): array
@@ -244,6 +303,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         $this->connection->beginTransaction();
 
         try {
+            $this->lockSupplierForProfileWrite($account->supplierId);
             if ($account->primary) {
                 $this->connection->executeStatement(
                     "UPDATE supplier_bank_accounts SET is_primary = 'N', updated_at = SYSTIMESTAMP
