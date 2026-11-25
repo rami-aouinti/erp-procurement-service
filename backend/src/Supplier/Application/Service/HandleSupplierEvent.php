@@ -44,7 +44,7 @@ final readonly class HandleSupplierEvent
             } elseif (in_array($type, [
                 'SupplierCreated', 'SupplierUpdated',
                 'SupplierOnboardingSubmitted', 'SupplierOnboardingApproved',
-                'SupplierOnboardingRejected', 'SupplierOnboardingChangesRequested',
+                'SupplierOnboardingRejected', 'SupplierOnboardingChangesRequested', 'SupplierClassificationUpdated',
             ], true)) {
                 // Always reload the aggregate. A delayed event must not restore
                 // stale payload data or recreate a supplier deleted in Oracle.
