@@ -283,7 +283,7 @@ class MetricsRegistry
 
         $redis = new Redis();
         if (!$redis->connect($this->redisHost, $this->redisPort, 1.0)) {
-            throw new RuntimeException('Unable to connect to Redis metrics store.');
+            throw new \\RuntimeException('Unable to connect to Redis metrics store.');
         }
         $redis->setOption(Redis::OPT_READ_TIMEOUT, 1.0);
         $this->redis = $redis;
