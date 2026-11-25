@@ -91,217 +91,53 @@ final class ApiDocumentationController
                     'get' => ['tags' => ['Supplier Onboarding'], 'summary' => 'Read the onboarding decision timeline', 'operationId' => 'supplierOnboardingHistory', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Transition history'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Forbidden'], '404' => ['$ref' => '#/components/responses/NotFound']]],
                 ],
                 '/api/supplier-classifications/{type}' => [
-                    'parameters' => [['name' => 'type', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string', 'enum' => ['categories', 'commodities', 'tags', 'business-units']]]],
-                    'get' => ['tags' => ['Supplier Classification'], 'summary' => 'List taxonomy entries', 'operationId' => 'listSupplierTaxonomy', 'responses' => ['200' => ['description' => 'Taxonomy entries including active state'], '401' => ['description' => 'Unauthorized']]],
-                    'post' => ['tags' => ['Supplier Classification'], 'summary' => 'Create a taxonomy entry (supplier-admin only)', 'operationId' => 'createSupplierTaxonomyEntry', 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'required' => ['code', 'name'], 'properties' => ['code' => ['type' => 'string', 'maxLength' => 50], 'name' => ['type' => 'string', 'maxLength' => 150], 'description' => ['type' => 'string'], 'parentId' => ['type' => 'integer'], 'color' => ['type' => 'string', 'pattern' => '^#[0-9A-Fa-f]{6}
+                    'parameters' => [
+                        ['name' => 'type', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string', 'enum' => ['categories', 'commodities', 'tags', 'business-units']]],
+                    ],
                     'get' => [
-                        'tags' => ['Suppliers'], 'summary' => 'List suppliers', 'operationId' => 'listSuppliers',
-                        'parameters' => [
-                            ['name' => 'search', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string'], 'description' => 'Full-text search across supplier name, email, tax number, contact person, phone and address fields.'],
-                            ['name' => 'status', 'in' => 'query', 'required' => false, 'schema' => ['type' => 'string', 'enum' => ['ACTIVE', 'INACTIVE', 'BLOCKED']]],
-                            ['name' => 'categoryId', 'in' => 'query', 'schema' => ['type' => 'integer']],
-                            ['name' => 'commodityId', 'in' => 'query', 'schema' => ['type' => 'integer']],
-                            ['name' => 'tagId', 'in' => 'query', 'schema' => ['type' => 'integer']],
-                            ['name' => 'businessUnitId', 'in' => 'query', 'schema' => ['type' => 'integer']],
-                            ['name' => 'strategicTier', 'in' => 'query', 'schema' => ['type' => 'string', 'enum' => ['STANDARD', 'PREFERRED', 'STRATEGIC']]],
-                        ],
-                        'responses' => ['200' => ['description' => 'Supplier collection', 'content' => ['application/json' => ['schema' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Supplier']]]]]],
+                        'tags' => ['Supplier Classification'],
+                        'summary' => 'List taxonomy entries',
+                        'operationId' => 'listSupplierTaxonomy',
+                        'responses' => ['200' => ['description' => 'Taxonomy entries including active state']],
                     ],
                     'post' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Create a supplier (supplier-admin only; normal users must use supplier onboarding)', 'operationId' => 'createSupplier',
-                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierInput'], 'example' => ['name' => 'Acme GmbH', 'email' => 'contact@acme.de', 'phone' => '+49 421 123456', 'taxNumber' => 'DE123456789']]]],
-                        'responses' => [
-                            '201' => ['description' => 'Supplier created', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]],
-                            '400' => ['$ref' => '#/components/responses/BadRequest'], '422' => ['$ref' => '#/components/responses/ValidationError'], '409' => ['$ref' => '#/components/responses/Conflict'],
-                        ],
+                        'tags' => ['Supplier Classification'],
+                        'summary' => 'Create a taxonomy entry (supplier-admin only)',
+                        'operationId' => 'createSupplierTaxonomyEntry',
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'required' => ['code', 'name'], 'properties' => ['code' => ['type' => 'string', 'maxLength' => 50], 'name' => ['type' => 'string', 'maxLength' => 150], 'description' => ['type' => 'string'], 'parentId' => ['type' => 'integer'], 'color' => ['type' => 'string']]]]]],
+                        'responses' => ['201' => ['description' => 'Created'], '409' => ['$ref' => '#/components/responses/Conflict'], '422' => ['$ref' => '#/components/responses/ValidationError']],
                     ],
-                ],
-
-                '/api/suppliers/{id}/contacts/{contactId}' => [
-                    'parameters' => [
-                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
-                        ['name' => 'contactId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
-                    ],
-                    'put' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Replace a supplier contact', 'operationId' => 'updateSupplierContact',
-                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierContactInput']]]],
-                        'responses' => ['200' => ['description' => 'Contact updated'], '400' => ['$ref' => '#/components/responses/BadRequest'], '404' => ['$ref' => '#/components/responses/NotFound']],
-                    ],
-                    'delete' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier contact', 'operationId' => 'deleteSupplierContact',
-                        'responses' => ['204' => ['description' => 'Contact deleted'], '404' => ['$ref' => '#/components/responses/NotFound']],
-                    ],
-                ],
-                '/api/suppliers/{id}/addresses/{addressId}' => [
-                    'parameters' => [
-                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
-                        ['name' => 'addressId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
-                    ],
-                    'put' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Replace a supplier address', 'operationId' => 'updateSupplierAddress',
-                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierAddressInput']]]],
-                        'responses' => ['200' => ['description' => 'Address updated'], '400' => ['$ref' => '#/components/responses/BadRequest'], '404' => ['$ref' => '#/components/responses/NotFound']],
-                    ],
-                    'delete' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier address', 'operationId' => 'deleteSupplierAddress',
-                        'responses' => ['204' => ['description' => 'Address deleted'], '404' => ['$ref' => '#/components/responses/NotFound']],
-                    ],
-                ],
-                '/api/suppliers/{id}' => [
-                    'parameters' => [['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
-                    'get' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Get a supplier', 'operationId' => 'getSupplier',
-                        'responses' => ['200' => ['description' => 'Supplier details', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]], '404' => ['$ref' => '#/components/responses/NotFound']],
-                    ],
-                    'put' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Update a supplier (supplier-admin only)', 'operationId' => 'updateSupplier',
-                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierInput']]]],
-                        'responses' => ['200' => ['description' => 'Supplier updated', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]], '400' => ['$ref' => '#/components/responses/BadRequest'], '422' => ['$ref' => '#/components/responses/ValidationError'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']],
-                    ],
-                    'delete' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier (supplier-admin only)', 'operationId' => 'deleteSupplier',
-                        'responses' => ['204' => ['description' => 'Supplier deleted'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']],
-                    ],
-                ],
-            ],
-            'components' => [
-                'schemas' => [
-                    'SiteConfigurationInput' => [
-                        'type' => 'object',
-                        'required' => ['settings'],
-                        'properties' => [
-                            'settings' => ['type' => 'object', 'description' => 'Fields are described by GET /api/configuration/site and validated against the server-side settings registry.'],
-                        ],
-                    ],
-                    'UserPreferencesInput' => [
-                        'type' => 'object',
-                        'required' => ['preferences'],
-                        'properties' => [
-                            'preferences' => [
-                                'type' => 'object',
-                                'properties' => [
-                                    'palette' => ['type' => 'string', 'enum' => ['indigo', 'ocean', 'emerald', 'violet', 'rose', 'amber']],
-                                    'colorMode' => ['type' => 'string', 'enum' => ['light', 'dark', 'system']],
-                                ],
-                            ],
-                        ],
-                    ],
-                    'SupplierCandidateInput' => [
-                        'type' => 'object', 'required' => ['name'],
-                        'properties' => [
-                            'name' => ['type' => 'string', 'maxLength' => 150],
-                            'email' => ['type' => 'string', 'format' => 'email', 'nullable' => true],
-                            'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
-                            'taxNumber' => ['type' => 'string', 'maxLength' => 50, 'nullable' => true],
-                            'contactPerson' => ['type' => 'string', 'maxLength' => 150, 'nullable' => true],
-                            'street' => ['type' => 'string', 'maxLength' => 180, 'nullable' => true],
-                            'city' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
-                            'postalCode' => ['type' => 'string', 'maxLength' => 20, 'nullable' => true],
-                            'country' => ['type' => 'string', 'maxLength' => 2, 'nullable' => true],
-                        ],
-                    ],
-                    'OnboardingDecision' => [
-                        'type' => 'object',
-                        'properties' => ['reason' => ['type' => 'string', 'maxLength' => 1000]],
-                    ],
-                    'SupplierContactInput' => [
-                        'type' => 'object', 'required' => ['firstName', 'lastName'],
-                        'properties' => [
-                            'contactType' => ['type' => 'string', 'maxLength' => 30, 'default' => 'GENERAL'],
-                            'firstName' => ['type' => 'string', 'maxLength' => 100],
-                            'lastName' => ['type' => 'string', 'maxLength' => 100],
-                            'jobTitle' => ['type' => 'string', 'maxLength' => 120, 'nullable' => true],
-                            'email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 150, 'nullable' => true],
-                            'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
-                            'primary' => ['type' => 'boolean', 'default' => false],
-                        ],
-                    ],
-                    'SupplierAddressInput' => [
-                        'type' => 'object', 'required' => ['addressType', 'street', 'postalCode', 'city', 'country'],
-                        'properties' => [
-                            'addressType' => ['type' => 'string', 'enum' => ['REGISTERED', 'BILLING', 'SHIPPING', 'OTHER']],
-                            'label' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
-                            'companyName' => ['type' => 'string', 'maxLength' => 150, 'nullable' => true],
-                            'street' => ['type' => 'string', 'maxLength' => 180],
-                            'street2' => ['type' => 'string', 'maxLength' => 180, 'nullable' => true],
-                            'postalCode' => ['type' => 'string', 'maxLength' => 20],
-                            'city' => ['type' => 'string', 'maxLength' => 100],
-                            'region' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
-                            'country' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 2, 'example' => 'DE'],
-                            'default' => ['type' => 'boolean', 'default' => false],
-                        ],
-                    ],
-                    'SupplierInput' => [
-                        'type' => 'object', 'required' => ['name'],
-                        'properties' => [
-                            'name' => ['type' => 'string', 'maxLength' => 150, 'example' => 'Acme GmbH'],
-                            'email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 150, 'nullable' => true],
-                            'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
-                            'taxNumber' => ['type' => 'string', 'maxLength' => 50, 'nullable' => true],
-                            'status' => ['type' => 'string', 'enum' => ['ACTIVE', 'INACTIVE', 'BLOCKED'], 'default' => 'ACTIVE'],
-                            'contactPerson' => ['type' => 'string', 'maxLength' => 150, 'nullable' => true],
-                            'street' => ['type' => 'string', 'maxLength' => 180, 'nullable' => true],
-                            'city' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
-                            'postalCode' => ['type' => 'string', 'maxLength' => 20, 'nullable' => true],
-                            'country' => ['type' => 'string', 'maxLength' => 2, 'nullable' => true, 'example' => 'DE'],
-                        ],
-                    ],
-                    'Supplier' => [
-                        'allOf' => [
-                            ['$ref' => '#/components/schemas/SupplierInput'],
-                            ['type' => 'object', 'required' => ['id', 'createdAt'], 'properties' => [
-                                'id' => ['type' => 'integer', 'example' => 12],
-                                'createdAt' => ['type' => 'string', 'format' => 'date-time'],
-                            ]],
-                        ],
-                    ],
-                    'Error' => ['type' => 'object', 'required' => ['error'], 'properties' => ['error' => ['type' => 'string'], 'violations' => ['type' => 'array', 'items' => ['type' => 'string']]]],
-                ],
-                'securitySchemes' => [
-                    'bearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'bearerFormat' => 'JWT'],
-                ],
-                'responses' => [
-                    'BadRequest' => ['description' => 'Invalid request payload', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
-                    'ValidationError' => ['description' => 'Supplier data failed validation. Response includes a list of field violations.', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
-                    'NotFound' => ['description' => 'Resource not found', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
-                    'Conflict' => ['description' => 'Email already exists or supplier is referenced by another record', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
-                ],
-            ],
-        ]);
-    }
-
-    #[Route('/api/docs', name: 'api_docs_ui', methods: ['GET'])]
-    public function ui(): Response
-    {
-        return new Response(<<<'HTML'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ERP Procurement API - Swagger UI</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
-  <style>body{margin:0;background:#fafafa}.topbar{display:none}</style>
-</head>
-<body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
-  <script>window.onload=()=>SwaggerUIBundle({url:'/api/docs.json',dom_id:'#swagger-ui',deepLinking:true,persistAuthorization:true});</script>
-</body>
-</html>
-HTML, Response::HTTP_OK, ['Content-Type' => 'text/html; charset=UTF-8']);
-    }
-}
-]]]]]], 'responses' => ['201' => ['description' => 'Taxonomy entry created'], '409' => ['$ref' => '#/components/responses/Conflict'], '422' => ['$ref' => '#/components/responses/ValidationError']]],
                 ],
                 '/api/supplier-classifications/{type}/{id}/status' => [
-                    'parameters' => [['name' => 'type', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']], ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer']]],
-                    'patch' => ['tags' => ['Supplier Classification'], 'summary' => 'Activate or deactivate a taxonomy entry (supplier-admin only)', 'operationId' => 'setSupplierTaxonomyStatus', 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'required' => ['active'], 'properties' => ['active' => ['type' => 'boolean']]]]]], 'responses' => ['200' => ['description' => 'Status updated'], '404' => ['$ref' => '#/components/responses/NotFound']]],
+                    'parameters' => [
+                        ['name' => 'type', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer']],
+                    ],
+                    'patch' => [
+                        'tags' => ['Supplier Classification'],
+                        'summary' => 'Activate or deactivate a taxonomy entry (supplier-admin only)',
+                        'operationId' => 'setSupplierTaxonomyStatus',
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'required' => ['active'], 'properties' => ['active' => ['type' => 'boolean']]]]]],
+                        'responses' => ['200' => ['description' => 'Status updated'], '404' => ['$ref' => '#/components/responses/NotFound']],
+                    ],
                 ],
                 '/api/suppliers/{id}/classification' => [
-                    'parameters' => [['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
-                    'get' => ['tags' => ['Supplier Classification'], 'summary' => 'Read supplier classification', 'operationId' => 'getSupplierClassification', 'responses' => ['200' => ['description' => 'Assigned categories, commodities, tags, business units and strategic tier'], '404' => ['$ref' => '#/components/responses/NotFound']]],
-                    'put' => ['tags' => ['Supplier Classification'], 'summary' => 'Replace supplier classification assignments', 'operationId' => 'replaceSupplierClassification', 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'properties' => ['categoryIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'commodityIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'tagIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'businessUnitIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'strategicTier' => ['type' => 'string', 'enum' => ['STANDARD', 'PREFERRED', 'STRATEGIC']]]]]]], 'responses' => ['200' => ['description' => 'Classification replaced; search index updated asynchronously'], '422' => ['$ref' => '#/components/responses/ValidationError']]],
+                    'parameters' => [
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
+                    ],
+                    'get' => [
+                        'tags' => ['Supplier Classification'],
+                        'summary' => 'Read supplier classification',
+                        'operationId' => 'getSupplierClassification',
+                        'responses' => ['200' => ['description' => 'Current supplier classification'], '404' => ['$ref' => '#/components/responses/NotFound']],
+                    ],
+                    'put' => [
+                        'tags' => ['Supplier Classification'],
+                        'summary' => 'Replace supplier classification assignments',
+                        'operationId' => 'replaceSupplierClassification',
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'properties' => ['categoryIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'commodityIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'tagIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'businessUnitIds' => ['type' => 'array', 'items' => ['type' => 'integer']], 'strategicTier' => ['type' => 'string', 'enum' => ['STANDARD', 'PREFERRED', 'STRATEGIC']]]]]]],
+                        'responses' => ['200' => ['description' => 'Classification replaced; search index updated asynchronously'], '422' => ['$ref' => '#/components/responses/ValidationError']],
+                    ],
                 ],
                 '/api/suppliers' => [
                     'get' => [
