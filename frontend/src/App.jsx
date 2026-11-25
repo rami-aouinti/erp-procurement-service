@@ -48,7 +48,7 @@ function WorkspaceApp() {
       siteName: 'ERP Procurement', companyName: '', companyEmail: '', companyPhone: '',
       companyAddress: '', currency: 'EUR', locale: 'en', timezone: 'Europe/Berlin',
       dateFormat: 'Y-m-d', itemsPerPage: 10,
-      supplierForm: { requireEmail: false, requirePhone: false, requireTaxNumber: false, allowInactive: true },
+      supplierForm: { requireEmail: false, requirePhone: false, requireTaxNumber: false, requireContactPerson: false },
     };
     try {
       const stored = JSON.parse(window.localStorage.getItem('erp-site-settings') || '{}');
@@ -224,7 +224,7 @@ function WorkspaceApp() {
         </section>}
         {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage />}
         {route.page === 'onboarding' && !(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to review supplier onboarding requests.</div></section>}
-        {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} canCreate={roles.includes('supplier-onboarding-submit') || roles.includes('supplier-admin')} />}
+        {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} canCreate={roles.includes('supplier-onboarding-submit') || roles.includes('supplier-admin')} siteSettings={settings} itemsPerPage={settings.itemsPerPage} />}
         {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
         {route.page === 'configuration' && <ConfigurationPage settings={settings} onSettingsChange={setSettings} schema={configurationSchema} preferences={preferences} onPreferencesChange={persistPreferences} canManage={roles.includes('supplier-admin')} onSaveSite={saveSiteConfiguration} saving={configurationSaving} error={configurationError} saved={configurationSaved} />}
