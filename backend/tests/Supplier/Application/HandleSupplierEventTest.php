@@ -67,7 +67,7 @@ final class HandleSupplierEventTest extends TestCase
 
     public function testClassificationEventRebuildsTheCurrentSearchDocument(): void
     {
-        $supplier = \\App\\Supplier\\Domain\\Model\\Supplier::reconstitute(42, 'Current Supplier', null, null, null, new \\DateTimeImmutable());
+        $supplier = \App\Supplier\Domain\Model\Supplier::reconstitute(42, 'Current Supplier', null, null, null, new \DateTimeImmutable());
         $suppliers = $this->createMock(SupplierRepository::class);
         $suppliers->expects(self::once())->method('findById')->with(42)->willReturn($supplier);
         $search = $this->createMock(SupplierSearchIndex::class);
@@ -87,7 +87,7 @@ final class HandleSupplierEventTest extends TestCase
 
     public function testClassificationIndexFailureReleasesTheEventForRetry(): void
     {
-        $supplier = \\App\\Supplier\\Domain\\Model\\Supplier::reconstitute(42, 'Current Supplier', null, null, null, new \\DateTimeImmutable());
+        $supplier = \App\Supplier\Domain\Model\Supplier::reconstitute(42, 'Current Supplier', null, null, null, new \DateTimeImmutable());
         $suppliers = $this->createMock(SupplierRepository::class);
         $suppliers->expects(self::once())->method('findById')->with(42)->willReturn($supplier);
         $search = $this->createMock(SupplierSearchIndex::class);
