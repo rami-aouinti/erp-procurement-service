@@ -170,6 +170,11 @@ final class SupplierEventPipelineTest extends KernelTestCase
     {
         $content = $payload === null ? '' : json_encode($payload, JSON_THROW_ON_ERROR);
         $request = Request::create($uri, $method, server: ['CONTENT_TYPE' => 'application/json'], content: $content);
+        $request->attributes->set('_keycloak_user', [
+            'id' => 'supplier-pipeline-test-user',
+            'username' => 'supplier-pipeline-test',
+            'roles' => ['supplier-admin'],
+        ]);
 
         return $this->httpKernel->handle($request, HttpKernelInterface::MAIN_REQUEST);
     }
