@@ -1,10 +1,15 @@
-const API_URL = '/api/suppliers';
+import { getKeycloakAccessToken } from '../auth/AuthProvider.jsx';
 
-async function request(path = '', options = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
+const API_URL = '/api/suppliers';
+const ONBOARDING_API_URL = '/api/supplier-onboarding';
+
+async function request(path = '', options = {}, baseUrl = API_URL) {
+  const token = await getKeycloakAccessToken();
+  const response = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },
@@ -28,7 +33,7 @@ export const suppliersApi = {
     if (filters.status && filters.status !== 'ALL') params.set('status', filters.status);
     return request(params.size ? `?${params.toString()}` : '');
   },
-  create: (data) => request('', json('POST', data)),
+  create: (data) => request('', json('POST', data), ONBOARDING_API_URL),
   update: (id, data) => request(supplierPath(id), json('PUT', data)),
   remove: (id) => request(supplierPath(id), { method: 'DELETE' }),
 
