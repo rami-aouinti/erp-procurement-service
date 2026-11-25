@@ -7,6 +7,7 @@ namespace App\Supplier\Transport\Http;
 use App\Supplier\Application\UseCase\ManageSupplierBankAccounts;
 use App\Supplier\Domain\Exception\SupplierNotFound;
 use App\Supplier\Domain\Model\SupplierBankAccount;
+use App\Security\Keycloak\KeycloakRoleGuard;
 use InvalidArgumentException;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,13 +17,14 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/suppliers/{id<\\d+>}/bank-accounts')]
 final readonly class SupplierBankAccountController
 {
-    public function __construct(private ManageSupplierBankAccounts $accounts)
+    public function __construct(private ManageSupplierBankAccounts $accounts, private KeycloakRoleGuard $roles)
     {
     }
 
     #[Route('', name: 'api_supplier_bank_accounts_list', methods: ['GET'])]
     public function list(int $id): JsonResponse
     {
+        $this->roles->assertAnyRole('supplier-finance', 'supplier-admin');
         try {
             return new JsonResponse(array_map(self::serialize(...), $this->accounts->list($id)));
         } catch (SupplierNotFound) {
@@ -33,6 +35,7 @@ final readonly class SupplierBankAccountController
     #[Route('', name: 'api_supplier_bank_accounts_add', methods: ['POST'])]
     public function add(int $id, Request $request): JsonResponse
     {
+        $this->roles->assertAnyRole('supplier-finance', 'supplier-admin');
         try {
             $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($data) || array_is_list($data)) {
@@ -61,6 +64,7 @@ final readonly class SupplierBankAccountController
     #[Route('/{accountId<\\d+>}/primary', name: 'api_supplier_bank_accounts_set_primary', methods: ['POST'])]
     public function setPrimary(int $id, int $accountId): JsonResponse
     {
+        $this->roles->assertAnyRole('supplier-finance', 'supplier-admin');
         try {
             if (!$this->accounts->setPrimary($id, $accountId)) {
                 return new JsonResponse(['error' => 'Bank account not found.'], 404);
@@ -77,6 +81,7 @@ final readonly class SupplierBankAccountController
     #[Route('/{accountId<\\d+>}', name: 'api_supplier_bank_accounts_delete', methods: ['DELETE'])]
     public function delete(int $id, int $accountId): JsonResponse
     {
+        $this->roles->assertAnyRole('supplier-finance', 'supplier-admin');
         try {
             if (!$this->accounts->delete($id, $accountId)) {
                 return new JsonResponse(['error' => 'Bank account not found.'], 404);
