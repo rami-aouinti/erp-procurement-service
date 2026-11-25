@@ -98,3 +98,21 @@ groups:
         annotations:
           summary: Configuration API p95 latency is above 350 ms
           description: The 95th percentile Configuration API response time exceeded 350 ms for five minutes.
+      - alert: ErpRedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: ERP Redis is unavailable
+          description: The Redis exporter cannot reach the application cache.
+
+      - alert: ErpRedisMemoryHigh
+        expr: |
+          redis_memory_used_bytes / clamp_min(redis_memory_max_bytes, 1) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: ERP Redis memory usage is above 90 percent
+          description: Redis is approaching its configured memory limit and may evict cache keys.
