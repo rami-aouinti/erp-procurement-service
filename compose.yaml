@@ -100,21 +100,6 @@ services:
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
       - keycloak_data:/opt/keycloak/data/h2
-  clamav:
-    image: clamav/clamav:1.4.2
-    container_name: erp-clamav
-    restart: unless-stopped
-    expose:
-      - "3310"
-    volumes:
-      - clamav_data:/var/lib/clamav
-    healthcheck:
-      test: ["CMD-SHELL", "clamdscan --ping=1 >/dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 30
-      start_period: 120s
-
   backend:
     build:
       context: ./backend
@@ -128,9 +113,6 @@ services:
       SUPPLIER_BANK_ENCRYPTION_KEY: ${SUPPLIER_BANK_ENCRYPTION_KEY:-}
       SUPPLIER_BANK_ENCRYPTION_KEY_VERSION: ${SUPPLIER_BANK_ENCRYPTION_KEY_VERSION:-v1}
       SUPPLIER_DOCUMENT_STORAGE_PATH: /var/lib/erp/supplier-documents
-      CLAMAV_HOST: clamav
-      CLAMAV_PORT: 3310
-      CLAMAV_TIMEOUT_SECONDS: 30
       DEFAULT_URI: http://localhost
       ORACLE_HOST: oracle
       ORACLE_PORT: 1521
@@ -160,8 +142,6 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
-      clamav:
-        condition: service_started
 
   supplier-outbox-publisher:
     build:
@@ -392,5 +372,3 @@ volumes:
     name: erp_alloy_data
   supplier_documents_data:
     name: erp_supplier_documents_data
-  clamav_data:
-    name: erp_clamav_data
