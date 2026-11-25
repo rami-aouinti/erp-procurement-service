@@ -109,7 +109,7 @@ services:
     volumes:
       - clamav_data:/var/lib/clamav
     healthcheck:
-      test: ["CMD-SHELL", "clamdscan --ping=1 --host=127.0.0.1 >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "clamdscan --ping=1 >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 30
