@@ -165,7 +165,7 @@ final readonly class OracleSupplierDocumentRepository
                 'checksum_sha256' => $stored->sha256,
                 'scan_status' => 'PENDING',
                 'review_status' => 'PENDING',
-                'expires_at' => $expiresAt,
+                'expires_at' => $expiresAtDb,
                 'uploaded_by' => $actorId,
             ]);
             $versionId = (int) $this->db->fetchOne(
