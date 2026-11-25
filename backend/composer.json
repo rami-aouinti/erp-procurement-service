@@ -33,7 +33,7 @@
   },
   "scripts": {
     "test": "vendor/bin/simple-phpunit --testsuite='Default'",
-    "test:unit": "vendor/bin/simple-phpunit --testsuite='Supplier Unit'",
+    "test:unit": "vendor/bin/simple-phpunit --testsuite='Supplier Unit' && vendor/bin/simple-phpunit --testsuite='Configuration Unit'",
     "test:functional": "vendor/bin/simple-phpunit --testsuite='Supplier Functional'",
     "auto-scripts": {
       "cache:clear": "symfony-cmd",
