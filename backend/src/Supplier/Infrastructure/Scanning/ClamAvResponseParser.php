@@ -13,15 +13,15 @@ final class ClamAvResponseParser
     {
         $response = trim($response);
 
-        if (preg_match('/(?:^|:\s).*\sOK$/D', $response) === 1) {
+        if (preg_match('/(?:^|:\\s).*\\bOK$/D', $response) === 1) {
             return SupplierDocumentScanResult::CLEAN;
         }
 
-        if (preg_match('/(?:^|:\s).+\sFOUND$/D', $response) === 1) {
+        if (preg_match('/(?:^|:\\s).+\\bFOUND$/D', $response) === 1) {
             return SupplierDocumentScanResult::INFECTED;
         }
 
-        if (preg_match('/(?:^|:\s).*\sERROR$/D', $response) === 1) {
+        if (preg_match('/(?:^|:\\s).*\\bERROR$/D', $response) === 1) {
             throw new RuntimeException('ClamAV could not complete the document scan.');
         }
 
