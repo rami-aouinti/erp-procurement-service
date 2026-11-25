@@ -20,6 +20,10 @@ interface SupplierProfileRepository
 
     public function addContact(SupplierContact $contact): SupplierContact;
 
+    public function updateContact(SupplierContact $contact): bool;
+
+    public function deleteContact(int $supplierId, int $contactId): bool;
+
     /** @return list<SupplierAddress> */
     public function findAddresses(int $supplierId): array;
 
