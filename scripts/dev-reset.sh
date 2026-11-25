@@ -45,6 +45,7 @@ run_sql database/oracle/019_fix_supplier_profile_conditional_unique_indexes.sql
 run_sql database/oracle/020_create_supplier_audit_trail.sql
 run_sql database/oracle/023_supplier_onboarding_workflow.sql
 run_sql database/oracle/024_create_configuration_settings.sql
+run_sql database/oracle/025_supplier_classification.sql
 run_sql database/oracle/030_reset_dev_data.sql
 
 # Seed the procurement core, complete supplier profiles and representative stock movements.
