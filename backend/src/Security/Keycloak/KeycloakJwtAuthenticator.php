@@ -120,7 +120,7 @@ final class KeycloakJwtAuthenticator
         $rsa = $integer($modulus).$integer($exponent);
         $rsa = "\x30".$this->derLength(strlen($rsa)).$rsa;
         $algorithm = hex2bin('300d06092a864886f70d0101010500')
-            ?: throw new \\RuntimeException('Unable to encode the RSA public key algorithm.');
+            ?: throw new \RuntimeException('Unable to encode the RSA public key algorithm.');
         $bitString = "\x03".$this->derLength(strlen($rsa) + 1)."\0".$rsa;
         $sequence = $algorithm.$bitString;
         $der = "\x30".$this->derLength(strlen($sequence)).$sequence;
