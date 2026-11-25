@@ -141,9 +141,12 @@ final class ConfigurationUseCasesTest extends TestCase
     {
         $repository = new class implements UserPreferenceRepository {
             private array $values = [];
+            public int $findCalls = 0;
 
             public function findForUser(string $userId): array
             {
+                $this->findCalls++;
+
                 return $this->values[$userId] ?? [];
             }
 
@@ -152,8 +155,28 @@ final class ConfigurationUseCasesTest extends TestCase
                 $this->values[$userId] = $preferences;
             }
         };
-        $get = new GetUserPreferences($repository);
-        $update = new UpdateUserPreferences($repository);
+        $cache = new class implements ConfigurationCache {
+            private array $values = [];
+            public array $invalidated = [];
+
+            public function get(string $key): ?array
+            {
+                return $this->values[$key] ?? null;
+            }
+
+            public function set(string $key, array $value, int $ttl = 300): void
+            {
+                $this->values[$key] = $value;
+            }
+
+            public function invalidate(string $key): void
+            {
+                $this->invalidated[] = $key;
+                unset($this->values[$key]);
+            }
+        };
+        $get = new GetUserPreferences($repository, $cache);
+        $update = new UpdateUserPreferences($repository, $cache);
 
         self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], $get->execute('user-a'));
         $saved = $update->execute('user-a', ['palette' => 'ocean', 'colorMode' => 'dark']);
@@ -161,6 +184,8 @@ final class ConfigurationUseCasesTest extends TestCase
         self::assertSame(['palette' => 'ocean', 'colorMode' => 'dark'], $saved);
         self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], $get->execute('user-b'));
         self::assertSame($saved, $get->execute('user-a'));
+        self::assertSame(2, $repository->findCalls, 'Repeated reads should be served from the per-user cache.');
+        self::assertSame(['user:' . hash('sha256', 'user-a')], $cache->invalidated);
     }
 
     public function testUserPreferencesRejectUnsupportedPalette(): void
@@ -176,7 +201,12 @@ final class ConfigurationUseCasesTest extends TestCase
             }
         };
 
+        $cache = new class implements ConfigurationCache {
+            public function get(string $key): ?array { return null; }
+            public function set(string $key, array $value, int $ttl = 300): void {}
+            public function invalidate(string $key): void {}
+        };
         $this->expectException(InvalidArgumentException::class);
-        (new UpdateUserPreferences($repository))->execute('user-a', ['palette' => 'custom-unsafe']);
+        (new UpdateUserPreferences($repository, $cache))->execute('user-a', ['palette' => 'custom-unsafe']);
     }
 }
