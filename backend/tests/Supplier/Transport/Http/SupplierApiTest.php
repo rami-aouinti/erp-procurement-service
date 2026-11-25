@@ -93,6 +93,19 @@ final class SupplierApiTest extends KernelTestCase
         );
     }
 
+
+    public function testSupplierClassificationEndpointsRequireAuthenticationAndAdminTaxonomyWrites(): void
+    {
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $this->request('GET', '/api/supplier-classifications/categories', null, null)->getStatusCode());
+        self::assertSame(Response::HTTP_OK, $this->request('GET', '/api/supplier-classifications/categories', null, ['supplier-reviewer'])->getStatusCode());
+        self::assertSame(Response::HTTP_FORBIDDEN, $this->request('POST', '/api/supplier-classifications/categories', ['code'=>'NO-ROLE','name'=>'No role'], ['procurement-user'])->getStatusCode());
+
+        $created = $this->request('POST', '/api/supplier-classifications/categories', ['code'=>'API-'.bin2hex(random_bytes(3)), 'name'=>'API category']);
+        self::assertSame(Response::HTTP_CREATED, $created->getStatusCode(), (string)$created->getContent());
+
+        self::assertSame(Response::HTTP_BAD_REQUEST, $this->request('GET', '/api/suppliers?categoryId=not-an-id')->getStatusCode());
+    }
+
     public function testSupplierCrudLifecycle(): void
     {
         $listBefore = $this->request('GET', '/api/suppliers');
