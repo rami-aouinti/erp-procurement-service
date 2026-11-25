@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Supplier\Infrastructure\Search;
 
 use App\Supplier\Application\Port\SupplierSearchIndex;
+use App\Supplier\Application\Port\SupplierClassificationReader;
 use App\Supplier\Domain\Model\Supplier;
 use RuntimeException;
 
@@ -16,18 +17,18 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
     {
     }
 
-    public function search(string $query, ?string $status = null, int $limit = 500): array
+    public function search(string $query, ?string $status = null, int $limit = 500, array $filters = []): array
     {
         $this->ensureIndex();
-        $filters = [];
-        if ($status !== null) {
-            $filters[] = ['term' => ['status' => $status]];
+        $queryFilters = [];
+        if ($status !== null) $queryFilters[] = ['term' => ['status' => $status]];
+        foreach (['categoryId'=>'classification.categoryIds','commodityId'=>'classification.commodityIds','tagId'=>'classification.tagIds','businessUnitId'=>'classification.businessUnitIds','strategicTier'=>'classification.strategicTier'] as $key => $field) {
+            if (isset($filters[$key]) && $filters[$key] !== '') $queryFilters[] = ['term' => [$field => is_numeric($filters[$key]) ? (int)$filters[$key] : strtoupper((string)$filters[$key])]];
         }
-
         $body = [
             'size' => min(500, max(1, $limit)),
             'query' => $query === ''
-                ? ($filters === [] ? ['match_all' => (object) []] : ['bool' => ['filter' => $filters]])
+                ? ($queryFilters === [] ? ['match_all' => (object) []] : ['bool' => ['filter' => $queryFilters]])
                 : ['bool' => [
                     'must' => [[
                         'multi_match' => [
@@ -38,7 +39,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
                             'operator' => 'and',
                         ],
                     ]],
-                    'filter' => $filters,
+                    'filter' => $queryFilters,
                 ]],
             'sort' => $query === ''
                 ? [['name.keyword' => ['order' => 'asc']]]
@@ -78,6 +79,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
             'postalCode' => $supplier->postalCode(),
             'country' => $supplier->country(),
             'createdAt' => $supplier->createdAt()->format(DATE_ATOM),
+            'classification' => $this->classificationDocument((int)$supplier->id()),
         ]);
     }
 
@@ -95,10 +97,23 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
         ]);
         $count = 0;
         foreach ($suppliers as $supplier) {
-            self::INDEX($supplier);
+            $this->index($supplier);
             ++$count;
         }
         return $count;
+    }
+
+    /** @return array<string,mixed> */
+    private function classificationDocument(int $supplierId): array
+    {
+        $data = $this->classifications->forSupplier($supplierId);
+        return [
+            'categoryIds' => array_map(static fn(array $item): int => (int)$item['id'], $data['categories']),
+            'commodityIds' => array_map(static fn(array $item): int => (int)$item['id'], $data['commodities']),
+            'tagIds' => array_map(static fn(array $item): int => (int)$item['id'], $data['tags']),
+            'businessUnitIds' => array_map(static fn(array $item): int => (int)$item['id'], $data['businessUnits']),
+            'strategicTier' => $data['strategicTier'],
+        ];
     }
 
     private function ensureIndex(): void
@@ -129,6 +144,11 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
                     'postalCode' => ['type' => 'text'],
                     'country' => ['type' => 'keyword'],
                     'createdAt' => ['type' => 'date'],
+                    'classification' => ['properties' => [
+                        'categoryIds' => ['type' => 'integer'], 'commodityIds' => ['type' => 'integer'],
+                        'tagIds' => ['type' => 'integer'], 'businessUnitIds' => ['type' => 'integer'],
+                        'strategicTier' => ['type' => 'keyword'],
+                    ]],
                 ],
             ],
         ]);
