@@ -35,7 +35,7 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
         }
 
         $path = $request->getPathInfo();
-        $protectedPaths = ['/api/supplier-onboarding', '/api/configuration', '/api/suppliers'];
+        $protectedPaths = ['/api/supplier-onboarding', '/api/configuration', '/api/suppliers', '/api/supplier-classifications'];
         $isProtectedPath = false;
         foreach ($protectedPaths as $protectedPath) {
             if ($path === $protectedPath || str_starts_with($path, $protectedPath . '/')) {
