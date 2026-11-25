@@ -13,7 +13,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
 {
     private const INDEX = 'suppliers';
 
-    public function __construct(private string $url)
+    public function __construct(private string $url, private SupplierClassificationReader $classifications)
     {
     }
 
