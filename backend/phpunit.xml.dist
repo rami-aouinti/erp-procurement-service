@@ -8,7 +8,7 @@
     <php>
         <env name="APP_ENV" value="test" force="true"/>
         <env name="APP_DEBUG" value="1" force="true"/>
-        <env name="KERNEL_CLASS" value="App\Kernel"/>
+        <env name="KERNEL_CLASS" value="App\Kernel"/>\n        <env name="ELASTICSEARCH_INDEX" value="suppliers_test" force="true"/>
     </php>
     <testsuites>
         <testsuite name="Default">
