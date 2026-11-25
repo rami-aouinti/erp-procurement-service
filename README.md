@@ -284,3 +284,40 @@ See [Cloud deployment and load testing](docs/cloud-deployment.md) for thresholds
 ## Kubernetes cloud deployment
 
 Cloud-oriented Dockerfiles and starter Kubernetes manifests are provided in `backend/Dockerfile.cloud`, `frontend/Dockerfile` and `k8s/erp.yaml`. The manifests assume managed Oracle, Redis, Elasticsearch and RabbitMQ endpoints; configure the ConfigMap and Kubernetes Secret before deploying. See [docs/cloud-deployment.md](docs/cloud-deployment.md).
+
+
+## Supplier Management roadmap and delivery tracking
+
+The Supplier module is being evolved toward an enterprise Supplier Relationship Management (SRM) capability. The roadmap explicitly distinguishes **already implemented capabilities** from **planned work**; a feature is not considered delivered until its code, tests, documentation and verification are complete.
+
+### Verified current baseline
+
+- [x] Supplier master CRUD, ACTIVE / INACTIVE / BLOCKED status, input validation and duplicate-email protection.
+- [x] Supplier company profile, including legal name, registration/VAT numbers, website, preferred language/currency and payment terms.
+- [x] Supplier contacts and addresses (current baseline supports listing and adding; see roadmap for lifecycle hardening).
+- [x] Bank accounts with IBAN validation, AES-256-GCM encryption, masked API responses, primary-account management and key-version metadata.
+- [x] Oracle as source of truth; Redis read cache; Elasticsearch search with Oracle fallback.
+- [x] Transactional Outbox, RabbitMQ publisher confirms, bounded retries, lease recovery, consumer idempotency and DLQ replay.
+- [x] Supplier event/outbox metrics and automated test suites.
+
+### Planned feature backlog
+
+| Feature | Status | Ticket |
+|---|---|---|
+| Supplier onboarding and approval workflow | Planned | [SUP-F01 #4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) |
+| Supplier categories and classification | Planned | [SUP-F02 #5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) |
+| Documents and compliance tracking | Planned | [SUP-F03 #6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) |
+| Audit trail and change history | Planned | [SUP-F04 #7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) |
+| Contract lifecycle management | Planned | [SUP-F05 #8](https://github.com/rami-aouinti/erp-procurement-service/issues/8) |
+| Performance scorecards | Planned | [SUP-F06 #9](https://github.com/rami-aouinti/erp-procurement-service/issues/9) |
+| Risk assessment and alerts | Planned | [SUP-F07 #10](https://github.com/rami-aouinti/erp-procurement-service/issues/10) |
+| Notifications and scheduled reminders | Planned | [SUP-F08 #11](https://github.com/rami-aouinti/erp-procurement-service/issues/11) |
+| Supplier self-service portal | Planned | [SUP-F09 #12](https://github.com/rami-aouinti/erp-procurement-service/issues/12) |
+| Purchase-order, invoice and payment integration | Planned | [SUP-F10 #13](https://github.com/rami-aouinti/erp-procurement-service/issues/13) |
+| Supplier analytics and spend reporting | Planned | [SUP-F11 #14](https://github.com/rami-aouinti/erp-procurement-service/issues/14) |
+
+**Epic:** [Evolve Supplier Management into an enterprise SRM module (#3)](https://github.com/rami-aouinti/erp-procurement-service/issues/3).
+
+Each feature ticket contains its goal, implementation checklist, concrete acceptance criteria, dependencies and relevant security/testing/documentation requirements. Keep the issue checklist and roadmap status synchronized as work is delivered.
+
+See **[docs/supplier-roadmap.md](docs/supplier-roadmap.md)** for the full current-state audit, architecture rules, feature dependencies, delivery waves, Definition of Ready/Done, migration/security/testing standards and change log. Existing technical documentation remains in [backend/docs/supplier-architecture.md](backend/docs/supplier-architecture.md), [backend/docs/supplier-clean-architecture.md](backend/docs/supplier-clean-architecture.md), [backend/docs/supplier-testing-and-swagger.md](backend/docs/supplier-testing-and-swagger.md) and [docs/supplier-profile-management.md](docs/supplier-profile-management.md).
