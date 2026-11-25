@@ -41,6 +41,9 @@ services:
     App\Supplier\Application\Port\SupplierListCache:
         alias: App\Supplier\Infrastructure\Cache\RedisSupplierListCache
 
+    App\Supplier\Application\Port\SupplierClassificationReader:
+        alias: App\Supplier\Infrastructure\Persistence\OracleSupplierClassificationReader
+
     App\Supplier\Application\Port\SupplierEventDeduplication:
         alias: App\Supplier\Infrastructure\Persistence\OracleSupplierEventDeduplication
 
