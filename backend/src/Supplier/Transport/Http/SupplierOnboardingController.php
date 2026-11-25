@@ -75,6 +75,8 @@ final readonly class SupplierOnboardingController
             return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
         } catch (SupplierEmailAlreadyUsed $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], 409);
+        } catch (UniqueConstraintViolationException) {
+            return new JsonResponse(['error' => 'A supplier with this email already exists.'], 409);
         } catch (InvalidSupplierData | \InvalidArgumentException | JsonException $exception) {
             return new JsonResponse(['error' => $exception->getMessage()], 400);
         }
