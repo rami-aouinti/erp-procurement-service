@@ -7,6 +7,7 @@ namespace App\Supplier\Infrastructure\Persistence\Doctrine;
 use App\Supplier\Domain\Model\Supplier;
 use App\Supplier\Domain\Repository\SupplierRepository as SupplierRepositoryInterface;
 use App\Supplier\Infrastructure\Persistence\Doctrine\Entity\SupplierRecord;
+use App\Supplier\Infrastructure\Audit\SupplierAuditLogger;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\Persistence\ManagerRegistry;
@@ -14,7 +15,7 @@ use Throwable;
 
 final class DoctrineSupplierRepository extends ServiceEntityRepository implements SupplierRepositoryInterface
 {
-    public function __construct(ManagerRegistry $registry, Connection $connection)
+    public function __construct(ManagerRegistry $registry, Connection $connection, private readonly SupplierAuditLogger $audit)
     {
         parent::__construct($registry, SupplierRecord::class);
         $connection->executeStatement("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'");
@@ -69,6 +70,10 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
             $em->flush();
             $saved = $this->toDomain($record);
             $this->appendOutboxEvent($isNew ? 'SupplierCreated' : 'SupplierUpdated', $saved);
+            $this->audit->record((int) $saved->id(), 'SUPPLIER', $saved->id(), $isNew ? 'CREATED' : 'UPDATED', [
+                'name', 'email', 'phone', 'taxNumber', 'status', 'contactPerson',
+                'street', 'city', 'postalCode', 'country',
+            ]);
             $connection->commit();
 
             return $saved;
@@ -92,6 +97,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
         try {
             $this->getEntityManager()->remove($record);
             $this->getEntityManager()->flush();
+            $this->audit->record((int) $supplier->id(), 'SUPPLIER', $supplier->id(), 'DELETED', ['deleted']);
             $connection->executeStatement(
                 "INSERT INTO supplier_outbox_events (event_id, event_type, aggregate_id, payload, status, attempts, occurred_at, next_attempt_at)
                  VALUES (RAWTOHEX(SYS_GUID()), 'SupplierDeleted', :supplierId, :payload, 'PENDING', 0, SYSTIMESTAMP, SYSTIMESTAMP)",
