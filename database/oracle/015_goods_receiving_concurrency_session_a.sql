@@ -6,6 +6,7 @@ SELECT id
   FROM purchase_orders
  WHERE order_number = 'PO-TEST-CONCURRENCY-001'
  FOR UPDATE;
+PROMPT SESSION_A_LOCK_ACQUIRED
 HOST sleep 5
 BEGIN
     receive_purchase_order_line(
