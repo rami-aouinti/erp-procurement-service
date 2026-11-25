@@ -54,6 +54,9 @@ services:
     App\Configuration\Application\Port\ConfigurationCache:
         alias: App\Configuration\Infrastructure\Cache\RedisConfigurationCache
 
+    App\Supplier\Application\Port\SupplierFormPolicy:
+        alias: App\Configuration\Infrastructure\Supplier\ConfigurationSupplierFormPolicy
+
     App\Observability\MetricsRegistry:
         arguments:
             $redisHost: '%env(REDIS_HOST)%'
