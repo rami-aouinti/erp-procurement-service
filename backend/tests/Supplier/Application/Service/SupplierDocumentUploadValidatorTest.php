@@ -32,7 +32,7 @@ final class SupplierDocumentUploadValidatorTest extends TestCase
         $result = (new SupplierDocumentUploadValidator())->validate($file, ['application/pdf'], 1024);
 
         self::assertSame('application/pdf', $result['mimeType']);
-        self::assertSame('_.._tax_certificate.pdf', $result['filename']);
+        self::assertSame('tax_certificate.pdf', $result['filename']);
         self::assertGreaterThan(0, $result['sizeBytes']);
     }
 
