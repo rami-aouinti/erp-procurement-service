@@ -184,6 +184,7 @@ final class ConfigurationUseCasesTest extends TestCase
         self::assertSame(['palette' => 'ocean', 'colorMode' => 'dark'], $saved);
         self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], $get->execute('user-b'));
         self::assertSame($saved, $get->execute('user-a'));
+        self::assertSame($saved, $get->execute('user-a'));
         self::assertSame(4, $repository->findCalls, 'Repeated reads should be served from the per-user cache.');
         self::assertSame(['user:' . hash('sha256', 'user-a')], $cache->invalidated);
     }
