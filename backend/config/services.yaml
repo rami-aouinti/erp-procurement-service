@@ -47,6 +47,13 @@ services:
     App\Supplier\Application\Port\SupplierClassificationRepository:
         alias: App\Supplier\Infrastructure\Persistence\OracleSupplierClassificationRepository
 
+    App\Supplier\Application\Port\SupplierDocumentStorage:
+        alias: App\Supplier\Infrastructure\Storage\LocalPrivateSupplierDocumentStorage
+
+    App\Supplier\Infrastructure\Storage\LocalPrivateSupplierDocumentStorage:
+        arguments:
+            $root: '%env(SUPPLIER_DOCUMENT_STORAGE_PATH)%'
+
     App\Supplier\Application\Port\SupplierEventDeduplication:
         alias: App\Supplier\Infrastructure\Persistence\OracleSupplierEventDeduplication
 
