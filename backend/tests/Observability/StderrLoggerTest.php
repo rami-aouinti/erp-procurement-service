@@ -14,11 +14,8 @@ final class StderrLoggerTest extends TestCase
     {
         $path = tempnam(sys_get_temp_dir(), 'erp-log-');
         self::assertIsString($path);
-        $previousErrorLog = ini_get('error_log');
-
         try {
-            ini_set('error_log', $path);
-            (new StderrLogger())->error('Database health check failed.', [
+            (new StderrLogger($path))->error('Database health check failed.', [
                 'route' => 'api_database_health',
                 'request_id' => 'request-123',
                 'detail' => 'oracle password must never be logged',
@@ -35,7 +32,6 @@ final class StderrLoggerTest extends TestCase
             self::assertStringNotContainsString('password', $line);
             self::assertStringNotContainsString('sensitive exception message', $line);
         } finally {
-            ini_set('error_log', is_string($previousErrorLog) ? $previousErrorLog : '');
             unlink($path);
         }
     }
