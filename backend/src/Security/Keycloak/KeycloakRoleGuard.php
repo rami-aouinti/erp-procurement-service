@@ -29,9 +29,19 @@ final readonly class KeycloakRoleGuard
     public function currentActor(): array
     {
         $user = $this->requestStack->getCurrentRequest()?->attributes->get('_keycloak_user');
-        if (!is_array($user) || !is_string($user['id'] ?? null)) {
+        if (
+            !is_array($user)
+            || !is_string($user['id'] ?? null)
+            || !is_string($user['username'] ?? null)
+            || !is_array($user['roles'] ?? null)
+        ) {
             throw new AccessDeniedHttpException('An authenticated Keycloak identity is required.');
         }
-        return $user;
+
+        return [
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'roles' => array_values(array_filter($user['roles'], 'is_string')),
+        ];
     }
 }
