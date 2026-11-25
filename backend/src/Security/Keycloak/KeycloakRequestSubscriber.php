@@ -46,6 +46,7 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
         if (!is_string($username) || $username === '') {
             $username = $claims['sub'];
         }
+        $username = mb_substr($username, 0, 160);
 
         $request->attributes->set('_keycloak_user', [
             'id' => $claims['sub'],
