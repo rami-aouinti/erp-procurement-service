@@ -37,6 +37,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 | Event consumption | `ConsumeSupplierEventsCommand`, `HandleSupplierEvent`, `supplier_consumed_events` | **Implemented.** At-least-once delivery, persistent deduplication, Oracle reload, Elasticsearch update and Redis invalidation. Not exactly-once delivery. |
 | Dead-letter recovery | retry queue, `supplier.events.dead`, `supplier:events:dead-letter:replay` | **Implemented.** Bounded replay after correcting the underlying cause. |
 | API and test documentation | Supplier Swagger/OpenAPI, unit/functional/integration test suites | **Implemented baseline.** See `backend/docs/supplier-testing-and-swagger.md`. |
+| Audit trail | `supplier_audit_logs` + `SupplierAuditLogger` | **Partial.** Supplier, profile, contact, address and bank-account lifecycle changes are written in the same Oracle transaction. Only changed field names are stored; no before/after values or financial data. HTTP requests are currently attributed as ANONYMOUS because authentication/actor identity is not configured. |
 | Operational metrics | Supplier event/outbox metrics exposed on `/metrics` and Grafana overview | **Implemented baseline.** Includes published/consumed/deduplicated/failed/dead-letter counters and pending/failed/oldest-pending gauges. |
 
 ### 2.2 Important architecture rules already in place
@@ -53,7 +54,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 
 - No complete supplier onboarding/approval state machine is currently implemented. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
 - No supplier document repository, malware-scanning lifecycle or compliance checklist is currently implemented.
-- No comprehensive immutable supplier audit history is currently implemented.
+- A privacy-safe append-only audit baseline is implemented for Supplier master data, profiles, contacts, addresses and bank accounts. Actor identity is still unresolved until authentication/RBAC is introduced; audit records currently identify HTTP requests as ANONYMOUS and CLI/worker activity as SYSTEM.
 - No contract lifecycle module is currently implemented.
 - No evidence-backed performance scorecard or risk assessment module is currently implemented.
 - No supplier-facing self-service portal is currently implemented.
@@ -75,7 +76,7 @@ Status values:
 | F01 | Supplier onboarding and approval workflow | PLANNED | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | RBAC + audit design |
 | F02 | Supplier categories, classification and segmentation | PLANNED | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Taxonomy decision |
 | F03 | Supplier documents and compliance tracking | PLANNED | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + access control |
-| F04 | Supplier audit trail and change history | PLANNED | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Actor identity + retention policy |
+| F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
 | F05 | Supplier contract lifecycle | PLANNED | [#8](https://github.com/rami-aouinti/erp-procurement-service/issues/8) | F03 document storage + reminders |
 | F06 | Supplier performance scorecards | PLANNED | [#9](https://github.com/rami-aouinti/erp-procurement-service/issues/9) | Reliable PO/receipt/quality data |
 | F07 | Supplier risk assessment and alerts | PLANNED | [#10](https://github.com/rami-aouinti/erp-procurement-service/issues/10) | Risk model + audit |
@@ -246,3 +247,4 @@ Start with the foundation/governance prerequisites and then implement **F01 Supp
 |---|---|---|
 | 2026-11-25 | Foundation hardening started: contact/address create responses now return persisted Oracle IDs; profile writes lock the supplier row to serialize primary/default changes; functional regression test added. Local Oracle test and CI verification still pending. | Commits on main: repository fix + SupplierApiTest regression coverage |
 | 2026-11-25 | Initial roadmap created after reviewing current `main` Supplier source, Oracle migrations, tests and docs. Existing implementation and planned features separated explicitly. | GitHub issues [#3–#14](https://github.com/rami-aouinti/erp-procurement-service/issues) |
+| 2026-11-25 | Added privacy-safe append-only audit persistence for Supplier, profile, contact, address and bank-account mutations. Added repeatable Supplier/procurement fixtures and a guarded development reset workflow. Local Oracle verification is pending. | Migration 020, `SupplierAuditLogger`, `021`/`022` fixtures, `scripts/dev-reset.sh`, audit functional assertions |
