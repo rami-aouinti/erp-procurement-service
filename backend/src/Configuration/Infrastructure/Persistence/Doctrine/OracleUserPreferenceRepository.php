@@ -29,8 +29,12 @@ final readonly class OracleUserPreferenceRepository implements UserPreferenceRep
             if (!is_string($value)) {
                 continue;
             }
+            $key = (string) ($row['PREFERENCE_KEY'] ?? $row['preference_key'] ?? '');
+            if ($key === '') {
+                continue;
+            }
             try {
-                $preferences[$row['PREFERENCE_KEY'] ?? $row['preference_key']] = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+                $preferences[$key] = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException) {
                 continue;
             }
