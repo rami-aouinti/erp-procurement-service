@@ -64,6 +64,26 @@ final class HandleSupplierEventTest extends TestCase
         );
     }
 
+
+    public function testClassificationEventRebuildsTheCurrentSearchDocument(): void
+    {
+        $supplier = \\App\\Supplier\\Domain\\Model\\Supplier::reconstitute(42, 'Current Supplier', null, null, null, new \\DateTimeImmutable());
+        $suppliers = $this->createMock(SupplierRepository::class);
+        $suppliers->expects(self::once())->method('findById')->with(42)->willReturn($supplier);
+        $search = $this->createMock(SupplierSearchIndex::class);
+        $search->expects(self::once())->method('index')->with($supplier);
+        $search->expects(self::never())->method('delete');
+        $cache = $this->createMock(SupplierListCache::class);
+        $cache->expects(self::once())->method('invalidate');
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::once())->method('claim')->with('event-42', 'SupplierClassificationUpdated', 42)->willReturn('claim-token');
+        $deduplication->expects(self::once())->method('markProcessed')->with('event-42', 'claim-token');
+        $metrics = $this->metrics();
+        $metrics->expects(self::once())->method('incrementSupplierEvent')->with('consumed');
+
+        (new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics))($this->event('SupplierClassificationUpdated'));
+    }
+
     public function testDuplicateDeliveryIsSkippedAfterFirstSuccessfulProcessing(): void
     {
         $suppliers = $this->createMock(SupplierRepository::class);
