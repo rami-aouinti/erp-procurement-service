@@ -56,6 +56,50 @@ final readonly class SupplierProfileRelationsController
         }
     }
 
+
+    #[Route('/contacts/{contactId<\\\\d+>}', name: 'api_supplier_contacts_update', methods: ['PUT'])]
+    public function updateContact(int $id, int $contactId, Request $request): JsonResponse
+    {
+        try {
+            $data = $this->payload($request);
+            $contact = new SupplierContact(
+                $contactId,
+                $id,
+                self::string($data, 'contactType', 'GENERAL'),
+                self::string($data, 'firstName'),
+                self::string($data, 'lastName'),
+                self::nullableString($data, 'jobTitle'),
+                self::nullableString($data, 'email'),
+                self::nullableString($data, 'phone'),
+                self::boolean($data, 'primary'),
+            );
+
+            if (!$this->relations->updateContact($contact)) {
+                return new JsonResponse(['error' => 'Supplier contact not found.'], 404);
+            }
+
+            return new JsonResponse(self::serializeContact($contact));
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
+        } catch (JsonException | InvalidArgumentException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], 400);
+        }
+    }
+
+    #[Route('/contacts/{contactId<\\\\d+>}', name: 'api_supplier_contacts_delete', methods: ['DELETE'])]
+    public function deleteContact(int $id, int $contactId): JsonResponse
+    {
+        try {
+            if (!$this->relations->deleteContact($id, $contactId)) {
+                return new JsonResponse(['error' => 'Supplier contact not found.'], 404);
+            }
+
+            return new JsonResponse(null, 204);
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
+        }
+    }
+
     #[Route('/addresses', name: 'api_supplier_addresses_list', methods: ['GET'])]
     public function addresses(int $id): JsonResponse
     {
