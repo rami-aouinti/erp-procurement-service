@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Security\Keycloak;
 
 use App\Security\Keycloak\KeycloakJwtAuthenticator;
+use App\Security\Keycloak\KeycloakUnavailableException;
 use PHPUnit\Framework\TestCase;
 
 final class KeycloakJwtAuthenticatorTest extends TestCase
@@ -37,6 +38,27 @@ final class KeycloakJwtAuthenticatorTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Invalid token signature.');
         $authenticator->authenticate(implode('.', $parts));
+    }
+
+    public function testUnavailableJwksIsReportedAsIdentityProviderFailure(): void
+    {
+        $header = $this->base64UrlEncode(json_encode([
+            'alg' => 'RS256',
+            'kid' => 'missing-key',
+        ], JSON_THROW_ON_ERROR));
+        $payload = $this->base64UrlEncode(json_encode([
+            'sub' => 'user-123',
+        ], JSON_THROW_ON_ERROR));
+        $token = $header.'.'.$payload.'.signature';
+
+        $authenticator = new KeycloakJwtAuthenticator(
+            'https://identity.example/realms/erp',
+            'erp-procurement-api',
+            'file:///this/path/does-not-exist-jwks.json',
+        );
+
+        $this->expectException(KeycloakUnavailableException::class);
+        $authenticator->authenticate($token);
     }
 
     /** @return array{KeycloakJwtAuthenticator, string} */
