@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Supplier\Transport\Http;
 
+use App\Security\Keycloak\KeycloakRoleGuard;
+
 use App\Supplier\Application\DTO\SupplierData;
 use App\Supplier\Application\Exception\SupplierValidationException;
 use App\Supplier\Application\UseCase\CreateSupplier;
