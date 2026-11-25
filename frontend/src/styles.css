@@ -898,3 +898,12 @@ input[type="radio"] {
 .auth-login-button{width:100%;justify-content:center;padding:13px 18px}
 .auth-security-note{margin:22px 0 0;color:var(--muted,#64748b);font-size:12px}
 .auth-logout{padding:8px 12px;font-size:12px}
+
+.onboarding-history{padding:24px;border-top:1px solid var(--border,#e5e7eb)}
+.onboarding-history h3{margin:0 0 16px;font-size:15px}
+.onboarding-history ol{margin:0;padding-left:22px;display:grid;gap:14px}
+.onboarding-history li{padding-left:4px}
+.onboarding-history li strong,.onboarding-history li span{display:block}
+.onboarding-history li span{margin-top:4px;color:var(--muted,#64748b);font-size:12px}
+.onboarding-history li p{margin:6px 0 0;color:var(--muted,#64748b)}
+.directory-heading h2{margin:0 0 5px;font-size:18px}
