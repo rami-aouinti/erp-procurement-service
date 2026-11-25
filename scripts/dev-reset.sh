@@ -43,12 +43,15 @@ run_sql() {
 # Reassert the conditional unique indexes and ensure the audit table exists before resetting data.
 run_sql database/oracle/019_fix_supplier_profile_conditional_unique_indexes.sql
 run_sql database/oracle/020_create_supplier_audit_trail.sql
+run_sql database/oracle/023_supplier_onboarding_workflow.sql
 run_sql database/oracle/030_reset_dev_data.sql
 
 # Seed the procurement core, complete supplier profiles and representative stock movements.
 run_sql database/oracle/002_seed_procurement_data.sql
 run_sql database/oracle/021_seed_supplier_profile_fixtures.sql
 run_sql database/oracle/022_seed_goods_receiving_fixtures.sql
+# Backfill newly seeded development suppliers as legacy-approved.
+run_sql database/oracle/023_supplier_onboarding_workflow.sql
 
 echo "Creating encrypted bank-account fixtures through the application service..."
 docker compose exec -T backend php bin/console app:fixtures:supplier-bank-accounts --env=dev
