@@ -60,8 +60,9 @@ final class KeycloakJwtAuthenticator
 
     private function publicKey(string $kid): string
     {
-        if (isset(self::$keyCache[$kid]) && self::$keyCache[$kid]['expiresAt'] > time()) {
-            return self::$keyCache[$kid]['key'];
+        $cacheKey = $this->jwksUrl.'#'.$kid;
+        if (isset(self::$keyCache[$cacheKey]) && self::$keyCache[$cacheKey]['expiresAt'] > time()) {
+            return self::$keyCache[$cacheKey]['key'];
         }
 
         $context = stream_context_create(['http' => ['timeout' => 3, 'ignore_errors' => false]]);
@@ -76,7 +77,7 @@ final class KeycloakJwtAuthenticator
                     $this->base64UrlDecode((string) ($jwk['n'] ?? '')),
                     $this->base64UrlDecode((string) ($jwk['e'] ?? '')),
                 );
-                self::$keyCache[$kid] = ['key' => $pem, 'expiresAt' => time() + 300];
+                self::$keyCache[$cacheKey] = ['key' => $pem, 'expiresAt' => time() + 300];
                 return $pem;
             }
         }
