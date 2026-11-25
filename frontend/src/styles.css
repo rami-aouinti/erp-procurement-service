@@ -496,3 +496,6 @@ body { background: #f6f8fc; }
   .edit-form-card { padding: 17px; }
   .edit-card-heading { align-items: flex-start; gap: 10px; }
 }
+
+/* Header alignment */
+.topbar { display: flex; align-items: center; justify-content: space-between; }
