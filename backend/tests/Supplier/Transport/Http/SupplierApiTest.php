@@ -16,7 +16,7 @@ final class SupplierApiTest extends KernelTestCase
 {
     private Connection $connection;
     private HttpKernelInterface $httpKernel;
-    private string $email;
+    private string $email;\n    private ?int $indexedSupplierId = null;
 
     protected function setUp(): void
     {
@@ -177,7 +177,7 @@ final class SupplierApiTest extends KernelTestCase
         // test owns its database transaction, so seed the projection explicitly.
         $supplier = static::getContainer()->get(SupplierRepository::class)->findById($id);
         self::assertNotNull($supplier);
-        static::getContainer()->get(SupplierSearchIndex::class)->index($supplier);
+        static::getContainer()->get(SupplierSearchIndex::class)->index($supplier);\n        $this->indexedSupplierId = $id;
 
         $results = $this->request('GET', '/api/suppliers?search=Elasticsearch%20Demo');
         self::assertSame(Response::HTTP_OK, $results->getStatusCode());
