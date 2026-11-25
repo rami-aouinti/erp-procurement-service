@@ -175,6 +175,7 @@ final class SupplierApiTest extends KernelTestCase
         self::assertSame('3.0.3', $document['openapi']);
         self::assertArrayHasKey('/api/suppliers', $document['paths']);
         self::assertArrayHasKey('/api/suppliers/{id}', $document['paths']);
+        self::assertArrayHasKey('/api/suppliers/{id}/contacts/{contactId}', $document['paths']);
 
         $ui = $this->request('GET', '/api/docs');
         self::assertSame(Response::HTTP_OK, $ui->getStatusCode());
@@ -218,6 +219,33 @@ final class SupplierApiTest extends KernelTestCase
         self::assertCount(2, $contactItems);
         self::assertSame(1, count(array_filter($contactItems, static fn (array $item): bool => $item['primary'] === true)));
         self::assertSame($secondContactData['id'], $contactItems[0]['id']);
+
+
+        $updatedContact = $this->request('PUT', '/api/suppliers/' . $supplierId . '/contacts/' . $secondContactData['id'], [
+            'contactType' => 'GENERAL',
+            'firstName' => 'Grace',
+            'lastName' => 'Hopper',
+            'jobTitle' => 'Admiral',
+            'email' => 'grace@example.test',
+            'phone' => null,
+            'primary' => true,
+        ]);
+        self::assertSame(Response::HTTP_OK, $updatedContact->getStatusCode(), (string) $updatedContact->getContent());
+        self::assertSame('Admiral', json_decode((string) $updatedContact->getContent(), true, 512, JSON_THROW_ON_ERROR)['jobTitle']);
+
+        self::assertSame(
+            Response::HTTP_NO_CONTENT,
+            $this->request('DELETE', '/api/suppliers/' . $supplierId . '/contacts/' . $secondContactData['id'])->getStatusCode(),
+        );
+        $contactsAfterDelete = json_decode(
+            (string) $this->request('GET', '/api/suppliers/' . $supplierId . '/contacts')->getContent(),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertCount(1, $contactsAfterDelete);
+        self::assertSame($firstContactData['id'], $contactsAfterDelete[0]['id']);
+        self::assertTrue($contactsAfterDelete[0]['primary']);
 
         $firstAddress = $this->request('POST', '/api/suppliers/' . $supplierId . '/addresses', [
             'addressType' => 'BILLING',
