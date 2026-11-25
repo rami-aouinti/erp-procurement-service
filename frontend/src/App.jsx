@@ -47,7 +47,7 @@ function WorkspaceApp() {
     const defaults = {
       siteName: 'ERP Procurement', companyName: '', companyEmail: '', companyPhone: '',
       companyAddress: '', currency: 'EUR', locale: 'en', timezone: 'Europe/Berlin',
-      dateFormat: 'Y-m-d', itemsPerPage: 10,
+      dateFormat: 'Y-m-d', itemsPerPage: 5,
       supplierForm: { requireEmail: false, requirePhone: false, requireTaxNumber: false, requireContactPerson: false },
     };
     try {
