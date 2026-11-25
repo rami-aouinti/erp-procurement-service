@@ -18,6 +18,12 @@ services:
             - '../src/Supplier/Application/DTO/'
             - '../src/Supplier/Infrastructure/Persistence/Doctrine/Entity/'
 
+    App\Security\Keycloak\KeycloakJwtAuthenticator:
+        arguments:
+            $issuer: '%env(KEYCLOAK_ISSUER)%'
+            $audience: '%env(KEYCLOAK_AUDIENCE)%'
+            $jwksUrl: '%env(KEYCLOAK_JWKS_URL)%'
+
     App\Supplier\Application\Port\SupplierBankDataCipher:
         alias: App\Supplier\Infrastructure\Security\SupplierBankDataEncryptor
 
