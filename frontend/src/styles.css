@@ -873,3 +873,19 @@ input[type="radio"] {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
+
+
+/* Supplier directory: Appbar search, aligned actions and sortable columns */
+.topbar-search{display:flex;align-items:center;gap:10px;width:min(390px,38vw);height:40px;padding:0 13px;border:1px solid var(--border-color);border-radius:11px;color:var(--text-muted);background:var(--surface-soft)}
+.topbar-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 15%,transparent)}
+.topbar-search input{width:100%;min-width:0;border:0;outline:0;color:var(--text-primary);background:transparent;font:inherit;font-size:12px}
+.topbar-search input::placeholder{color:var(--text-muted)}
+.topbar-right{flex:1;justify-content:flex-end}
+.directory-card .directory-actions{justify-content:flex-end}
+.directory-action-group{display:flex;align-items:center;gap:9px;flex-wrap:nowrap}
+.directory-action-group button{white-space:nowrap}
+.table-sort{display:inline-flex;align-items:center;gap:7px;padding:0;border:0;color:inherit;background:transparent;font:inherit;font-weight:750;letter-spacing:inherit;cursor:pointer}
+.table-sort span{color:var(--accent-strong);font-size:13px}
+.table-sort:hover{color:var(--accent-strong)}
+@media(max-width:760px){.topbar-search{width:min(260px,42vw)}.directory-action-group{flex-wrap:wrap}}
+@media(max-width:520px){.topbar-search{width:40vw}.directory-action-group{width:100%}.directory-action-group button{flex:1;padding-inline:8px;font-size:11px}}
