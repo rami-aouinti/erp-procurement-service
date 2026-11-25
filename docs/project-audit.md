@@ -69,3 +69,25 @@ It is **not yet production-ready**. The main remaining gaps are operational hard
 3. Run k6 and correlate latency with logs and Prometheus metrics.
 4. Deploy the app and Loki/Alloy to a development Kubernetes cluster.
 5. Harden cloud credentials, TLS, secrets, network policies and backups before production exposure.
+
+
+## Oracle procurement schema audit (2026-11-25)
+
+The local Oracle schema was inspected through read-only SQL queries. The observed schema has ten core tables, enabled primary/foreign/unique/check constraints, seven identity columns, and valid indexes. Read-only consistency checks found no orphaned foreign-key relationships and no difference between recorded purchase-order received quantities and summed receipt-line quantities. The stock-versus-movement check also returned no differences for IN/OUT movements; ADJUSTMENT semantics still need to be defined before that reconciliation is considered complete. The standalone `RECEIVE_PURCHASE_ORDER_LINE` procedure was reported as VALID with no compilation errors.
+
+### Changes added on main
+
+- Added `IDX_GRL_RECEIPT_ID` to support lookups of receipt lines by their parent receipt.
+- Added `GOODS_RECEIPT_NUMBER_SEQ` and changed new receipt numbers to a sequence-backed format (`GR-YYYY-0000000001`) to avoid relying on millisecond timestamp uniqueness.
+- Added `database/oracle/011_harden_goods_receiving.sql` as an additive migration for databases where goods receiving is already installed.
+- Updated `004_create_goods_receiving.sql` so fresh installations receive the same index and sequence-based numbering.
+
+The migration changes schema objects only; it does not create receipts or modify existing stock/order quantities. Oracle DDL implicitly commits, so apply it during a controlled maintenance window and inspect the output. Existing receipt numbers are retained.
+
+### Remaining Oracle work
+
+- Verify the new migration against the user's local Oracle container and confirm the index, sequence and procedure are VALID.
+- Exercise the procedure with a disposable submitted purchase order, including success, over-receipt, invalid status, unknown SKU and concurrent calls. The procedure currently owns COMMIT/ROLLBACK; preserve this documented transaction contract unless the application integration is deliberately redesigned.
+- Define whether ADJUSTMENT quantities are signed or whether a separate direction is required, then include them in stock reconciliation.
+- Consider enforcing that a goods receipt and its receipt line refer to the same purchase order, not merely independently valid parent rows.
+- Review actual SQL plans and workload before adding further indexes.
