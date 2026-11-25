@@ -43,9 +43,14 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
             throw new UnauthorizedHttpException('Bearer', 'The access token is invalid or expired.');
         }
 
+        $username = $claims['preferred_username'] ?? $claims['email'] ?? $claims['sub'];
+        if (!is_string($username) || $username === '') {
+            $username = $claims['sub'];
+        }
+
         $request->attributes->set('_keycloak_user', [
             'id' => $claims['sub'],
-            'username' => $claims['preferred_username'] ?? $claims['email'] ?? $claims['sub'],
+            'username' => $username,
             'roles' => $this->roles($claims),
         ]);
     }
@@ -54,6 +59,9 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
     private function roles(array $claims): array
     {
         $roles = $claims['realm_access']['roles'] ?? [];
+        if (!is_array($roles)) {
+            $roles = [];
+        }
         foreach (($claims['resource_access'] ?? []) as $client) {
             if (is_array($client) && is_array($client['roles'] ?? null)) {
                 $roles = array_merge($roles, $client['roles']);
