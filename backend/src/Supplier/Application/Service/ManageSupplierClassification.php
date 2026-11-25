@@ -33,7 +33,13 @@ final readonly class ManageSupplierClassification
             'commodities' => 'id, code, name, description, is_active AS "active"',
             default => 'id, code, name, is_active AS "active"',
         };
-        return $this->db->fetchAllAssociative("SELECT {$columns} FROM {$table} ORDER BY name");
+        $rows = $this->db->fetchAllAssociative("SELECT {$columns} FROM {$table} ORDER BY name");
+        return array_map(static function (array $row): array {
+            $row['id'] = (int)$row['id'];
+            $row['active'] = (int)$row['active'] === 1;
+            if (isset($row['parentId'])) $row['parentId'] = $row['parentId'] !== null ? (int)$row['parentId'] : null;
+            return $row;
+        }, $rows);
     }
 
     /** @param array<string,mixed> $data @return array<string,mixed> */
