@@ -5,9 +5,10 @@ const PAGE_SIZE = 5;
 const blank = { name: '', email: '', phone: '', taxNumber: '', status: 'ACTIVE', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
 const steps = ['Company', 'Contact', 'Address'];
 
-export default function SuppliersPage({ navigate, onCountChange }) {
+export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange }) {
   const [items, setItems] = useState([]);
-  const [queryInput, setQueryInput] = useState('');
+  const [sortField, setSortField] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -31,11 +32,30 @@ export default function SuppliersPage({ navigate, onCountChange }) {
     finally { setLoading(false); }
   }, [query, status, onCountChange]);
 
-  useEffect(() => { const timer = window.setTimeout(() => setQuery(queryInput.trim()), 300); return () => window.clearTimeout(timer); }, [queryInput]);
+  useEffect(() => { const timer = window.setTimeout(() => setQuery(searchValue.trim()), 300); return () => window.clearTimeout(timer); }, [searchValue]);
   useEffect(() => { load(); }, [load]);
 
   const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const visible = useMemo(() => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [items, page]);
+  const sortedItems = useMemo(() => [...items].sort((a, b) => {
+    const value = (item) => sortField === 'location' ? [item.city, item.postalCode, item.country].filter(Boolean).join(' ') : item[sortField] || '';
+    const comparison = String(value(a)).localeCompare(String(value(b)), undefined, { numeric: true, sensitivity: 'base' });
+    return sortDirection === 'asc' ? comparison : -comparison;
+  }), [items, sortField, sortDirection]);
+  const visible = useMemo(() => sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [sortedItems, page]);
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+  const sortLabel = (field, label) => <button type="button" className="table-sort" onClick={() => toggleSort(field)}>{label}<span>{sortField === field ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span></button>;
+  const exportCsv = () => {
+    const columns = [['Supplier', 'name'], ['Tax / VAT number', 'taxNumber'], ['Contact person', 'contactPerson'], ['Email', 'email'], ['Phone', 'phone'], ['Street', 'street'], ['Postal code', 'postalCode'], ['City', 'city'], ['Country', 'country'], ['Status', 'status']];
+    const escapeCsv = (value) => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+    const csv = [columns.map(([label]) => escapeCsv(label)).join(','), ...sortedItems.map((item) => columns.map(([, key]) => escapeCsv(item[key])).join(','))].join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = 'suppliers.csv'; link.click();
+    URL.revokeObjectURL(url);
+  };
   const change = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
   const openCreate = () => { setForm(blank); setStep(0); setModal(true); setError(''); setNotice(''); };
   const closeCreate = () => { if (!saving) setModal(false); };
@@ -70,14 +90,17 @@ export default function SuppliersPage({ navigate, onCountChange }) {
     <section className="page-content suppliers-page">
       <section className="supplier-table-card directory-card">
         <div className="directory-heading directory-actions">
-          <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>
-          <button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button>
+          <div className="directory-action-group">
+            <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>
+            <button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button>
+            <button className="secondary-button" onClick={exportCsv} disabled={items.length === 0}>↓ Export CSV</button>
+          </div>
         </div>
         {notice && <div className="alert alert-success" role="status">{notice}</div>}
         {error && !modal && <div className="alert alert-error" role="alert">{error}</div>}
-        <div className="directory-toolbar"><label className="search-field"><span>⌕</span><input value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder="Search suppliers by name, email, tax number..." aria-label="Search suppliers" /></label><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select></div>
+        <div className="directory-toolbar"><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select></div>
         {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : items.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span><button className="primary-button" onClick={openCreate}>Create supplier</button></div> : <>
-          <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th>SUPPLIER</th><th>CONTACT INFORMATION</th><th>LOCATION</th><th>STATUS</th><th className="actions-heading">ACTIONS</th></tr></thead>
+          <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th>{sortLabel('name', 'SUPPLIER')}</th><th>{sortLabel('contactPerson', 'CONTACT INFORMATION')}</th><th>{sortLabel('location', 'LOCATION')}</th><th>{sortLabel('status', 'STATUS')}</th><th className="actions-heading">ACTIONS</th></tr></thead>
             <tbody>{visible.map((supplier) => <tr key={supplier.id}>
               <td><button className="supplier-name-link" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}`)}>{supplier.name}</button><small>SUP-{String(supplier.id).padStart(4, '0')} · {supplier.taxNumber || 'No tax number'}</small></td>
               <td><span className="cell-primary">{supplier.contactPerson || '—'}</span><small>{supplier.email || supplier.phone || 'No contact details'}</small></td>
