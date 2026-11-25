@@ -9,7 +9,7 @@ The Compose stack includes Keycloak 26 at http://localhost:8081. The realm impor
 - API audience: `erp-procurement-api`
 - Browser client: `erp-procurement-frontend` (Authorization Code + PKCE S256)
 - Local-only test client: `erp-procurement-dev-cli` (password grant enabled only to simplify local API exercises)
-- Realm roles: `procurement-user`, `supplier-onboarding-submit`, `supplier-reviewer`, `supplier-admin`
+- Realm roles: `procurement-user`, `supplier-onboarding-submit`, `supplier-reviewer`, `supplier-admin`, `supplier-finance`
 
 Start the identity provider:
 
@@ -62,7 +62,8 @@ service accounts.
 | `supplier-onboarding-submit` | Register a candidate and submit it for review |
 | `supplier-reviewer` | Read the approval queue/history; approve, reject or request changes |
 | `supplier-admin` | Both submit and review |
-| `procurement-user` | General procurement role; no approval authority by itself |
+| `procurement-user` | Read suppliers and maintain profiles, contacts and addresses; no approval authority |
+| `supplier-finance` | Read and manage supplier bank accounts |
 
 Role checks happen in the API controller after the token has been cryptographically
 validated. A missing/invalid token returns 401; a valid token without the required role
@@ -143,14 +144,33 @@ The migration is safe to re-run for local recovery: it creates missing objects, 
 suppliers not yet represented in the onboarding table as APPROVED, and refreshes the
 audit action constraint. It does not reset supplier operational statuses.
 
-## Important rollout boundary
+## Legacy Supplier API authorization
 
-This first security increment protects the new onboarding API and captures verified
-Keycloak identity in audit records. The pre-existing Supplier CRUD/profile endpoints
-remain on their legacy access policy for backward compatibility with the current UI and
-functional tests. Do not expose the application publicly yet: the next security task is
-to migrate those legacy endpoints and the React frontend to Keycloak, then add full
-authorization and negative-path tests for every supplier/profile/bank-account operation.
+The legacy Supplier API now also requires a verified Keycloak access token. Role
+authorization is enforced inside the backend controllers; frontend navigation visibility
+is not treated as a security boundary.
+
+| Operation | Allowed roles |
+|---|---|
+| List and read suppliers, profiles, contacts and addresses | `procurement-user`, `supplier-onboarding-submit`, `supplier-reviewer`, `supplier-admin` |
+| Update supplier profiles, contacts and addresses | `procurement-user`, `supplier-admin` |
+| Direct supplier creation, core supplier update and deletion | `supplier-admin` only |
+| Read and manage bank accounts | `supplier-finance`, `supplier-admin` |
+
+Direct supplier creation is restricted to administrators because the normal supplier
+registration path must go through onboarding and approval. Bank-account operations use a
+separate finance role because masked IBANs and bank metadata are still sensitive.
+
+The realm JSON defines `supplier-finance`. Existing persistent Keycloak realms are not
+automatically overwritten by a realm import on every restart. If this role is missing in
+an already initialized local realm, create it under **Realm roles** in the Keycloak admin
+console and assign it only to finance users. Assign `procurement-user` to normal
+procurement staff, `supplier-onboarding-submit` to candidate submitters,
+`supplier-reviewer` to reviewers and `supplier-admin` only to administrators.
+
+Anonymous legacy Supplier API requests return 401. Authenticated users without the
+required role receive 403. The API tests cover both cases and verify that reviewers
+cannot use direct supplier creation or access bank-account endpoints.
 
 
 ## React frontend integration
