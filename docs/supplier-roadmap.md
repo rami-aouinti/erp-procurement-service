@@ -25,7 +25,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 
 | Capability | Current implementation | Status / boundary |
 |---|---|---|
-| Supplier master CRUD | `SupplierController`, `CreateSupplier`, `UpdateSupplier`, `GetSupplier`, `ListSuppliers`, `DeleteSupplier`, domain `Supplier` | **Implemented.** Existing status enum is ACTIVE / INACTIVE / BLOCKED. |
+| Supplier master CRUD | `SupplierController`, `CreateSupplier`, `UpdateSupplier`, `GetSupplier`, `ListSuppliers`, `DeleteSupplier`, domain `Supplier` | **Implemented baseline.** Existing status enum is ACTIVE / INACTIVE / BLOCKED; legacy routes still need Keycloak authorization. |
 | Validation and duplicate protection | `SupplierDataValidator`, value objects for name/email/phone, repository email existence check | **Implemented.** Email duplicate protection exists; broader legal-entity duplicate detection is future work. |
 | Supplier profile | `SupplierProfile`, profile repository/use cases/controller and Oracle migration 009 | **Implemented baseline.** Legal name, registration number, VAT number, website, language, currency and payment terms. |
 | Multiple contacts | `SupplierContact`, `ManageSupplierProfileRelations`, profile repository and `supplier_contacts` | **Implemented baseline.** Listing/adding is present; full edit/delete lifecycle and richer contact governance should be verified/extended separately. |
@@ -52,7 +52,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 
 ### 2.3 Current implementation gaps (do not describe these as already delivered)
 
-- No complete supplier onboarding/approval state machine is currently implemented. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
+- Supplier onboarding backend is **PARTIAL**: Keycloak RS256 JWT validation, role-protected candidate submission/review endpoints, Oracle transition history, transactional outbox events and a purchase-order eligibility trigger are implemented. React OIDC login/review screens, comprehensive authorization/Oracle concurrency tests and migration of legacy Supplier/profile/bank-account routes remain open. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
 - No supplier document repository, malware-scanning lifecycle or compliance checklist is currently implemented.
 - A privacy-safe append-only audit baseline is implemented for Supplier master data, profiles, contacts, addresses and bank accounts. Actor identity is still unresolved until authentication/RBAC is introduced; audit records currently identify HTTP requests as ANONYMOUS and CLI/worker activity as SYSTEM.
 - No contract lifecycle module is currently implemented.
@@ -73,7 +73,7 @@ Status values:
 | ID | Feature | Status | Tracking issue | Main dependency |
 |---|---|---:|---|---|
 | BASE | Supplier CRUD, validation, search, profile, contacts, addresses, bank accounts | PARTIAL / existing baseline | [Epic #3](https://github.com/rami-aouinti/erp-procurement-service/issues/3) | Existing module |
-| F01 | Supplier onboarding and approval workflow | PLANNED | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | RBAC + audit design |
+| F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Frontend OIDC/review UI + legacy API authorization + broader tests |
 | F02 | Supplier categories, classification and segmentation | PLANNED | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Taxonomy decision |
 | F03 | Supplier documents and compliance tracking | PLANNED | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + access control |
 | F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
@@ -103,7 +103,7 @@ This order is a dependency-aware proposal, not a promise that every feature must
 - [ ] Add database migration inventory/version tracking and documented rollback approach.
 
 ### Wave 1 — Core governance
-- [ ] **F01:** Onboarding and approval workflow.
+- [~] **F01:** Backend state machine, Keycloak roles, audit/history, outbox and purchase-order eligibility guard implemented; frontend OIDC/review UI and full authorization coverage remain.
 - [ ] **F02:** Categories and classification.
 - [ ] **F04:** Audit trail (start early; onboarding and sensitive changes depend on it).
 
