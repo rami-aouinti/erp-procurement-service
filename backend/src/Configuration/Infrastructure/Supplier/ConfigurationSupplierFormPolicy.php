@@ -15,7 +15,12 @@ final readonly class ConfigurationSupplierFormPolicy implements SupplierFormPoli
 
     public function isRequired(string $field): bool
     {
-        $form = $this->configuration->execute()['supplierForm'] ?? [];
+        $settings = $this->configuration->execute();
+        $form = $settings['supplierForm'] ?? [];
+        if (!is_array($form)) {
+            return false;
+        }
+
         $option = match ($field) {
             'email' => 'requireEmail',
             'phone' => 'requirePhone',
