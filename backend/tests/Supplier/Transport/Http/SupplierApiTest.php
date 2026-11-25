@@ -46,11 +46,15 @@ final class SupplierApiTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function testOnboardingEndpointsRequireAKeycloakAccessToken(): void
+    public function testOnboardingAndConfigurationEndpointsRequireAKeycloakAccessToken(): void
     {
-        $response = $this->request('GET', '/api/supplier-onboarding/queue');
+        $onboarding = $this->request('GET', '/api/supplier-onboarding/queue');
+        $preferences = $this->request('GET', '/api/configuration/me/preferences');
+        $siteConfiguration = $this->request('GET', '/api/configuration/site');
 
-        self::assertSame(Response::HTTP_UNAUTHORIZED, $response->getStatusCode());
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $onboarding->getStatusCode());
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $preferences->getStatusCode());
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $siteConfiguration->getStatusCode());
     }
 
     public function testSupplierCrudLifecycle(): void
@@ -213,6 +217,8 @@ final class SupplierApiTest extends KernelTestCase
         $document = json_decode((string) $spec->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame('3.0.3', $document['openapi']);
         self::assertArrayHasKey('/api/suppliers', $document['paths']);
+        self::assertArrayHasKey('/api/configuration/site', $document['paths']);
+        self::assertArrayHasKey('/api/configuration/me/preferences', $document['paths']);
         self::assertArrayHasKey('/api/suppliers/{id}', $document['paths']);
         self::assertArrayHasKey('/api/suppliers/{id}/contacts/{contactId}', $document['paths']);
         self::assertArrayHasKey('/api/suppliers/{id}/addresses/{addressId}', $document['paths']);
