@@ -1,6 +1,6 @@
 import {
   ArrowRight, BookOpen, Building2, CheckCircle2, CircleHelp, ClipboardCheck,
-  FileCog, FileText, KeyRound, LifeBuoy, LockKeyhole, Search, Settings2,
+  FileCog, KeyRound, LifeBuoy, LockKeyhole, Search, Settings2,
   ShieldCheck, Users, Workflow,
 } from 'lucide-react';
 import '../help-page.css';
@@ -90,6 +90,7 @@ const faqs = [
 const quickLinks = [
   { href: '#suppliers', label: 'Manage suppliers', icon: Building2 },
   { href: '#approvals', label: 'Review onboarding', icon: ClipboardCheck },
+  { href: '#classification', label: 'Supplier classification', icon: Workflow },
   { href: '#configuration', label: 'Configure workspace', icon: FileCog },
   { href: '#faq', label: 'Troubleshooting & FAQ', icon: CircleHelp },
 ];
