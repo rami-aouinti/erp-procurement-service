@@ -38,7 +38,7 @@ final readonly class SearchSuppliers
             $results = $this->searchIndex->search($query, $status, 500, $filters);
 
             // Bootstrap an empty index from Oracle on the first unfiltered listing.
-            if ($results === [] && $query === '' && $status === null) {
+            if ($results === [] && $query === '' && $status === null && $filters === []) {
                 $allSuppliers = $this->suppliers->findAll();
                 if ($allSuppliers !== []) {
                     $this->searchIndex->reindex($allSuppliers);
