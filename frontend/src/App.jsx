@@ -89,7 +89,7 @@ export default function App() {
     <div className="erp-app">
       <aside className="sidebar">
         <a className="brand" href="/" onClick={(event) => { event.preventDefault(); navigate('/'); }}>
-          <span className="brand-mark">P</span><span className="brand-copy"><strong>Procurement</strong><small>MANAGEMENT SUITE</small></span>
+          <span className="brand-mark">P</span><span className="brand-copy"><strong>{settings.appName || "Procurement"}</strong><small>MANAGEMENT SUITE</small></span>
         </a>
         <div className="sidebar-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
