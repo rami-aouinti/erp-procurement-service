@@ -30,7 +30,7 @@ BEGIN
     assert_count('GOODS_RECEIPT_LINES', 5);
     assert_count('INVENTORY', 5);
     assert_count('INVENTORY_MOVEMENTS', 5);
-    assert_count('SUPPLIER_AUDIT_LOGS', 5);
+    assert_count('SUPPLIER_AUDIT_LOGS', 35);
 
     SELECT COUNT(*) INTO v_count
       FROM purchase_orders
