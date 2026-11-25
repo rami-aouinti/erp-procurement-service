@@ -176,6 +176,7 @@ final class SupplierApiTest extends KernelTestCase
         self::assertArrayHasKey('/api/suppliers', $document['paths']);
         self::assertArrayHasKey('/api/suppliers/{id}', $document['paths']);
         self::assertArrayHasKey('/api/suppliers/{id}/contacts/{contactId}', $document['paths']);
+        self::assertArrayHasKey('/api/suppliers/{id}/addresses/{addressId}', $document['paths']);
 
         $ui = $this->request('GET', '/api/docs');
         self::assertSame(Response::HTTP_OK, $ui->getStatusCode());
@@ -277,6 +278,37 @@ final class SupplierApiTest extends KernelTestCase
         self::assertCount(2, $addressItems);
         self::assertSame(1, count(array_filter($addressItems, static fn (array $item): bool => $item['default'] === true)));
         self::assertSame($secondAddressData['id'], $addressItems[0]['id']);
+
+        $updatedAddress = $this->request('PUT', '/api/suppliers/' . $supplierId . '/addresses/' . $secondAddressData['id'], [
+            'addressType' => 'BILLING',
+            'label' => 'Head office',
+            'companyName' => 'Profile Relations Supplier GmbH',
+            'street' => 'Alexanderplatz 10',
+            'street2' => '2. OG',
+            'postalCode' => '10178',
+            'city' => 'Berlin',
+            'region' => 'Berlin',
+            'country' => 'DE',
+            'default' => true,
+        ]);
+        self::assertSame(Response::HTTP_OK, $updatedAddress->getStatusCode(), (string) $updatedAddress->getContent());
+        $updatedAddressData = json_decode((string) $updatedAddress->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('Alexanderplatz 10', $updatedAddressData['street']);
+        self::assertSame('Head office', $updatedAddressData['label']);
+
+        self::assertSame(
+            Response::HTTP_NO_CONTENT,
+            $this->request('DELETE', '/api/suppliers/' . $supplierId . '/addresses/' . $secondAddressData['id'])->getStatusCode(),
+        );
+        $addressesAfterDelete = json_decode(
+            (string) $this->request('GET', '/api/suppliers/' . $supplierId . '/addresses')->getContent(),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertCount(1, $addressesAfterDelete);
+        self::assertSame($firstAddressData['id'], $addressesAfterDelete[0]['id']);
+        self::assertTrue($addressesAfterDelete[0]['default']);
 
         self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/' . $supplierId)->getStatusCode());
     }
