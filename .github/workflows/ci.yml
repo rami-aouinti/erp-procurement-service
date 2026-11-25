@@ -198,4 +198,15 @@ jobs:
             grafana/loki:3.4.2 \
             -config.file=/etc/loki/loki.yaml -verify-config=true
       - name: Validate Grafana dashboard JSON
-        run: python -m json.tool monitoring/grafana/dashboards/erp-overview.json > /dev/null
+        run: |
+          find monitoring/grafana/dashboards -name '*.json' -print0 | while IFS= read -r -d '' dashboard; do
+            python -m json.tool "$dashboard" > /dev/null
+          done
+      - name: Validate k6 load-test scripts
+        run: |
+          docker run --rm \
+            --volume "$PWD/k6:/scripts:ro" \
+            grafana/k6:0.57.0 inspect /scripts/configuration-load.js
+          docker run --rm \
+            --volume "$PWD/k6:/scripts:ro" \
+            grafana/k6:0.57.0 inspect /scripts/configuration-stress.js
