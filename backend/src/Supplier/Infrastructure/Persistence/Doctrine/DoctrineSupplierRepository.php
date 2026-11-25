@@ -33,7 +33,17 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
 
     public function findById(int $id): ?Supplier
     {
-        $record = $this->find($id);
+        // The event consumer is a long-running process. Doctrine may still hold
+        // an older SupplierRecord in its identity map after another process
+        // commits an update. Force this lookup to refresh managed entities from
+        // Oracle so read models never index stale supplier data.
+        $record = $this->createQueryBuilder('supplier')
+            ->andWhere('supplier.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->setHint(\\Doctrine\\ORM\\Query::HINT_REFRESH, true)
+            ->getOneOrNullResult();
+
         return $record instanceof SupplierRecord ? $this->toDomain($record) : null;
     }
 
