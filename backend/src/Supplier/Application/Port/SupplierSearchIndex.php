@@ -9,7 +9,7 @@ use App\Supplier\Domain\Model\Supplier;
 interface SupplierSearchIndex
 {
     /** @return list<array<string, mixed>> */
-    public function search(string $query, ?string $status = null, int $limit = 500): array;
+    public function search(string $query, ?string $status = null, int $limit = 500, array $filters = []): array;
 
     public function index(Supplier $supplier): void;
 
