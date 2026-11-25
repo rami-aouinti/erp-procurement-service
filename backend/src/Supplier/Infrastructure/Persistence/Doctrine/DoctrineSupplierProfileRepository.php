@@ -297,7 +297,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             );
             $this->connection->commit();
             return $updated > 0;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) $this->connection->rollBack();
             throw $exception;
         }
@@ -335,7 +335,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             );
             $this->connection->commit();
             return $deleted > 0;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) $this->connection->rollBack();
             throw $exception;
         }
