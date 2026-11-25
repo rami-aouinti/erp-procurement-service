@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Supplier\Application\Validator;
 
 use App\Supplier\Application\DTO\SupplierData;
-use App\Supplier\Application\Port\SupplierFormPolicy;
 use App\Supplier\Application\Exception\SupplierValidationException;
+use App\Supplier\Application\Port\SupplierFormPolicy;
 
 final class SupplierDataValidator
 {
