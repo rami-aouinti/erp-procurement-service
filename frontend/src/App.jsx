@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LayoutDashboard, LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import ConfigurationPage from './pages/ConfigurationPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
@@ -50,6 +50,8 @@ function WorkspaceApp() {
       return { palette: 'indigo', colorMode: 'light' };
     }
   });
+  const persistedPreferencesRef = useRef(preferences);
+  const preferenceSaveQueueRef = useRef(Promise.resolve());
   const [settings, setSettings] = useState(() => {
     const defaults = {
       siteName: 'ERP Procurement', companyName: '', companyEmail: '', companyPhone: '',
@@ -125,14 +127,29 @@ function WorkspaceApp() {
     }).catch((error) => console.warn('Unable to load site configuration:', error));
     configurationApi.getPreferences().then((data) => {
       if (!active) return;
-      setPreferences((current) => ({ ...current, ...data.preferences }));
+      setPreferences((current) => {
+        const merged = { ...current, ...data.preferences };
+        persistedPreferencesRef.current = merged;
+        return merged;
+      });
     }).catch((error) => console.warn('Unable to load user preferences:', error));
     return () => { active = false; };
   }, []);
 
   const persistPreferences = (next) => {
     setPreferences(next);
-    configurationApi.updatePreferences(next).catch((error) => console.warn('Unable to save user preferences:', error));
+    const save = preferenceSaveQueueRef.current
+      .catch(() => {})
+      .then(() => configurationApi.updatePreferences(next));
+    preferenceSaveQueueRef.current = save;
+    save.then(() => {
+      persistedPreferencesRef.current = next;
+    }).catch((error) => {
+      if (preferenceSaveQueueRef.current === save) {
+        setPreferences(persistedPreferencesRef.current);
+        showToast('error', 'Preferences not saved', error.message || 'Your personal preferences could not be saved.');
+      }
+    });
   };
 
   const showToast = useCallback((type, title, message) => {
