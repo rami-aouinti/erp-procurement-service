@@ -39,7 +39,7 @@ final readonly class ManageSupplierOnboarding
                 $db->insert('supplier_onboarding', [
                     'supplier_id' => $supplierId,
                     'onboarding_status' => 'DRAFT',
-                    'previous_supplier_status' => $activateOnApproval ? 'ACTIVE' : $supplier['STATUS'],
+                    'previous_supplier_status' => ($activateOnApproval || $supplier['STATUS'] === 'INACTIVE') ? 'ACTIVE' : $supplier['STATUS'],
                     'version' => 1,
                 ]);
             } else {
