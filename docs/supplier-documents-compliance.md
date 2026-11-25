@@ -2,7 +2,7 @@
 
 ## Delivery status
 
-**Foundation in progress.** Oracle metadata schema is introduced by migration 026 and CI initializes it after migration 025. A private local storage adapter and upload content validator are now present. No antivirus daemon is included; the malware-scanner application port remains optional and unbound for a future lightweight/provider integration. Upload/download API, Oracle lifecycle persistence, reviewer workflow, production S3 adapter and frontend are not yet delivered. Antivirus scanning is intentionally deferred. Do not treat the feature as production-ready until the remaining sections below are implemented and verified.
+**Implementation in progress.** Migration 026, private local storage, upload validation, Oracle metadata persistence, document-type administration, metadata listing and an authenticated multipart upload endpoint are now present. Upload is currently restricted to `supplier-admin` because supplier-to-Keycloak identity mapping is not implemented; this is an intentional IDOR safety boundary. No antivirus daemon is included and uploads remain `PENDING` for both scan and review. Download/release, reviewer decisions, version append/history, requirement evaluation, production S3 adapter and frontend remain outstanding. Do not treat the feature as production-ready until the remaining controls are implemented and verified.
 
 ## Architecture and data ownership
 
@@ -73,12 +73,12 @@ Collection endpoints must be paginated with a bounded page size. Upload, review 
 - [x] CI Oracle initialization includes migration 026.
 - [x] Protect the supplier document API namespace at the Keycloak request boundary.
 - [x] Add a private local object-storage adapter with random opaque keys, restrictive permissions, streaming size enforcement, SHA-256 checksums, and persistent Docker volume.\n- [ ] Add the production S3-compatible adapter.
-- [x] Add upload content validation for detected MIME type, allowlist, actual size and sanitized display filename; storage computes SHA-256 and cleans partial writes on failure.\n- [ ] Wire validation/storage into the authenticated upload API and Oracle metadata transaction.
+- [x] Add upload content validation for detected MIME type, allowlist, actual size and sanitized display filename; storage computes SHA-256 and cleans partial writes on failure.\n- [x] Wire validation/storage into the authenticated upload API and Oracle metadata transaction; clean up the private object if the Oracle transaction fails.
 - [x] Keep an optional malware-scanner application port for future integration without binding a heavy local service.\n- [ ] Decide and implement the no-scanner document release policy; add an external scanner only if deployment requirements justify it.
-- [ ] Add application use cases, repository, audit and metadata-only Outbox events.
+- [x] Add Oracle metadata persistence, upload audit and metadata-only Outbox event for initial upload.\n- [ ] Extract application use cases/ports and add immutable append-version workflow.
 - [x] Add unit tests for content-based MIME validation, oversize rejection, private object storage, checksum, traversal rejection and partial-write cleanup.\n- [ ] Add role/IDOR tests, storage outage and scanner failure tests.
 - [ ] Add expiry/required-document compliance queries and idempotent reminders.
-- [ ] Add REST/OpenAPI and React document/compliance screens.
+- [x] Add initial REST endpoints for document types, supplier document listing and multipart upload.\n- [ ] Add reviewer/version/download/requirements REST endpoints and React document/compliance screens.
 - [ ] Verify migration 026 and all test suites against local Docker Compose and CI.
 
 
@@ -96,3 +96,19 @@ The local adapter is for development only. It is not a substitute for the produc
 ClamAV was removed from Docker Compose because its memory footprint is disproportionate for this local development environment. The ClamAV adapter, response parser and their tests were removed as well. The application-level scanner port is retained as an extension point, but it is not bound to any implementation and no antivirus scan is claimed.
 
 The current upload foundation still performs content-based MIME detection, allowlist checks, size enforcement and private storage. These checks are not antivirus protection. The document lifecycle must therefore make the absence of scanning explicit and must not silently mark a file as CLEAN. Before enabling downloads, implement an explicit review/release policy for deployments without antivirus, or integrate an external scanning provider appropriate to the production environment.
+
+
+## Oracle upload/API vertical slice (2026-11-25)
+
+The first end-to-end metadata upload slice is implemented in `OracleSupplierDocumentRepository` and `SupplierDocumentController`:
+
+- `GET /api/supplier-document-types` lists active document types.
+- `POST /api/supplier-document-types` creates a type (supplier-admin only), with a strict PDF/JPEG/PNG allowlist and a maximum size capped at 100 MiB.
+- `GET /api/suppliers/{supplierId}/documents` lists document metadata and the current version.
+- `POST /api/suppliers/{supplierId}/documents` accepts multipart fields `file`, `documentTypeId`, `title`, and optional `expiresAt` (YYYY-MM-DD).
+
+The upload writes the binary to private storage first, then locks the supplier row and persists logical document/version metadata, audit data and a metadata-only outbox event in one Oracle transaction. If persistence fails, it attempts to delete the newly stored object. The response and list API never expose the object key or local path.
+
+Until an identity-to-supplier ownership mapping is available, document upload is restricted to `supplier-admin`; this prevents a generic onboarding role from submitting to arbitrary supplier IDs. Read access is limited to procurement/reviewer/admin roles. Every new version currently starts with `scanStatus=PENDING` and `reviewStatus=PENDING`. There is deliberately no download endpoint, no automatic CLEAN state and no claim of malware protection.
+
+This slice has been committed but still requires local Oracle/API integration tests and CI verification. The implementation uses a supplier-row lock to serialize the initial document ID allocation per supplier. Pagination, explicit document type requirement management, full version history, reviewer decisions and safe release/download remain follow-up work.
