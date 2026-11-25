@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Supplier\Application\UseCase;
 
 use App\Supplier\Application\Port\SupplierListCache;
+use App\Supplier\Application\Port\SupplierClassificationReader;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Domain\Model\Supplier;
 use App\Supplier\Domain\Repository\SupplierRepository;
@@ -16,15 +17,17 @@ final readonly class SearchSuppliers
         private SupplierSearchIndex $searchIndex,
         private SupplierListCache $cache,
         private SupplierRepository $suppliers,
+        private SupplierClassificationReader $classifications,
     ) {
     }
 
     /** @return list<array<string, mixed>> */
-    public function execute(string $query = '', ?string $status = null): array
+    public function execute(string $query = '', ?string $status = null, array $filters = []): array
     {
         $query = trim($query);
         $status = $status !== null && $status !== '' ? strtoupper(trim($status)) : null;
-        $cacheKey = 'search:' . hash('sha256', mb_strtolower($query) . '|' . ($status ?? 'ALL'));
+        ksort($filters);
+        $cacheKey = 'search:' . hash('sha256', mb_strtolower($query) . '|' . ($status ?? 'ALL') . '|' . json_encode($filters, JSON_THROW_ON_ERROR));
 
         $cached = $this->cache->get($cacheKey);
         if ($cached !== null) {
@@ -32,7 +35,7 @@ final readonly class SearchSuppliers
         }
 
         try {
-            $results = $this->searchIndex->search($query, $status);
+            $results = $this->searchIndex->search($query, $status, 500, $filters);
 
             // Bootstrap an empty index from Oracle on the first unfiltered listing.
             if ($results === [] && $query === '' && $status === null) {
@@ -44,11 +47,15 @@ final readonly class SearchSuppliers
             }
         } catch (Throwable $exception) {
             error_log('Elasticsearch supplier search failed; using Oracle fallback: ' . $exception->getMessage());
+            $matchingIds = $filters !== [] ? $this->classifications->matchingSupplierIds($filters) : null;
             $results = array_values(array_filter(
                 array_map($this->toArray(...), $this->suppliers->findAll()),
-                static function (array $supplier) use ($query, $status): bool {
+                static function (array $supplier) use ($query, $status, $filters, $matchingIds): bool {
                     if ($status !== null && $supplier['status'] !== $status) {
                         return false;
+                    }
+                    if ($filters !== []) {
+                        if (!in_array((int)$supplier['id'], $matchingIds ?? [], true)) return false;
                     }
                     if ($query === '') {
                         return true;
