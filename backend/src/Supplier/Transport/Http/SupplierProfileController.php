@@ -17,9 +17,14 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/suppliers/{id<\\d+>}/profile')]
 final class SupplierProfileController
 {
+    public function __construct(private readonly KeycloakRoleGuard $roles)
+    {
+    }
+
     #[Route('', name: 'api_supplier_profile_get', methods: ['GET'])]
     public function get(int $id, GetSupplierProfile $useCase): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-onboarding-submit', 'supplier-reviewer', 'supplier-admin');
         try {
             return new JsonResponse($this->serialize($useCase->execute($id)));
         } catch (SupplierNotFound $exception) {
@@ -30,6 +35,7 @@ final class SupplierProfileController
     #[Route('', name: 'api_supplier_profile_update', methods: ['PUT'])]
     public function update(int $id, Request $request, UpdateSupplierProfile $useCase): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             $payload = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($payload) || array_is_list($payload)) {
