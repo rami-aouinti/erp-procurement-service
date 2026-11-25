@@ -9,3 +9,9 @@ supplier_controllers:
         path: ../src/Supplier/Transport/Http/
         namespace: App\Supplier\Transport\Http
     type: attribute
+
+observability_controllers:
+    resource:
+        path: ../src/Observability/
+        namespace: App\Observability
+    type: attribute
