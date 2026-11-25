@@ -24,7 +24,7 @@ final class ConfigurationDefaults
             'locale' => 'en',
             'timezone' => 'Europe/Berlin',
             'dateFormat' => 'Y-m-d',
-            'itemsPerPage' => 10,
+            'itemsPerPage' => 5,
             'supplierForm' => [
                 'requireEmail' => false,
                 'requirePhone' => false,
