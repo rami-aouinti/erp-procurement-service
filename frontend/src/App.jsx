@@ -240,6 +240,7 @@ function WorkspaceApp() {
 }
 
 function SupplierDetailRoute({ supplierId, navigate }) {
+  const { roles } = useAuth();
   const [supplier, setSupplier] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -250,7 +251,7 @@ function SupplierDetailRoute({ supplierId, navigate }) {
     }).catch((err) => { if (active) setError(err.message); });
     return () => { active = false; };
   }, [supplierId]);
-  return <section className="page-content compact-page">{error && <div className="alert alert-error">{error}</div>}{supplier ? <SupplierDetails supplier={supplier} onBack={() => navigate('/suppliers')} onEdit={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)} /> : !error ? <div className="supplier-details"><div className="table-state"><span className="loader"></span>Loading supplier...</div></div> : null}</section>;
+  return <section className="page-content compact-page">{error && <div className="alert alert-error">{error}</div>}{supplier ? <SupplierDetails supplier={supplier} onBack={() => navigate('/suppliers')} onEdit={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)} canClassify={roles.includes('procurement-user') || roles.includes('supplier-admin')} /> : !error ? <div className="supplier-details"><div className="table-state"><span className="loader"></span>Loading supplier...</div></div> : null}</section>;
 }
 
 
