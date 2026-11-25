@@ -2,7 +2,7 @@
 
 ## Delivery status
 
-**Foundation in progress.** Oracle metadata schema is introduced by migration 026 and CI initializes it after migration 025. Upload/download, private object-storage adapters, malware scanning, lifecycle use cases, API and frontend are not yet delivered. Do not treat the feature as production-ready until the remaining sections below are implemented and verified.
+**Foundation in progress.** Oracle metadata schema is introduced by migration 026 and CI initializes it after migration 025. A private local storage adapter, upload content validator, ClamAV TCP scanner adapter and Docker service are now present. Upload/download API, Oracle lifecycle persistence, asynchronous scan worker, reviewer workflow, production S3 adapter and frontend are not yet delivered. Do not treat the feature as production-ready until the remaining sections below are implemented and verified.
 
 ## Architecture and data ownership
 
@@ -74,7 +74,7 @@ Collection endpoints must be paginated with a bounded page size. Upload, review 
 - [x] Protect the supplier document API namespace at the Keycloak request boundary.
 - [x] Add a private local object-storage adapter with random opaque keys, restrictive permissions, streaming size enforcement, SHA-256 checksums, and persistent Docker volume.\n- [ ] Add the production S3-compatible adapter.
 - [x] Add upload content validation for detected MIME type, allowlist, actual size and sanitized display filename; storage computes SHA-256 and cleans partial writes on failure.\n- [ ] Wire validation/storage into the authenticated upload API and Oracle metadata transaction.
-- [ ] Add malware-scanning port, quarantine state and idempotent worker.
+- [x] Add malware-scanning application port, streaming ClamAV TCP adapter, fail-closed response parser and private Docker service.\n- [ ] Persist scan state transitions, add quarantine handling and an idempotent scan worker.
 - [ ] Add application use cases, repository, audit and metadata-only Outbox events.
 - [x] Add unit tests for content-based MIME validation, oversize rejection, private object storage, checksum, traversal rejection and partial-write cleanup.\n- [ ] Add role/IDOR tests, storage outage and scanner failure tests.
 - [ ] Add expiry/required-document compliance queries and idempotent reminders.
@@ -89,3 +89,10 @@ The current development adapter is `LocalPrivateSupplierDocumentStorage`, config
 `SupplierDocumentUploadValidator` uses PHP fileinfo to detect actual content MIME, intersects it with the configured allowlist (PDF/JPEG/PNG only), checks actual upload size, and sanitizes the display filename. This foundation is not yet exposed as an upload endpoint; no file can be uploaded through the API until the Oracle use case and controller are delivered.
 
 The local adapter is for development only. It is not a substitute for the production S3-compatible adapter, malware scanner, quarantine workflow, authorization checks or backup/retention controls.
+
+
+## ClamAV scanner foundation (2026-11-25)
+
+The backend now depends on the `SupplierDocumentMalwareScanner` application port. Its ClamAV adapter sends a readable stream through the daemon's TCP `INSTREAM` protocol in 1 MiB chunks; document bytes are not loaded entirely into PHP memory. The response parser maps only an explicit `OK` to CLEAN and `FOUND` to INFECTED. Daemon errors, timeouts, malformed responses and connection failures throw an exception, so callers must leave the document unavailable (fail closed).
+
+Docker Compose runs `clamav/clamav:1.4.2` as an internal-only service with a persistent signature database volume. The backend waits for the daemon health check and receives its host, port and timeout from environment configuration. The scanner port is infrastructure only at this stage: no upload endpoint or scan worker invokes it yet, and no document can be marked CLEAN through this foundation alone. The next step is to persist upload metadata in Oracle and dispatch an idempotent scan job that updates scan state transactionally.
