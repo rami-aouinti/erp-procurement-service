@@ -146,7 +146,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
                 'method' => $method,
                 'header' => $headers,
                 'ignore_errors' => true,
-                'timeout' => 3,
+                'timeout' => 10,
             ],
         ];
         if ($payload !== null) {
@@ -162,11 +162,17 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
 
         if ($response === false) {
             $error = error_get_last();
+            $errorMessage = $error['message'] ?? 'no response';
+            $reason = preg_match('/timed? out|timeout/i', $errorMessage) === 1
+                ? 'timeout'
+                : 'connection error';
+
             throw new RuntimeException(sprintf(
-                'Elasticsearch request failed (%s %s): connection error: %s',
+                'Elasticsearch request failed (%s %s): %s: %s',
                 $method,
                 $path,
-                $error['message'] ?? 'no response',
+                $reason,
+                $errorMessage,
             ));
         }
 
@@ -177,7 +183,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
             }
         }
 
-        if ($response === false || !in_array($status, $acceptedStatuses, true)) {
+        if (!in_array($status, $acceptedStatuses, true)) {
             throw new RuntimeException(sprintf('Elasticsearch request failed (%s %s): HTTP %d %s', $method, $path, $status, is_string($response) ? $response : 'no response'));
         }
 
