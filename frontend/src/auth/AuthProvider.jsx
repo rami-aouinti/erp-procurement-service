@@ -78,6 +78,12 @@ export function useAuth() {
 
 export async function getKeycloakAccessToken() {
   if (!keycloak.authenticated) return null;
-  await keycloak.updateToken(30);
-  return keycloak.token || null;
+  try {
+    await keycloak.updateToken(30);
+    return keycloak.token || null;
+  } catch (error) {
+    console.error('Unable to refresh Keycloak access token:', error);
+    await keycloak.login({ redirectUri: window.location.href });
+    return null;
+  }
 }
