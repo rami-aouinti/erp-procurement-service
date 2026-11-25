@@ -200,9 +200,7 @@ Only use this against the local development database. The command requires the b
 
 ## Elasticsearch index isolation
 
-The application uses the `suppliers` Elasticsearch index by default. PHPUnit sets `ELASTICSEARCH_INDEX=suppliers_test`, so functional and integration tests never write into the development/production read model. The index name is injected into the Elasticsearch adapter through Symfony configuration; deployments can override it with the `ELASTICSEARCH_INDEX` environment variable.
-
-A database rollback cannot undo Elasticsearch writes because Oracle and Elasticsearch do not share a transaction. Functional tests that explicitly index a document therefore track its ID and delete that projection in `tearDown()`. The test index remains separate as a second safety boundary. For a development index that contains stale documents, rebuild it from Oracle with:
+A database rollback cannot undo Elasticsearch writes because Oracle and Elasticsearch do not share a transaction. Functional tests that explicitly index a document therefore track its ID and delete that projection in `tearDown()`. The test suite also uses unique test emails and IDs, while committed end-to-end event tests verify the real worker pipeline. For a development index that contains stale documents, rebuild it from Oracle with:
 
 ```bash
 docker compose exec backend php bin/console supplier:reindex --env=dev
