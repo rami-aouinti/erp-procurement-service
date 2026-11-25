@@ -113,9 +113,6 @@ jobs:
             --env APP_SECRET=ci-only-secret \
             --env SUPPLIER_BANK_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY= \
             --env SUPPLIER_BANK_ENCRYPTION_KEY_VERSION=v1 \
-            --env CLAMAV_HOST=127.0.0.1 \
-            --env CLAMAV_PORT=3310 \
-            --env CLAMAV_TIMEOUT_SECONDS=1 \
             --env KEYCLOAK_ISSUER=http://localhost:8081/realms/erp-procurement \
             --env KEYCLOAK_AUDIENCE=erp-procurement-api \
             --env KEYCLOAK_JWKS_URL=http://127.0.0.1:8081/realms/erp-procurement/protocol/openid-connect/certs \
