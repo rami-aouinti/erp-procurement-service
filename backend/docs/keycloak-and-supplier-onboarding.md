@@ -82,8 +82,9 @@ The onboarding state is separate from the operational supplier status.
   restores its previous operational status. A BLOCKED supplier remains BLOCKED.
 - Oracle row locks serialize concurrent decisions. A second reviewer sees the committed
   state and receives 409 rather than overwriting the first decision.
-- An Oracle purchase-order trigger requires supplier status ACTIVE and onboarding APPROVED;
-  it locks the supplier row so a PO insert cannot race a submission/decision transition.
+- An Oracle activation trigger rejects ACTIVE while onboarding is not APPROVED. A separate
+  purchase-order trigger requires supplier status ACTIVE and onboarding APPROVED; it locks
+  the supplier row so a PO insert cannot race a submission/decision transition.
 - Transition history, privacy-safe audit metadata and a versioned outbox event are
   written in the same Oracle transaction.
 - Existing suppliers are backfilled as `APPROVED`; their ACTIVE / INACTIVE / BLOCKED
