@@ -40,6 +40,30 @@ final class HandleSupplierEventTest extends TestCase
         $handler($this->event('SupplierCreated'));
     }
 
+    public function testSupplierOnboardingEventsSynchronizeTheCurrentSupplierReadModel(): void
+    {
+        $suppliers = $this->createMock(SupplierRepository::class);
+        $suppliers->expects(self::once())->method('findById')->with(42)->willReturn(null);
+
+        $search = $this->createMock(SupplierSearchIndex::class);
+        $search->expects(self::once())->method('delete')->with(42);
+
+        $cache = $this->createMock(SupplierListCache::class);
+        $cache->expects(self::once())->method('invalidate');
+
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::once())->method('claim')
+            ->with('event-42', 'SupplierOnboardingApproved', 42)->willReturn('claim-token');
+        $deduplication->expects(self::once())->method('markProcessed')->with('event-42', 'claim-token');
+
+        $metrics = $this->metrics();
+        $metrics->expects(self::once())->method('incrementSupplierEvent')->with('consumed');
+
+        (new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics))(
+            $this->event('SupplierOnboardingApproved')
+        );
+    }
+
     public function testDuplicateDeliveryIsSkippedAfterFirstSuccessfulProcessing(): void
     {
         $suppliers = $this->createMock(SupplierRepository::class);
