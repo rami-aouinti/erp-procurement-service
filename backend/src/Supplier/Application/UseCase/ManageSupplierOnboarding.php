@@ -140,13 +140,6 @@ final readonly class ManageSupplierOnboarding
                 throw new \DomainException('Only suppliers pending approval can receive a decision.');
             }
 
-            if ($target === 'APPROVED' && $onboarding['PREVIOUS_SUPPLIER_STATUS'] !== null) {
-                $db->executeStatement(
-                    'UPDATE suppliers SET status = :status WHERE id = :id',
-                    ['status' => $onboarding['PREVIOUS_SUPPLIER_STATUS'], 'id' => $supplierId],
-                );
-            }
-
             $db->executeStatement(
                 'UPDATE supplier_onboarding
                  SET onboarding_status = :status, decided_at = SYSTIMESTAMP, decided_by = :actor,
@@ -154,6 +147,15 @@ final readonly class ManageSupplierOnboarding
                  WHERE supplier_id = :id',
                 ['status' => $target, 'actor' => $actor['id'], 'reason' => $reason !== null ? trim($reason) : null, 'id' => $supplierId],
             );
+
+            // Set onboarding to APPROVED first: the Oracle activation trigger
+            // rejects any attempt to reactivate a non-approved supplier.
+            if ($target === 'APPROVED' && $onboarding['PREVIOUS_SUPPLIER_STATUS'] !== null) {
+                $db->executeStatement(
+                    'UPDATE suppliers SET status = :status WHERE id = :id',
+                    ['status' => $onboarding['PREVIOUS_SUPPLIER_STATUS'], 'id' => $supplierId],
+                );
+            }
 
             $this->recordTransition($db, $supplierId, 'PENDING_APPROVAL', $target, $actor, $reason, $action);
             return ['supplierId' => $supplierId, 'status' => $target, 'reason' => $reason !== null ? trim($reason) : null];
