@@ -44,6 +44,9 @@ services:
     App\Supplier\Application\Port\SupplierClassificationReader:
         alias: App\Supplier\Infrastructure\Persistence\OracleSupplierClassificationReader
 
+    App\Supplier\Application\Port\SupplierClassificationRepository:
+        alias: App\Supplier\Infrastructure\Persistence\OracleSupplierClassificationRepository
+
     App\Supplier\Application\Port\SupplierEventDeduplication:
         alias: App\Supplier\Infrastructure\Persistence\OracleSupplierEventDeduplication
 
