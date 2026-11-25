@@ -136,6 +136,7 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `020_create_supplier_audit_trail.sql` — creates the append-only, privacy-safe Supplier audit log.
 - `021_seed_supplier_profile_fixtures.sql` and `022_seed_goods_receiving_fixtures.sql` — repeatable supplier profile, contact, address, receipt and inventory fixtures.
 - `030_reset_dev_data.sql` — development-only Oracle business-data cleanup; run through the guarded `scripts/dev-reset.sh` orchestrator.
+- `031_verify_dev_fixtures.sql` — asserts expected entity counts and partial/complete receiving scenarios after seeding.
 - `test_goods_receiving_concurrency.sh` — orchestrates two independent SQL*Plus sessions; run it from the repository root with `bash database/oracle/test_goods_receiving_concurrency.sh`.
 
 Run a script from the repository root, for example:
