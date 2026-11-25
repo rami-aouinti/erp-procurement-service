@@ -26,6 +26,7 @@ final class SupplierClassificationOracleTest extends KernelTestCase
         $this->manager = $container->get(ManageSupplierClassification::class);
         $this->reader = $container->get(SupplierClassificationReader::class);
         $this->db->beginTransaction();
+        self::assertNotEmpty($container->get(ManageSupplierClassification::class)->list('business-units'));
         $this->supplierId = (int)$this->db->fetchOne('SELECT id FROM suppliers ORDER BY id FETCH FIRST 1 ROWS ONLY');
         self::assertGreaterThan(0, $this->supplierId, 'Supplier fixtures must exist before classification integration tests.');
     }
@@ -84,6 +85,14 @@ final class SupplierClassificationOracleTest extends KernelTestCase
 
         $matches = $this->reader->matchingSupplierIds(['categoryId'=>(int)$category['id'], 'strategicTier'=>'STRATEGIC']);
         self::assertContains($this->supplierId, $matches);
+
+        try {
+            $this->manager->assign($this->supplierId, ['categoryIds'=>[], 'commodityIds'=>[999999999], 'tagIds'=>[], 'businessUnitIds'=>[], 'strategicTier'=>'STANDARD'], 'integration-test');
+            self::fail('An invalid commodity must abort the complete classification replacement.');
+        } catch (UnprocessableEntityHttpException) {
+            self::assertSame([(int)$category['id']], array_map(static fn(array $item): int => (int)$item['id'], $this->reader->forSupplier($this->supplierId)['categories']));
+            self::assertSame('STRATEGIC', $this->reader->forSupplier($this->supplierId)['strategicTier']);
+        }
 
         $this->manager->assign($this->supplierId, ['categoryIds'=>[], 'commodityIds'=>[], 'tagIds'=>[], 'businessUnitIds'=>[], 'strategicTier'=>null], 'integration-test');
         $cleared = $this->reader->forSupplier($this->supplierId);
