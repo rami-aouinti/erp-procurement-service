@@ -6,6 +6,7 @@ const tabs = [
   ['contacts', 'Contacts'],
   ['addresses', 'Addresses'],
   ['banks', 'Bank accounts'],
+  ['classification', 'Classification'],
 ];
 
 const emptyProfile = {
@@ -13,12 +14,14 @@ const emptyProfile = {
   preferredLanguage: 'de', preferredCurrency: 'EUR', paymentTermsDays: 30,
 };
 
-export default function SupplierDetails({ supplier, onBack, onEdit }) {
+export default function SupplierDetails({ supplier, onBack, onEdit, canClassify = false }) {
   const [tab, setTab] = useState('profile');
   const [profile, setProfile] = useState(emptyProfile);
   const [contacts, setContacts] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [banks, setBanks] = useState([]);
+  const [classification, setClassification] = useState({ categories: [], commodities: [], tags: [], businessUnits: [], strategicTier: '' });
+  const [taxonomy, setTaxonomy] = useState({ categories: [], commodities: [], tags: [], units: [] });
   const [contactForm, setContactForm] = useState({ contactType: 'GENERAL', firstName: '', lastName: '', jobTitle: '', email: '', phone: '', primary: false });
   const [addressForm, setAddressForm] = useState({ addressType: 'REGISTERED', label: '', companyName: '', street: '', street2: '', postalCode: '', city: '', region: '', country: 'DE', default: false });
   const [bankForm, setBankForm] = useState({ accountHolder: '', iban: '', bic: '', bankName: '', currency: 'EUR', primary: false });
@@ -49,6 +52,23 @@ export default function SupplierDetails({ supplier, onBack, onEdit }) {
   }, [supplier.id]);
 
   useEffect(() => { loadDetails(); }, [loadDetails]);
+
+  const loadClassification = useCallback(async () => {
+    try {
+      const [current, categories, commodities, tags, units] = await Promise.all([
+        suppliersApi.getClassification(supplier.id),
+        suppliersApi.listClassifications('categories'), suppliersApi.listClassifications('commodities'),
+        suppliersApi.listClassifications('tags'), suppliersApi.listClassifications('business-units'),
+      ]);
+      setClassification({ ...current, strategicTier: current.strategicTier || '' });
+      setTaxonomy({ categories, commodities, tags, units });
+    } catch (err) { setError(err.message || 'Unable to load supplier classification.'); }
+  }, [supplier.id]);
+
+  useEffect(() => { if (tab === 'classification') loadClassification(); }, [tab, loadClassification]);
+
+  const selectedIds = (items) => items.map((item) => String(item.id));
+  const selectIds = (event) => Array.from(event.target.selectedOptions).map((option) => Number(option.value));
 
   async function submit(event, action, successMessage) {
     event.preventDefault();
@@ -189,6 +209,26 @@ export default function SupplierDetails({ supplier, onBack, onEdit }) {
                 <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Add address'}</button>
               </form>
             </div>
+          )}
+
+          {tab === 'classification' && (
+            <form className="details-form" onSubmit={(event) => submit(event, () => suppliersApi.updateClassification(supplier.id, {
+              categoryIds: classification.categories.map((x) => Number(x.id)),
+              commodityIds: classification.commodities.map((x) => Number(x.id)),
+              tagIds: classification.tags.map((x) => Number(x.id)),
+              businessUnitIds: classification.businessUnits.map((x) => Number(x.id)),
+              strategicTier: classification.strategicTier || null,
+            }), 'Supplier classification saved.')}>
+              <p className="security-note">A supplier can have multiple categories, commodity codes, tags and business units. Inactive taxonomy entries remain visible on existing assignments but cannot be newly assigned.</p>
+              <div className="details-form-grid">
+                <label>Categories<select multiple size="5" disabled={!canClassify} value={selectedIds(classification.categories)} onChange={(e) => setClassification((v) => ({ ...v, categories: taxonomy.categories.filter((x) => selectIds(e).includes(Number(x.id))) }))}>{taxonomy.categories.map((x) => <option key={x.id} value={x.id} disabled={!x.active && !classification.categories.some((v) => Number(v.id) === Number(x.id))}>{x.name}{x.active ? '' : ' (inactive)'}</option>)}</select></label>
+                <label>Commodity codes<select multiple size="5" disabled={!canClassify} value={selectedIds(classification.commodities)} onChange={(e) => setClassification((v) => ({ ...v, commodities: taxonomy.commodities.filter((x) => selectIds(e).includes(Number(x.id))) }))}>{taxonomy.commodities.map((x) => <option key={x.id} value={x.id} disabled={!x.active && !classification.commodities.some((v) => Number(v.id) === Number(x.id))}>{x.code} · {x.name}{x.active ? '' : ' (inactive)'}</option>)}</select></label>
+                <label>Tags<select multiple size="5" disabled={!canClassify} value={selectedIds(classification.tags)} onChange={(e) => setClassification((v) => ({ ...v, tags: taxonomy.tags.filter((x) => selectIds(e).includes(Number(x.id))) }))}>{taxonomy.tags.map((x) => <option key={x.id} value={x.id} disabled={!x.active && !classification.tags.some((v) => Number(v.id) === Number(x.id))}>{x.name}{x.active ? '' : ' (inactive)'}</option>)}</select></label>
+                <label>Business units<select multiple size="5" disabled={!canClassify} value={selectedIds(classification.businessUnits)} onChange={(e) => setClassification((v) => ({ ...v, businessUnits: taxonomy.units.filter((x) => selectIds(e).includes(Number(x.id))) }))}>{taxonomy.units.map((x) => <option key={x.id} value={x.id} disabled={!x.active && !classification.businessUnits.some((v) => Number(v.id) === Number(x.id))}>{x.name}{x.active ? '' : ' (inactive)'}</option>)}</select></label>
+                <label>Strategic tier<select disabled={!canClassify} value={classification.strategicTier} onChange={(e) => setClassification((v) => ({ ...v, strategicTier: e.target.value }))}><option value="">Not classified</option><option value="STANDARD">Standard</option><option value="PREFERRED">Preferred</option><option value="STRATEGIC">Strategic</option></select></label>
+              </div>
+              {canClassify && <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save classification'}</button>}
+            </form>
           )}
 
           {tab === 'banks' && (
