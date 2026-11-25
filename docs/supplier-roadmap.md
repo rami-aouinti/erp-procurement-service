@@ -108,7 +108,7 @@ This order is a dependency-aware proposal, not a promise that every feature must
 - [ ] **F04:** Audit trail (start early; onboarding and sensitive changes depend on it).
 
 ### Wave 2 — Compliance and commercial lifecycle
-- [~] **F03:** Oracle metadata schema, CI initialization and protected API namespace are in place; storage, scan/review lifecycle, API and UI remain.
+- [~] **F03:** Oracle metadata schema, CI initialization, protected API namespace, private local storage foundation and MIME/size validation are in place; S3, scan/review lifecycle, upload API and UI remain.
 - [ ] **F05:** Contract lifecycle.
 - [ ] **F08:** Notifications and scheduled reminders.
 
@@ -251,3 +251,5 @@ Continue F03 by implementing private local and S3-compatible object storage, str
 | 2026-11-25 | Added privacy-safe append-only audit persistence for Supplier, profile, contact, address and bank-account mutations. Added repeatable Supplier/procurement fixtures and a guarded development reset workflow. Local Oracle verification is pending. | Migration 020, `SupplierAuditLogger`, `021`/`022` fixtures, `scripts/dev-reset.sh`, audit functional assertions |
 
 | 2026-11-25 | Started SUP-F03: added additive Oracle document metadata, requirement, logical document and immutable version tables; wired migration 026 into CI and protected the supplier-document API namespace. Added architecture, lifecycle, security and verification documentation. Remaining storage, scanner, API, UI and local verification are explicitly not marked complete. | `database/oracle/026_supplier_documents_compliance.sql`, CI workflow, `KeycloakRequestSubscriber`, `docs/supplier-documents-compliance.md` |
+
+| 2026-11-25 | Added private local object storage with random opaque keys, restrictive permissions, streaming size enforcement, SHA-256 and partial-write cleanup; added content-based MIME/size validation and tests. Docker Compose persists objects in a named volume. API wiring, Oracle lifecycle and malware scanning are not yet implemented. | Storage port/adapter, upload validator, tests and Compose volume |
