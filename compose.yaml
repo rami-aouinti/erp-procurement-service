@@ -72,6 +72,27 @@ services:
       retries: 20
       start_period: 20s
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: erp-keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
   backend:
     build:
       context: ./backend
@@ -98,6 +119,9 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-erp_app}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
       RABBITMQ_VHOST: /erp
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/erp-procurement
+      KEYCLOAK_AUDIENCE: erp-procurement-api
+      KEYCLOAK_JWKS_URL: http://keycloak:8080/realms/erp-procurement/protocol/openid-connect/certs
     volumes:
       - ./backend:/app
     ports:
