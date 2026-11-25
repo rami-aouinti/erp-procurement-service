@@ -132,6 +132,10 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `012_enforce_receipt_order_consistency.sql` — adds composite foreign keys so each receipt line must belong to the same order as its receipt document and purchase-order line.
 - `013_test_goods_receiving_guards.sql` — non-destructive negative-path tests for invalid quantities, invalid order statuses and unknown SKUs; it must run in a dedicated SQL*Plus session.
 - `014`–`018` — isolated two-session concurrency test fixture, session scripts, verification and cleanup.
+- `019_fix_supplier_profile_conditional_unique_indexes.sql` — repairs Oracle function-based unique indexes for primary contacts and default addresses.
+- `020_create_supplier_audit_trail.sql` — creates the append-only, privacy-safe Supplier audit log.
+- `021_seed_supplier_profile_fixtures.sql` and `022_seed_goods_receiving_fixtures.sql` — repeatable supplier profile, contact, address, receipt and inventory fixtures.
+- `030_reset_dev_data.sql` — development-only Oracle business-data cleanup; run through the guarded `scripts/dev-reset.sh` orchestrator.
 - `test_goods_receiving_concurrency.sh` — orchestrates two independent SQL*Plus sessions; run it from the repository root with `bash database/oracle/test_goods_receiving_concurrency.sh`.
 
 Run a script from the repository root, for example:
