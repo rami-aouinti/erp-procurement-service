@@ -63,6 +63,23 @@ final readonly class ManageSupplierProfileRelations
         return $this->profiles->addAddress($address);
     }
 
+    public function updateAddress(SupplierAddress $address): bool
+    {
+        $this->assertSupplierExists($address->supplierId);
+        if ($address->id === null) {
+            return false;
+        }
+
+        return $this->profiles->updateAddress($address);
+    }
+
+    public function deleteAddress(int $supplierId, int $addressId): bool
+    {
+        $this->assertSupplierExists($supplierId);
+
+        return $this->profiles->deleteAddress($supplierId, $addressId);
+    }
+
     private function assertSupplierExists(int $supplierId): void
     {
         if ($this->suppliers->findById($supplierId) === null) {
