@@ -44,6 +44,7 @@ final class KeycloakJwtAuthenticatorTest extends TestCase
     {
         $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
         self::assertNotFalse($key);
+        $privateKey = '';
         self::assertTrue(openssl_pkey_export($key, $privateKey));
         $details = openssl_pkey_get_details($key);
         self::assertIsArray($details);
