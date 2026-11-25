@@ -10,7 +10,7 @@
     "realm": [
       {
         "name": "procurement-user",
-        "description": "Create and maintain supplier data"
+        "description": "Maintain supplier profiles, contacts and addresses"
       },
       {
         "name": "supplier-onboarding-submit",
