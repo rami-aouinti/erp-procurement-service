@@ -4,7 +4,7 @@ import { onboardingApi } from '../api/onboarding.js';
 
 const field = (item, name) => item?.[name] ?? item?.[name.toUpperCase()] ?? '';
 
-export default function OnboardingPage() {
+export default function OnboardingPage({ onNotify = () => {} }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,11 +44,13 @@ export default function OnboardingPage() {
       if (decision.action === 'reject') await onboardingApi.reject(decision.id, reason.trim());
       if (decision.action === 'changes') await onboardingApi.requestChanges(decision.id, reason.trim());
       setNotice('Decision saved successfully.');
+      onNotify('success', 'Review decision saved', 'The onboarding request has been updated.');
       setDecision(null);
       setReason('');
       await load();
     } catch (err) {
       setError(err.message || 'Unable to save the decision.');
+      onNotify('error', 'Review action failed', err.message || 'Unable to save the decision.');
     } finally {
       setSaving(false);
     }
