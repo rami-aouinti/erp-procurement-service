@@ -193,6 +193,6 @@ docker compose exec backend composer test:functional
 docker compose exec backend composer test:integration
 ```
 
-The reset orchestrator applies audit migration 020, clears Oracle business rows without dropping schema objects, seeds procurement/Supplier/receiving fixtures, creates encrypted bank-account fixtures through the application service, and verifies expected row counts. It then clears Redis and Symfony's dev cache, purges the Supplier RabbitMQ queues, deletes the Elasticsearch Supplier index, restarts workers and triggers a fresh index build from Oracle.
+The reset orchestrator applies audit migration 020, clears Oracle business rows without dropping schema objects, seeds procurement/Supplier/receiving fixtures, creates encrypted bank-account fixtures through the application service, and verifies expected row counts. It then clears Redis and Symfony's dev cache, purges the Supplier RabbitMQ queues, deletes the Elasticsearch Supplier index, restarts workers and runs the explicit `supplier:reindex` command to rebuild all Supplier documents from Oracle (it does not rely on an HTTP list request, which may legitimately fall back to Oracle while Elasticsearch is empty).
 
 Only use this against the local development database. The command requires the backend container to expose `APP_ENV=dev` and Oracle service `FREEPDB1`, and requires the explicit `--yes` confirmation. It intentionally preserves Docker volumes and monitoring history.
