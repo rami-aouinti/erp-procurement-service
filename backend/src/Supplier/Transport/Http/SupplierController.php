@@ -77,6 +77,8 @@ final class SupplierController
             return $this->error($exception->getMessage(), 409);
         } catch (UniqueConstraintViolationException) {
             return $this->error('A supplier with this email already exists.', 409);
+        } catch (\DomainException $exception) {
+            return $this->error($exception->getMessage(), 409);
         }
     }
 
