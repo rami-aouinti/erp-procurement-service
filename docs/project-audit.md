@@ -92,5 +92,6 @@ The migration changes schema objects only; it does not create receipts or modify
 - Consider enforcing that a goods receipt and its receipt line refer to the same purchase order, not merely independently valid parent rows.
 
 - Added `database/oracle/012_enforce_receipt_order_consistency.sql`: preflights existing receipt/order relationships, backfills the order ID onto receipt lines, and adds composite foreign keys tying each receipt line to the same purchase order as both its receipt document and purchase-order line. The fresh-install script `004_create_goods_receiving.sql` now creates the same constraints and the receiving procedure supplies the required order ID.
+- Added `database/oracle/013_test_goods_receiving_guards.sql` with non-destructive negative-path checks for zero quantity, over-receipt, DRAFT/CANCELLED orders and unknown SKUs. These tests expect the procedure to reject the request before any receipt or stock mutation; execute them in a dedicated SQL*Plus session because the procedure issues `ROLLBACK` on errors.
 
 - Review actual SQL plans and workload before adding further indexes.
