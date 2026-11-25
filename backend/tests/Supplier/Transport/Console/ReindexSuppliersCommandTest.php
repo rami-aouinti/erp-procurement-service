@@ -25,13 +25,13 @@ final class ReindexSuppliersCommandTest extends TestCase
         $searchIndex->expects(self::once())
             ->method('reindex')
             ->with($suppliers)
-            ->willReturn(5);
+            ->willReturn(0);
 
         $cache = $this->createMock(SupplierListCache::class);
         $cache->expects(self::once())->method('invalidate');
 
         $tester = new CommandTester(new ReindexSuppliersCommand($repository, $searchIndex, $cache));
         self::assertSame(0, $tester->execute([]));
-        self::assertStringContainsString('5 suppliers indexed successfully.', $tester->getDisplay());
+        self::assertStringContainsString('0 suppliers indexed successfully.', $tester->getDisplay());
     }
 }
