@@ -55,7 +55,6 @@ function WorkspaceApp() {
       const legacy = JSON.parse(window.localStorage.getItem('erp-settings') || '{}');
       return {
         ...defaults,
-        ...legacy,
         ...stored,
         siteName: stored.siteName || legacy.appName || defaults.siteName,
         companyName: stored.companyName || legacy.shopName || '',
