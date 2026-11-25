@@ -72,11 +72,20 @@ Collection endpoints must be paginated with a bounded page size. Upload, review 
 - [x] Additive Oracle metadata schema and constraints.
 - [x] CI Oracle initialization includes migration 026.
 - [x] Protect the supplier document API namespace at the Keycloak request boundary.
-- [ ] Add private local and S3-compatible object-storage adapters.
-- [ ] Add streaming upload validation, checksum and cleanup behavior.
+- [x] Add a private local object-storage adapter with random opaque keys, restrictive permissions, streaming size enforcement, SHA-256 checksums, and persistent Docker volume.\n- [ ] Add the production S3-compatible adapter.
+- [x] Add upload content validation for detected MIME type, allowlist, actual size and sanitized display filename; storage computes SHA-256 and cleans partial writes on failure.\n- [ ] Wire validation/storage into the authenticated upload API and Oracle metadata transaction.
 - [ ] Add malware-scanning port, quarantine state and idempotent worker.
 - [ ] Add application use cases, repository, audit and metadata-only Outbox events.
-- [ ] Add role/IDOR tests, file validation, size/MIME/signature, storage outage and scanner failure tests.
+- [x] Add unit tests for content-based MIME validation, oversize rejection, private object storage, checksum, traversal rejection and partial-write cleanup.\n- [ ] Add role/IDOR tests, storage outage and scanner failure tests.
 - [ ] Add expiry/required-document compliance queries and idempotent reminders.
 - [ ] Add REST/OpenAPI and React document/compliance screens.
 - [ ] Verify migration 026 and all test suites against local Docker Compose and CI.
+
+
+## Local private storage foundation (2026-11-25)
+
+The current development adapter is `LocalPrivateSupplierDocumentStorage`, configured through `SUPPLIER_DOCUMENT_STORAGE_PATH` and mounted to the persistent Docker volume `erp_supplier_documents_data`. It generates 256-bit random hexadecimal keys, writes outside the web root with directory mode 0700 and file mode 0600, enforces the byte limit while streaming, calculates SHA-256 and removes partial objects after write failures. The key is not derived from the user filename.
+
+`SupplierDocumentUploadValidator` uses PHP fileinfo to detect actual content MIME, intersects it with the configured allowlist (PDF/JPEG/PNG only), checks actual upload size, and sanitizes the display filename. This foundation is not yet exposed as an upload endpoint; no file can be uploaded through the API until the Oracle use case and controller are delivered.
+
+The local adapter is for development only. It is not a substitute for the production S3-compatible adapter, malware scanner, quarantine workflow, authorization checks or backup/retention controls.
