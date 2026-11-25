@@ -128,6 +128,7 @@ The scripts in `database/oracle` build the procurement schema and its sample wor
 - `008_create_supplier_outbox.sql` — transactional outbox for reliable Supplier events.
 - `009_supplier_profile_management.sql` — supplier profile tables and constraints.
 - `010_create_supplier_consumed_events.sql` — persistent consumer idempotency ledger.
+- `011_harden_goods_receiving.sql` — additive hardening for existing databases: indexes receipt-line lookups and switches receipt numbers to an Oracle sequence.
 
 Run a script from the repository root, for example:
 
@@ -135,10 +136,13 @@ Run a script from the repository root, for example:
 docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/004_create_goods_receiving.sql
 ```
 
-The initial schema-creation scripts are intended for their documented order. Do not rerun non-idempotent schema scripts against an already initialized database. For an existing database, apply only the new additive supplier extension:
+The initial schema-creation scripts are intended for their documented order. Do not rerun non-idempotent schema scripts against an already initialized database. For an existing database, apply only the additive migrations that match the features already installed. The goods-receiving hardening migration below preserves existing business data:
 
 ```bash
 docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/007_extend_supplier_management.sql
+
+# Apply once to an existing database that already has goods-receiving objects
+docker compose exec -T oracle bash -lc 'sqlplus "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < database/oracle/011_harden_goods_receiving.sql
 ```
 
 ## Symfony backend
