@@ -61,6 +61,22 @@
         "roles",
         "erp-procurement-api-audience"
       ]
+    },
+    {
+      "clientId": "erp-procurement-dev-cli",
+      "name": "ERP Procurement Local Test Client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "roles",
+        "erp-procurement-api-audience"
+      ]
     }
   ],
   "clientScopes": [
