@@ -87,7 +87,6 @@ final readonly class ManageSupplierClassification
     /** @param array<string,mixed> $data @return array<string,mixed> */
     public function assign(int $supplierId, array $data, string $actor): array
     {
-        if ((int)$this->db->fetchOne('SELECT COUNT(*) FROM suppliers WHERE id=:id', ['id'=>$supplierId]) !== 1) throw new NotFoundHttpException('Supplier not found.');
         $categories = $this->ids($data['categoryIds'] ?? []);
         $commodities = $this->ids($data['commodityIds'] ?? []);
         $tags = $this->ids($data['tagIds'] ?? []);
@@ -96,6 +95,8 @@ final readonly class ManageSupplierClassification
         if ($tier !== null && !in_array($tier, ['STANDARD','PREFERRED','STRATEGIC'], true)) throw new UnprocessableEntityHttpException('Strategic tier must be STANDARD, PREFERRED or STRATEGIC.');
         $this->db->beginTransaction();
         try {
+            $lockedSupplier = $this->db->fetchOne('SELECT id FROM suppliers WHERE id=:id FOR UPDATE', ['id'=>$supplierId]);
+            if ($lockedSupplier === false) throw new NotFoundHttpException('Supplier not found.');
             $this->replace('supplier_supplier_categories','category_id','supplier_categories',$supplierId,$categories,$actor);
             $this->replace('supplier_supplier_commodities','commodity_id','supplier_commodity_codes',$supplierId,$commodities,$actor);
             $this->replace('supplier_supplier_tags','tag_id','supplier_tags',$supplierId,$tags,$actor);
@@ -116,16 +117,17 @@ final readonly class ManageSupplierClassification
     private function ids(mixed $value): array
     {
         if (!is_array($value) || !array_is_list($value)) throw new UnprocessableEntityHttpException('Classification IDs must be arrays.');
-        $ids = array_values(array_unique(array_map('intval',$value)));
-        foreach ($ids as $id) if ($id < 1) throw new UnprocessableEntityHttpException('Classification IDs must be positive integers.');
-        return $ids;
+        foreach ($value as $id) if (!is_int($id) || $id < 1) throw new UnprocessableEntityHttpException('Classification IDs must be positive integers.');
+        return array_values(array_unique($value));
     }
 
     /** @param list<int> $ids */
     private function replace(string $join, string $fk, string $taxonomy, int $supplierId, array $ids, string $actor): void
     {
+        $existing = array_map('intval', $this->db->fetchFirstColumn("SELECT {$fk} FROM {$join} WHERE supplier_id=:id", ['id'=>$supplierId]));
         foreach ($ids as $id) {
-            if ((int)$this->db->fetchOne("SELECT COUNT(*) FROM {$taxonomy} WHERE id=:id AND is_active=1", ['id'=>$id]) !== 1) throw new UnprocessableEntityHttpException("Classification {$id} does not exist or is inactive.");
+            $active = (int)$this->db->fetchOne("SELECT COUNT(*) FROM {$taxonomy} WHERE id=:id AND is_active=1", ['id'=>$id]) === 1;
+            if (!$active && !in_array($id, $existing, true)) throw new UnprocessableEntityHttpException("Classification {$id} does not exist or is inactive.");
         }
         $this->db->executeStatement("DELETE FROM {$join} WHERE supplier_id=:id", ['id'=>$supplierId]);
         foreach ($ids as $id) $this->db->executeStatement("INSERT INTO {$join} (supplier_id,{$fk},assigned_by) VALUES (:supplier,:classification,:actor)", ['supplier'=>$supplierId,'classification'=>$id,'actor'=>$actor]);
