@@ -220,7 +220,6 @@ final readonly class ManageSupplierOnboarding
                     'fromStatus' => $from,
                     'toStatus' => $to,
                     'actorId' => $actor['id'],
-                    'reason' => $reason !== null ? trim($reason) : null,
                 ], JSON_THROW_ON_ERROR),
             ],
         );
