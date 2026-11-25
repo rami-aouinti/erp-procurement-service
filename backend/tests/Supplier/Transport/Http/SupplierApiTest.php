@@ -95,6 +95,18 @@ final class SupplierApiTest extends KernelTestCase
         self::assertCount(3, $eventTypes);
         self::assertEqualsCanonicalizing(['SupplierCreated', 'SupplierUpdated', 'SupplierDeleted'], $eventTypes);
 
+        $auditEntries = $this->connection->fetchAllAssociative(
+            'SELECT entity_type, action, changed_fields FROM supplier_audit_logs WHERE supplier_id = :id ORDER BY id',
+            ['id' => $id],
+        );
+        self::assertCount(3, $auditEntries);
+        self::assertSame(['CREATED', 'UPDATED', 'DELETED'], array_column($auditEntries, 'ACTION'));
+        foreach ($auditEntries as $entry) {
+            $fields = json_decode((string) $entry['CHANGED_FIELDS'], true, 512, JSON_THROW_ON_ERROR);
+            self::assertIsArray($fields);
+            self::assertNotContains($this->email, $fields, 'Audit data must contain field names, never field values.');
+        }
+
         self::assertSame(Response::HTTP_NOT_FOUND, $this->request('GET', '/api/suppliers/' . $id)->getStatusCode());
     }
 
@@ -311,6 +323,12 @@ final class SupplierApiTest extends KernelTestCase
         self::assertTrue($addressesAfterDelete[0]['default']);
 
         self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/suppliers/' . $supplierId)->getStatusCode());
+
+        $auditCount = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM supplier_audit_logs WHERE supplier_id = :supplierId',
+            ['supplierId' => $supplierId],
+        );
+        self::assertSame(10, $auditCount, 'Supplier, contact and address lifecycle operations must be audited.');
     }
 
     /** @param array<string, mixed>|null $payload */
