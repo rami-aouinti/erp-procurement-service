@@ -27,8 +27,22 @@ echo "2/5 Starting Session A (it locks the order, then receives 6 units)..."
 run_sql database/oracle/015_goods_receiving_concurrency_session_a.sql >"$tmp_dir/session-a.log" 2>&1 &
 session_a_pid=$!
 
-# Session A acquires the row lock immediately, then sleeps for five seconds.
-sleep 1
+# Wait until Session A confirms that SELECT FOR UPDATE has acquired the lock.
+for _ in $(seq 1 100); do
+  if grep -q "SESSION_A_LOCK_ACQUIRED" "$tmp_dir/session-a.log"; then
+    break
+  fi
+  if ! kill -0 "$session_a_pid" 2>/dev/null; then
+    cat "$tmp_dir/session-a.log"
+    exit 1
+  fi
+  sleep 0.1
+done
+if ! grep -q "SESSION_A_LOCK_ACQUIRED" "$tmp_dir/session-a.log"; then
+  echo "Session A did not acquire the order lock in time."
+  cat "$tmp_dir/session-a.log"
+  exit 1
+fi
 
 echo "3/5 Starting Session B (it attempts to receive 5 units and must wait)..."
 if ! run_sql database/oracle/016_goods_receiving_concurrency_session_b.sql >"$tmp_dir/session-b.log" 2>&1; then
