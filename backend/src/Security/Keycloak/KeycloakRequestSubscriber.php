@@ -39,7 +39,9 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
 
         try {
             $claims = $this->authenticator->authenticate(trim($matches[1]));
-        } catch (\Throwable) {
+        } catch (KeycloakUnavailableException $exception) {
+            throw new ServiceUnavailableHttpException(5, 'The identity provider is temporarily unavailable.', $exception);
+        } catch (\RuntimeException) {
             throw new UnauthorizedHttpException('Bearer', 'The access token is invalid or expired.');
         }
 
