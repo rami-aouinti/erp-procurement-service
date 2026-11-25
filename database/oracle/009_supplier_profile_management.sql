@@ -100,7 +100,7 @@ EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF;
 END;
 /
 BEGIN
-    EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX uq_supplier_contacts_primary ON supplier_contacts (supplier_id, CASE WHEN is_primary = ''Y'' THEN contact_type END)';
+    EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX uq_supplier_contacts_primary ON supplier_contacts (CASE WHEN is_primary = ''Y'' THEN supplier_id END, CASE WHEN is_primary = ''Y'' THEN contact_type END)';
 EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF;
 END;
 /
@@ -110,7 +110,7 @@ EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF;
 END;
 /
 BEGIN
-    EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX uq_supplier_addresses_default ON supplier_addresses (supplier_id, CASE WHEN is_default = ''Y'' THEN address_type END)';
+    EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX uq_supplier_addresses_default ON supplier_addresses (CASE WHEN is_default = ''Y'' THEN supplier_id END, CASE WHEN is_default = ''Y'' THEN address_type END)';
 EXCEPTION WHEN OTHERS THEN IF SQLCODE != -955 THEN RAISE; END IF;
 END;
 /
