@@ -112,6 +112,7 @@ services:
       APP_SECRET: ${APP_SECRET:-local-development-secret-change-me}
       SUPPLIER_BANK_ENCRYPTION_KEY: ${SUPPLIER_BANK_ENCRYPTION_KEY:-}
       SUPPLIER_BANK_ENCRYPTION_KEY_VERSION: ${SUPPLIER_BANK_ENCRYPTION_KEY_VERSION:-v1}
+      SUPPLIER_DOCUMENT_STORAGE_PATH: /var/lib/erp/supplier-documents
       DEFAULT_URI: http://localhost
       ORACLE_HOST: oracle
       ORACLE_PORT: 1521
@@ -131,6 +132,7 @@ services:
       KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-http://keycloak:8080/realms/erp-procurement/protocol/openid-connect/certs}
     volumes:
       - ./backend:/app
+      - supplier_documents_data:/var/lib/erp/supplier-documents
     ports:
       - "8000:8000"
     depends_on:
@@ -368,3 +370,5 @@ volumes:
     name: erp_loki_data
   alloy_data:
     name: erp_alloy_data
+  supplier_documents_data:
+    name: erp_supplier_documents_data
