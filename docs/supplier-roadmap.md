@@ -60,7 +60,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 - No supplier-facing self-service portal is currently implemented.
 - No complete supplier notification/scheduler workflow for expiry and review reminders is currently implemented.
 - No end-to-end supplier spend analytics / invoice-payment integration is currently implemented.
-- SUP-F02 classification is now implemented on `main` (normalized Oracle taxonomy, assignments, role-protected APIs, Elasticsearch/Oracle search filters, Redis invalidation and React management/assignment screens); final CI and local Oracle verification are pending.
+- SUP-F02 classification is implemented and locally verified: normalized Oracle taxonomy, assignments, role-protected APIs, Elasticsearch/Oracle search filters, Redis invalidation and React management/assignment screens; the user confirmed all test suites pass on 2026-11-25.
 
 ## 3. Feature status overview
 
@@ -74,8 +74,8 @@ Status values:
 |---|---|---:|---|---|
 | BASE | Supplier CRUD, validation, search, profile, contacts, addresses, bank accounts | PARTIAL / existing baseline | [Epic #3](https://github.com/rami-aouinti/erp-procurement-service/issues/3) | Existing module |
 | F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Broader end-to-end/Oracle concurrency tests |
-| F02 | Supplier categories, classification and segmentation | PARTIAL — implementation on main; verification pending | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | CI + local Oracle verification |
-| F03 | Supplier documents and compliance tracking | PLANNED | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + access control |
+| F02 | Supplier categories, classification and segmentation | DONE — local test suites confirmed passing | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Delivered |
+| F03 | Supplier documents and compliance tracking | PARTIAL — Oracle metadata foundation and security namespace committed; lifecycle pending | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + malware scanning |
 | F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
 | F05 | Supplier contract lifecycle | PLANNED | [#8](https://github.com/rami-aouinti/erp-procurement-service/issues/8) | F03 document storage + reminders |
 | F06 | Supplier performance scorecards | PLANNED | [#9](https://github.com/rami-aouinti/erp-procurement-service/issues/9) | Reliable PO/receipt/quality data |
@@ -104,11 +104,11 @@ This order is a dependency-aware proposal, not a promise that every feature must
 
 ### Wave 1 — Core governance
 - [~] **F01:** Backend workflow, Keycloak roles, audit/history, outbox, PO eligibility guard and React OIDC candidate/reviewer UI implemented; legacy API authorization and full end-to-end/Oracle concurrency coverage remain.
-- [~] **F02:** Normalized categories, commodity codes, tags, business units, strategic tier, supplier assignment UI, taxonomy administration and filtered search implemented; CI and local Oracle verification pending.
+- [x] **F02:** Normalized categories, commodity codes, tags, business units, strategic tier, supplier assignment UI, taxonomy administration and filtered search implemented; user confirmed all test suites pass locally.
 - [ ] **F04:** Audit trail (start early; onboarding and sensitive changes depend on it).
 
 ### Wave 2 — Compliance and commercial lifecycle
-- [ ] **F03:** Document management and compliance.
+- [~] **F03:** Oracle metadata schema, CI initialization and protected API namespace are in place; storage, scan/review lifecycle, API and UI remain.
 - [ ] **F05:** Contract lifecycle.
 - [ ] **F08:** Notifications and scheduled reminders.
 
@@ -239,13 +239,15 @@ A feature can be marked **DONE** only when all applicable items pass:
 
 ## 10. Current next action
 
-Complete F02 verification on a development database: apply migration 025, run the Supplier unit/functional/integration suites and frontend build, then verify classification assignment, filters, outbox consumption and Elasticsearch reindex. Do not run the destructive development reset merely to apply this additive migration.
+Continue F03 by implementing private local and S3-compatible object storage, streaming upload validation, malware quarantine/scanning, metadata persistence and supplier-scoped authorization. Migration 026 is additive and is initialized by CI after migration 025. Do not run the destructive development reset merely to apply this migration.
 
 ## 11. Change log
 
 | Date | Change | Evidence |
 |---|---|---|
-| 2026-11-25 | Implemented SUP-F02 on main: normalized Oracle taxonomy and supplier relations, atomic assignment with audit/outbox, role-protected APIs, Elasticsearch/Oracle classification filters, Redis cache-key isolation/invalidation, React taxonomy management and supplier assignment/filter UI. Automated verification is pending. | Migration 025, Supplier classification services/controller, `SupplierClassificationOracleTest`, API/event tests, frontend pages and `docs/supplier-classification.md` |
+| 2026-11-25 | Implemented and locally verified SUP-F02; user confirmed all test suites pass. | Migration 025, Supplier classification services/controller, `SupplierClassificationOracleTest`, API/event tests, frontend pages and `docs/supplier-classification.md` |
 | 2026-11-25 | Foundation hardening started: contact/address create responses now return persisted Oracle IDs; profile writes lock the supplier row to serialize primary/default changes; functional regression test added. Local Oracle test and CI verification still pending. | Commits on main: repository fix + SupplierApiTest regression coverage |
 | 2026-11-25 | Initial roadmap created after reviewing current `main` Supplier source, Oracle migrations, tests and docs. Existing implementation and planned features separated explicitly. | GitHub issues [#3–#14](https://github.com/rami-aouinti/erp-procurement-service/issues) |
 | 2026-11-25 | Added privacy-safe append-only audit persistence for Supplier, profile, contact, address and bank-account mutations. Added repeatable Supplier/procurement fixtures and a guarded development reset workflow. Local Oracle verification is pending. | Migration 020, `SupplierAuditLogger`, `021`/`022` fixtures, `scripts/dev-reset.sh`, audit functional assertions |
+
+| 2026-11-25 | Started SUP-F03: added additive Oracle document metadata, requirement, logical document and immutable version tables; wired migration 026 into CI and protected the supplier-document API namespace. Added architecture, lifecycle, security and verification documentation. Remaining storage, scanner, API, UI and local verification are explicitly not marked complete. | `database/oracle/026_supplier_documents_compliance.sql`, CI workflow, `KeycloakRequestSubscriber`, `docs/supplier-documents-compliance.md` |
