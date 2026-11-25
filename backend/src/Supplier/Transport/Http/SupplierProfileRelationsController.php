@@ -57,7 +57,7 @@ final readonly class SupplierProfileRelationsController
     }
 
 
-    #[Route('/contacts/{contactId<\\\\d+>}', name: 'api_supplier_contacts_update', methods: ['PUT'])]
+    #[Route('/contacts/{contactId<\\d+>}', name: 'api_supplier_contacts_update', methods: ['PUT'])]
     public function updateContact(int $id, int $contactId, Request $request): JsonResponse
     {
         try {
@@ -86,7 +86,7 @@ final readonly class SupplierProfileRelationsController
         }
     }
 
-    #[Route('/contacts/{contactId<\\\\d+>}', name: 'api_supplier_contacts_delete', methods: ['DELETE'])]
+    #[Route('/contacts/{contactId<\\d+>}', name: 'api_supplier_contacts_delete', methods: ['DELETE'])]
     public function deleteContact(int $id, int $contactId): JsonResponse
     {
         try {
