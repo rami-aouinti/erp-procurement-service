@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersApi } from '../api/suppliers.js';
 
-const PAGE_SIZE = 5;
 const blank = { name: '', email: '', phone: '', taxNumber: '', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
 const steps = ['Company', 'Contact', 'Address'];
 
-export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange, canCreate = false }) {
+export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange, canCreate = false, siteSettings = {}, itemsPerPage = 5 }) {
+  const pageSize = Math.max(5, Math.min(100, Number(itemsPerPage) || 5));
+  const supplierForm = siteSettings.supplierForm || {};
   const [items, setItems] = useState([]);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -38,13 +39,13 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
 
   const locations = useMemo(() => [...new Map(items.filter((item) => item.city || item.country).map((item) => { const key = [item.city || '', item.country || ''].join('|'); return [key, { key, label: [item.city, item.country].filter(Boolean).join(', ') }]; })).values()].sort((a, b) => a.label.localeCompare(b.label)), [items]);
   const filteredItems = useMemo(() => location === 'ALL' ? items : items.filter((item) => [item.city || '', item.country || ''].join('|') === location), [items, location]);
-  const pages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const pages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const sortedItems = useMemo(() => [...filteredItems].sort((a, b) => {
     const value = (item) => sortField === 'location' ? [item.city, item.postalCode, item.country].filter(Boolean).join(' ') : item[sortField] || '';
     const comparison = String(value(a)).localeCompare(String(value(b)), undefined, { numeric: true, sensitivity: 'base' });
     return sortDirection === 'asc' ? comparison : -comparison;
   }), [filteredItems, sortField, sortDirection]);
-  const visible = useMemo(() => sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [sortedItems, page]);
+  const visible = useMemo(() => sortedItems.slice((page - 1) * pageSize, page * pageSize), [sortedItems, page]);
   const resetFilters = () => { onSearchChange(''); setStatus('ALL'); setLocation('ALL'); setPage(1); };
   const toggleSort = (field) => {
     if (sortField === field) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc');
@@ -65,6 +66,10 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
   const closeCreate = () => { if (!saving) setModal(false); };
   const next = () => {
     if (step === 0 && (!form.name.trim() || form.name.trim().length < 2)) { setError('Enter a company name with at least 2 characters.'); return; }
+    if (step === 0 && supplierForm.requireTaxNumber && !form.taxNumber.trim()) { setError('A tax / VAT number is required by the application configuration.'); return; }
+    if (step === 1 && supplierForm.requireContactPerson && !form.contactPerson.trim()) { setError('A primary contact person is required by the application configuration.'); return; }
+    if (step === 1 && supplierForm.requireEmail && !form.email.trim()) { setError('An email address is required by the application configuration.'); return; }
+    if (step === 1 && supplierForm.requirePhone && !form.phone.trim()) { setError('A phone number is required by the application configuration.'); return; }
     if (step === 1 && form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError('Enter a valid email address.'); return; }
     setError(''); setStep((value) => Math.min(2, value + 1));
   };
@@ -114,7 +119,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
               <td><span className={`supplier-status status-${String(supplier.status || 'inactive').toLowerCase()}`}><i></i>{supplier.status || 'UNKNOWN'}</span></td>
               <td><div className="table-actions"><button title="View supplier" aria-label="View supplier" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}`)}>↗</button><button title="Edit supplier" aria-label="Edit supplier" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)}>✎</button><button className="delete-action" title="Delete supplier" aria-label="Delete supplier" onClick={() => { setError(''); setDeleting(supplier); }}>⌫</button></div></td>
             </tr>)}</tbody></table></div>
-          <div className="pagination directory-pagination"><span>Showing <strong>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredItems.length)}</strong> of <strong>{filteredItems.length}</strong> suppliers</span><div><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="page-number">{page} / {pages}</span><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div>
+          <div className="pagination directory-pagination"><span>Showing <strong>{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredItems.length)}</strong> of <strong>{filteredItems.length}</strong> suppliers</span><div><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="page-number">{page} / {pages}</span><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div>
         </>}
       </section>
 
@@ -123,8 +128,8 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
         <div className="stepper">{steps.map((label, index) => <div className={index <= step ? 'step active' : 'step'} key={label}><span>{index < step ? '✓' : index + 1}</span><small>{label}</small></div>)}</div>
         {error && <div className="alert alert-error" role="alert">{error}</div>}
         <form onSubmit={step === 2 ? createSupplier : (event) => { event.preventDefault(); next(); }}>
-          {step === 0 && <div className="modal-form-grid"><div className="form-section-title">Company information</div><label className="full-field">Company name <b>*</b><input name="name" required autoFocus maxLength="150" value={form.name} onChange={change} placeholder="e.g. Acme GmbH" /></label><label>Tax / VAT number<input name="taxNumber" maxLength="50" value={form.taxNumber} onChange={change} placeholder="DE123456789" /></label></div>}
-          {step === 1 && <div className="modal-form-grid"><div className="form-section-title">Primary contact</div><label>Contact person<input name="contactPerson" maxLength="150" value={form.contactPerson} onChange={change} placeholder="Full name" /></label><label>Email address<input name="email" type="email" maxLength="150" value={form.email} onChange={change} placeholder="contact@company.com" /></label><label className="full-field">Phone number<input name="phone" maxLength="30" value={form.phone} onChange={change} placeholder="+49 30 123456" /></label></div>}
+          {step === 0 && <div className="modal-form-grid"><div className="form-section-title">Company information</div><label className="full-field">Company name <b>*</b><input name="name" required autoFocus maxLength="150" value={form.name} onChange={change} placeholder="e.g. Acme GmbH" /></label><label>Tax / VAT number {supplierForm.requireTaxNumber && <b>*</b>}<input name="taxNumber" required={Boolean(supplierForm.requireTaxNumber)} maxLength="50" value={form.taxNumber} onChange={change} placeholder="DE123456789" /></label></div>}
+          {step === 1 && <div className="modal-form-grid"><div className="form-section-title">Primary contact</div><label>Contact person {supplierForm.requireContactPerson && <b>*</b>}<input name="contactPerson" required={Boolean(supplierForm.requireContactPerson)} maxLength="150" value={form.contactPerson} onChange={change} placeholder="Full name" /></label><label>Email address {supplierForm.requireEmail && <b>*</b>}<input name="email" type="email" required={Boolean(supplierForm.requireEmail)} maxLength="150" value={form.email} onChange={change} placeholder="contact@company.com" /></label><label className="full-field">Phone number {supplierForm.requirePhone && <b>*</b>}<input name="phone" required={Boolean(supplierForm.requirePhone)} maxLength="30" value={form.phone} onChange={change} placeholder="+49 30 123456" /></label></div>}
           {step === 2 && <div className="modal-form-grid"><div className="form-section-title">Business address</div><label className="full-field">Street and number<input name="street" maxLength="180" value={form.street} onChange={change} placeholder="Hafenstraße 12" /></label><label>Postal code<input name="postalCode" maxLength="20" value={form.postalCode} onChange={change} placeholder="10115" /></label><label>City<input name="city" maxLength="100" value={form.city} onChange={change} placeholder="Berlin" /></label><label>Country code<input name="country" maxLength="2" value={form.country} onChange={change} placeholder="DE" /></label><div className="form-hint full-field">Legal details, additional contacts, addresses and bank accounts can be managed from the supplier detail page after creation.</div></div>}
           <footer className="modal-footer"><button type="button" className="secondary-button" onClick={step === 0 ? closeCreate : previous}>{step === 0 ? 'Cancel' : '← Back'}</button><button type="submit" className="primary-button" disabled={saving}>{saving ? 'Creating...' : step === 2 ? 'Create supplier' : 'Continue →'}</button></footer>
         </form>
