@@ -96,7 +96,7 @@ final class SupplierOnboardingOracleTest extends KernelTestCase
         self::assertSame('Compliance checks completed.', $workflow['DECISION_REASON']);
 
         self::assertEqualsCanonicalizing(
-            ['SupplierOnboardingSubmitted', 'SupplierOnboardingApproved'],
+            ['SupplierCreated', 'SupplierOnboardingSubmitted', 'SupplierOnboardingApproved'],
             $this->connection->fetchFirstColumn(
                 'SELECT event_type FROM supplier_outbox_events WHERE aggregate_id = :id',
                 ['id' => $this->supplierId],
@@ -129,21 +129,32 @@ final class SupplierOnboardingOracleTest extends KernelTestCase
         $candidate = json_decode((string) $created->getContent(), true, 512, JSON_THROW_ON_ERROR);
         $this->supplierId = (int) $candidate['supplierId'];
 
+        // Capture the candidate's existing records. Supplier creation and
+        // onboarding submission legitimately write their own audit/outbox rows.
+        $historyBefore = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM supplier_onboarding_history WHERE supplier_id = :id',
+            ['id' => $this->supplierId],
+        );
+        $auditBefore = (int) $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM supplier_audit_logs WHERE supplier_id = :id AND entity_type = 'SUPPLIER_ONBOARDING'",
+            ['id' => $this->supplierId],
+        );
+        $outboxBefore = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM supplier_outbox_events WHERE aggregate_id = :id',
+            ['id' => $this->supplierId],
+        );
+
         // Oracle actor_name is VARCHAR2(255). This deliberately causes the
         // history insert to fail after the workflow UPDATE, exercising rollback
         // of the whole decision transaction without schema changes or DDL.
-        try {
-            $this->request(
-                'POST',
-                '/api/supplier-onboarding/' . $this->supplierId . '/approve',
-                ['reason' => 'This decision must roll back.'],
-                ['supplier-reviewer'],
-                str_repeat('x', 256),
-            );
-        } catch (\Throwable) {
-            // Depending on the configured exception listener, Oracle errors are
-            // either converted to HTTP 500 or propagated to the test process.
-        }
+        $failedDecision = $this->request(
+            'POST',
+            '/api/supplier-onboarding/' . $this->supplierId . '/approve',
+            ['reason' => 'This decision must roll back.'],
+            ['supplier-reviewer'],
+            str_repeat('x', 256),
+        );
+        self::assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $failedDecision->getStatusCode());
 
         $workflowStatus = $this->connection->fetchOne(
             'SELECT onboarding_status FROM supplier_onboarding WHERE supplier_id = :id',
@@ -155,25 +166,28 @@ final class SupplierOnboardingOracleTest extends KernelTestCase
             $this->connection->fetchOne('SELECT status FROM suppliers WHERE id = :id', ['id' => $this->supplierId]),
         );
         self::assertSame(
-            1,
+            $historyBefore,
             (int) $this->connection->fetchOne(
                 'SELECT COUNT(*) FROM supplier_onboarding_history WHERE supplier_id = :id',
                 ['id' => $this->supplierId],
             ),
+            'A failed decision must not add onboarding history.',
         );
         self::assertSame(
-            1,
+            $auditBefore,
             (int) $this->connection->fetchOne(
                 "SELECT COUNT(*) FROM supplier_audit_logs WHERE supplier_id = :id AND entity_type = 'SUPPLIER_ONBOARDING'",
                 ['id' => $this->supplierId],
             ),
+            'A failed decision must not add an audit record.',
         );
         self::assertSame(
-            1,
+            $outboxBefore,
             (int) $this->connection->fetchOne(
                 'SELECT COUNT(*) FROM supplier_outbox_events WHERE aggregate_id = :id',
                 ['id' => $this->supplierId],
             ),
+            'A failed decision must not publish an outbox event.',
         );
     }
 
