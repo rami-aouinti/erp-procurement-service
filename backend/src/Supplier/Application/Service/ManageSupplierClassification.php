@@ -54,7 +54,8 @@ final readonly class ManageSupplierClassification
             throw $e;
         }
         $this->cache->invalidate();
-        return ['code'=>$code,'name'=>$name,'parentId'=>$parentId,'active'=>true];
+        $id = (int)$this->db->fetchOne("SELECT id FROM {$table} WHERE code=:code", ['code'=>$code]);
+        return ['id'=>$id,'code'=>$code,'name'=>$name,'parentId'=>$parentId,'active'=>true];
     }
 
     /** @return array<string,mixed> */
