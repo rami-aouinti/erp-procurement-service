@@ -21,6 +21,7 @@ final class ApiDocumentationController
                 'description' => 'REST API for suppliers in the ERP Procurement application.',
             ],
             'servers' => [['url' => '/']],
+            'security' => [['bearerAuth' => []]],
             'tags' => [
                 ['name' => 'Suppliers', 'description' => 'Supplier master data'],
                 ['name' => 'Configuration', 'description' => 'Global application configuration'],
@@ -98,7 +99,7 @@ final class ApiDocumentationController
                         'responses' => ['200' => ['description' => 'Supplier collection', 'content' => ['application/json' => ['schema' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Supplier']]]]]],
                     ],
                     'post' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Create a supplier', 'operationId' => 'createSupplier',
+                        'tags' => ['Suppliers'], 'summary' => 'Create a supplier (supplier-admin only; normal users must use supplier onboarding)', 'operationId' => 'createSupplier',
                         'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierInput'], 'example' => ['name' => 'Acme GmbH', 'email' => 'contact@acme.de', 'phone' => '+49 421 123456', 'taxNumber' => 'DE123456789']]]],
                         'responses' => [
                             '201' => ['description' => 'Supplier created', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]],
@@ -144,12 +145,12 @@ final class ApiDocumentationController
                         'responses' => ['200' => ['description' => 'Supplier details', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]], '404' => ['$ref' => '#/components/responses/NotFound']],
                     ],
                     'put' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Update a supplier', 'operationId' => 'updateSupplier',
+                        'tags' => ['Suppliers'], 'summary' => 'Update a supplier (supplier-admin only)', 'operationId' => 'updateSupplier',
                         'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierInput']]]],
                         'responses' => ['200' => ['description' => 'Supplier updated', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]], '400' => ['$ref' => '#/components/responses/BadRequest'], '422' => ['$ref' => '#/components/responses/ValidationError'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']],
                     ],
                     'delete' => [
-                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier', 'operationId' => 'deleteSupplier',
+                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier (supplier-admin only)', 'operationId' => 'deleteSupplier',
                         'responses' => ['204' => ['description' => 'Supplier deleted'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']],
                     ],
                 ],
