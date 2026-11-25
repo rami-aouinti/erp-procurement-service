@@ -33,6 +33,21 @@ final readonly class ManageSupplierProfileRelations
         return $this->profiles->addContact($contact);
     }
 
+    public function updateContact(SupplierContact $contact): bool
+    {
+        $this->assertSupplierExists($contact->supplierId);
+        if ($contact->id === null) {
+            return false;
+        }
+        return $this->profiles->updateContact($contact);
+    }
+
+    public function deleteContact(int $supplierId, int $contactId): bool
+    {
+        $this->assertSupplierExists($supplierId);
+        return $this->profiles->deleteContact($supplierId, $contactId);
+    }
+
     /** @return list<SupplierAddress> */
     public function listAddresses(int $supplierId): array
     {
