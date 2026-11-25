@@ -10,6 +10,10 @@ use Throwable;
 
 final class StderrLogger extends AbstractLogger
 {
+    public function __construct(private readonly ?string $testLogPath = null)
+    {
+    }
+
     private const SENSITIVE_CONTEXT_KEYS = '/password|secret|token|authorization|cookie|iban|bank|email|phone|payload|body|detail|sql|query/i';
 
     public function log($level, string|Stringable $message, array $context = []): void
