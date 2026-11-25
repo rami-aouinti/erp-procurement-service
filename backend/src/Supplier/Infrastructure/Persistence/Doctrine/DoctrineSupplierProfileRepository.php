@@ -315,6 +315,14 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             );
             if ($contact === false) { $this->connection->commit(); return false; }
             if ($contact['IS_PRIMARY'] === 'Y') {
+                // Release the function-based unique constraint before promoting
+                // the replacement contact of the same type.
+                $this->connection->executeStatement(
+                    "UPDATE supplier_contacts SET is_primary = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND id = :contactId",
+                    ['supplierId' => $supplierId, 'contactId' => $contactId],
+                );
+
                 $replacementId = $this->connection->fetchOne(
                     'SELECT id FROM supplier_contacts WHERE supplier_id = :supplierId
                      AND contact_type = :contactType AND id <> :contactId
