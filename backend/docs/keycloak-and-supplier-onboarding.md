@@ -151,3 +151,47 @@ remain on their legacy access policy for backward compatibility with the current
 functional tests. Do not expose the application publicly yet: the next security task is
 to migrate those legacy endpoints and the React frontend to Keycloak, then add full
 authorization and negative-path tests for every supplier/profile/bank-account operation.
+
+
+## React frontend integration
+
+The React application uses the public OIDC client `erp-procurement-frontend` with
+Authorization Code + PKCE (S256). The browser never receives a client secret.
+
+Configure the optional Vite variables in `frontend/.env` (defaults are shown):
+
+```dotenv
+VITE_KEYCLOAK_URL=http://localhost:8081
+VITE_KEYCLOAK_REALM=erp-procurement
+VITE_KEYCLOAK_CLIENT_ID=erp-procurement-frontend
+```
+
+Copy `frontend/.env.example` to `frontend/.env` if you want to override the defaults.
+The Keycloak client redirect URI and web origin must include the actual frontend URL.
+For the local Compose setup they are configured for `http://localhost:5173`.
+
+The app performs a silent `check-sso` on startup and displays a sign-in screen when
+there is no active session. Authenticated API requests receive a refreshed Bearer
+access token. The frontend shows the approval queue only to users with
+`supplier-reviewer` or `supplier-admin`; the API independently enforces the same
+roles, so hiding a navigation item is not treated as an authorization control.
+
+The supplier creation form now submits to `POST /api/supplier-onboarding`. The user
+cannot choose an operational status: a new candidate stays INACTIVE until a reviewer
+approves it. Reviewers can approve, reject or request changes and inspect the decision
+history from the Onboarding approvals page.
+
+Install the browser dependency and start the frontend:
+
+```bash
+cd frontend
+npm install
+```
+
+Then use the normal Compose frontend service at http://localhost:5173.
+
+> Rollout boundary: the existing Supplier CRUD, profile, contacts, addresses and
+> bank-account backend endpoints have not yet been migrated to Keycloak authorization.
+> The frontend requires a session, but this alone does not secure those backend routes
+> against direct HTTP calls. Do not expose this development application publicly until
+> the legacy API authorization migration and its negative-path tests are complete.
