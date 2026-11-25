@@ -61,13 +61,9 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
         $roles = is_array($realmAccess) && is_array($realmAccess['roles'] ?? null)
             ? $realmAccess['roles']
             : [];
-        $resourceAccess = $claims['resource_access'] ?? [];
-        if (is_array($resourceAccess)) {
-            foreach ($resourceAccess as $client) {
-                if (is_array($client) && is_array($client['roles'] ?? null)) {
-                    $roles = array_merge($roles, $client['roles']);
-                }
-            }
+        $apiClientRoles = $claims['resource_access']['erp-procurement-api']['roles'] ?? [];
+        if (is_array($apiClientRoles)) {
+            $roles = array_merge($roles, $apiClientRoles);
         }
         return array_values(array_unique(array_filter($roles, 'is_string')));
     }
