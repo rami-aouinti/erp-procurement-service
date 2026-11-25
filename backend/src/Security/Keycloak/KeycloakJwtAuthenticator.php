@@ -16,7 +16,7 @@ final class KeycloakJwtAuthenticator
     ) {
     }
 
-    /** @return array{sub: string, preferred_username?: string, email?: string, realm_access?: array, resource_access?: array, ...} */
+    /** @return array<string, mixed> */
     public function authenticate(string $token): array
     {
         $parts = explode('.', $token);
@@ -104,7 +104,7 @@ final class KeycloakJwtAuthenticator
 
     private function rsaPublicKeyToPem(string $modulus, string $exponent): string
     {
-        $integer = static function (string $value): string {
+        $integer = function (string $value): string {
             if ($value === '') {
                 throw new \RuntimeException('Invalid RSA key material.');
             }
