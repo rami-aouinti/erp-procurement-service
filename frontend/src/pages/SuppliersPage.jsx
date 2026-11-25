@@ -13,6 +13,8 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('ALL');
   const [location, setLocation] = useState('ALL');
+  const [taxonomy, setTaxonomy] = useState({ categories: [], commodities: [], tags: [], units: [] });
+  const [classificationFilters, setClassificationFilters] = useState({ categoryId: '', commodityId: '', tagId: '', businessUnitId: '', strategicTier: '' });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,16 +28,20 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const data = await suppliersApi.list({ search: query, status });
+      const data = await suppliersApi.list({ search: query, status, ...classificationFilters });
       setItems(Array.isArray(data) ? data : []);
       onCountChange(data.length);
       setPage(1);
     } catch (err) { setError(err.message || 'Unable to load suppliers.'); }
     finally { setLoading(false); }
-  }, [query, status, onCountChange]);
+  }, [query, status, classificationFilters, onCountChange]);
 
   useEffect(() => { const timer = window.setTimeout(() => setQuery(searchValue.trim()), 300); return () => window.clearTimeout(timer); }, [searchValue]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    Promise.all(['categories', 'commodities', 'tags', 'business-units'].map((type) => suppliersApi.listClassifications(type).catch(() => [])))
+      .then(([categories, commodities, tags, units]) => setTaxonomy({ categories, commodities, tags, units }));
+  }, []);
 
   const locations = useMemo(() => [...new Map(items.filter((item) => item.city || item.country).map((item) => { const key = [item.city || '', item.country || ''].join('|'); return [key, { key, label: [item.city, item.country].filter(Boolean).join(', ') }]; })).values()].sort((a, b) => a.label.localeCompare(b.label)), [items]);
   const filteredItems = useMemo(() => location === 'ALL' ? items : items.filter((item) => [item.city || '', item.country || ''].join('|') === location), [items, location]);
@@ -46,7 +52,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
     return sortDirection === 'asc' ? comparison : -comparison;
   }), [filteredItems, sortField, sortDirection]);
   const visible = useMemo(() => sortedItems.slice((page - 1) * pageSize, page * pageSize), [sortedItems, page]);
-  const resetFilters = () => { onSearchChange(''); setStatus('ALL'); setLocation('ALL'); setPage(1); };
+  const resetFilters = () => { onSearchChange(''); setStatus('ALL'); setLocation('ALL'); setClassificationFilters({ categoryId: '', commodityId: '', tagId: '', businessUnitId: '', strategicTier: '' }); setPage(1); };
   const toggleSort = (field) => {
     if (sortField === field) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDirection('asc'); }
@@ -105,7 +111,12 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
             <button className="secondary-button" onClick={exportCsv} disabled={filteredItems.length === 0}>↓ Export CSV</button>
             <select className="directory-filter" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select>
             <select className="directory-filter" value={location} onChange={(event) => { setLocation(event.target.value); setPage(1); }} aria-label="Filter suppliers by location"><option value="ALL">All locations</option>{locations.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select>
-            <button className="secondary-button reset-filters-button" onClick={resetFilters} disabled={!searchValue && status === 'ALL' && location === 'ALL'}>↺ Reset filters</button>
+            <select className="directory-filter" aria-label="Filter by category" value={classificationFilters.categoryId} onChange={(e) => setClassificationFilters((v) => ({ ...v, categoryId: e.target.value }))}><option value="">All categories</option>{taxonomy.categories.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <select className="directory-filter" aria-label="Filter by commodity" value={classificationFilters.commodityId} onChange={(e) => setClassificationFilters((v) => ({ ...v, commodityId: e.target.value }))}><option value="">All commodities</option>{taxonomy.commodities.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.code} · {x.name}</option>)}</select>
+            <select className="directory-filter" aria-label="Filter by tag" value={classificationFilters.tagId} onChange={(e) => setClassificationFilters((v) => ({ ...v, tagId: e.target.value }))}><option value="">All tags</option>{taxonomy.tags.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <select className="directory-filter" aria-label="Filter by business unit" value={classificationFilters.businessUnitId} onChange={(e) => setClassificationFilters((v) => ({ ...v, businessUnitId: e.target.value }))}><option value="">All business units</option>{taxonomy.units.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <select className="directory-filter" aria-label="Filter by strategic tier" value={classificationFilters.strategicTier} onChange={(e) => setClassificationFilters((v) => ({ ...v, strategicTier: e.target.value }))}><option value="">All tiers</option><option value="STANDARD">Standard</option><option value="PREFERRED">Preferred</option><option value="STRATEGIC">Strategic</option></select>
+            <button className="secondary-button reset-filters-button" onClick={resetFilters} disabled={!searchValue && status === 'ALL' && location === 'ALL' && Object.values(classificationFilters).every((value) => !value)}>↺ Reset filters</button>
           </div>
         </div>
         {notice && <div className="alert alert-success" role="status">{notice}</div>}
