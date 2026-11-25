@@ -144,8 +144,18 @@ final class SupplierEventPipelineTest extends KernelTestCase
     {
         $search = static::getContainer()->get(SupplierSearchIndex::class);
         $deadline = microtime(true) + 30;
+        $lastSearchError = null;
         do {
-            $results = $search->search($query);
+            try {
+                $results = $search->search($query);
+                $lastSearchError = null;
+            } catch (\\RuntimeException $exception) {
+                // Elasticsearch may briefly refuse connections while the
+                // consumer/index refresh catches up; keep polling until timeout.
+                $lastSearchError = $exception->getMessage();
+                usleep(250_000);
+                continue;
+            }
 
             $found = false;
             foreach ($results as $result) {
@@ -162,7 +172,11 @@ final class SupplierEventPipelineTest extends KernelTestCase
             usleep(250_000);
         } while (microtime(true) < $deadline);
 
-        self::fail(sprintf('Elasticsearch did not reach the expected state for query "%s".', $query));
+        self::fail(sprintf(
+            'Elasticsearch did not reach the expected state for query "%s". Last search error: %s',
+            $query,
+            $lastSearchError ?? 'none',
+        ));
     }
 
     /** @param array<string, mixed>|null $payload */
