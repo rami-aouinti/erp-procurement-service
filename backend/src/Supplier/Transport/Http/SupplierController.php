@@ -26,9 +26,14 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/suppliers')]
 final class SupplierController
 {
+    public function __construct(private readonly KeycloakRoleGuard $roles)
+    {
+    }
+
     #[Route('', name: 'api_suppliers_list', methods: ['GET'])]
     public function list(Request $request, SearchSuppliers $useCase): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-onboarding-submit', 'supplier-reviewer', 'supplier-admin');
         $status = trim((string) $request->query->get('status', ''));
         return new JsonResponse($useCase->execute(
             (string) $request->query->get('search', ''),
@@ -39,6 +44,7 @@ final class SupplierController
     #[Route('/{id<\d+>}', name: 'api_suppliers_get', methods: ['GET'])]
     public function get(int $id, GetSupplier $useCase): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-onboarding-submit', 'supplier-reviewer', 'supplier-admin');
         try {
             return new JsonResponse($this->serialize($useCase->execute($id)));
         } catch (SupplierNotFound) {
@@ -49,6 +55,8 @@ final class SupplierController
     #[Route('', name: 'api_suppliers_create', methods: ['POST'])]
     public function create(Request $request, CreateSupplier $useCase): JsonResponse
     {
+        // Bypass of the approval workflow is reserved for supplier administrators.
+        $this->roles->assertAnyRole('supplier-admin');
         try {
             return new JsonResponse($this->serialize($useCase->execute($this->input($request))), 201);
         } catch (JsonException | InvalidSupplierData | \InvalidArgumentException $exception) {
@@ -65,6 +73,7 @@ final class SupplierController
     #[Route('/{id<\d+>}', name: 'api_suppliers_update', methods: ['PUT'])]
     public function update(int $id, Request $request, UpdateSupplier $useCase): JsonResponse
     {
+        $this->roles->assertAnyRole('supplier-admin');
         try {
             return new JsonResponse($this->serialize($useCase->execute($id, $this->input($request))));
         } catch (JsonException | InvalidSupplierData | \InvalidArgumentException $exception) {
@@ -85,6 +94,7 @@ final class SupplierController
     #[Route('/{id<\d+>}', name: 'api_suppliers_delete', methods: ['DELETE'])]
     public function delete(int $id, DeleteSupplier $useCase): Response
     {
+        $this->roles->assertAnyRole('supplier-admin');
         try {
             $useCase->execute($id);
             return new Response('', Response::HTTP_NO_CONTENT);
