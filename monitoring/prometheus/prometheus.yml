@@ -18,6 +18,11 @@ scrape_configs:
       - targets: ["backend:8000"]
     scrape_interval: 10s
 
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    scrape_interval: 10s
+
   - job_name: cadvisor
     static_configs:
       - targets: ["cadvisor:8080"]
