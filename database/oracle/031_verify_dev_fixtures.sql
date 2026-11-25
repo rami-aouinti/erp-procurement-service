@@ -8,7 +8,8 @@ DECLARE
     PROCEDURE assert_count(p_table_name IN VARCHAR2, p_expected IN NUMBER) IS
         v_actual NUMBER;
     BEGIN
-        EXECUTE IMMEDIATE 'SELECT COUNT(*) FROM ' || DBMS_ASSERT.SIMPLE_SQL_NAME(p_table_name)
+        -- p_table_name is supplied only by the fixed assertions below.
+        EXECUTE IMMEDIATE 'SELECT COUNT(*) FROM ' || p_table_name
             INTO v_actual;
         IF v_actual <> p_expected THEN
             RAISE_APPLICATION_ERROR(
