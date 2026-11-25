@@ -180,3 +180,19 @@ docker compose exec backend vendor/bin/simple-phpunit --testsuite="Supplier Infr
 docker compose exec backend composer test:integration
 docker compose exec backend vendor/bin/simple-phpunit --testsuite="Observability Unit"
 ```
+
+
+## Repeatable development fixtures and reset
+
+From the repository root, after the Oracle schema has been initialized (including migration 019):
+
+```bash
+git pull --ff-only origin main
+bash scripts/dev-reset.sh --yes
+docker compose exec backend composer test:functional
+docker compose exec backend composer test:integration
+```
+
+The reset orchestrator applies audit migration 020, clears Oracle business rows without dropping schema objects, seeds procurement/Supplier/receiving fixtures, creates encrypted bank-account fixtures through the application service, and verifies expected row counts. It then clears Redis and Symfony's dev cache, purges the Supplier RabbitMQ queues, deletes the Elasticsearch Supplier index, restarts workers and triggers a fresh index build from Oracle.
+
+Only use this against the local development database. The command requires the backend container to expose `APP_ENV=dev` and Oracle service `FREEPDB1`, and requires the explicit `--yes` confirmation. It intentionally preserves Docker volumes and monitoring history.
