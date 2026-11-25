@@ -7,12 +7,13 @@ namespace App\Supplier\Infrastructure\Persistence\Doctrine;
 use App\Supplier\Domain\Model\SupplierProfile;
 use App\Supplier\Domain\Model\SupplierBankAccount;
 use App\Supplier\Domain\Repository\SupplierProfileRepository;
+use App\Supplier\Infrastructure\Audit\SupplierAuditLogger;
 use Doctrine\DBAL\Connection;
 use Throwable;
 
 final readonly class DoctrineSupplierProfileRepository implements SupplierProfileRepository
 {
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private SupplierAuditLogger $audit)
     {
     }
 
@@ -70,6 +71,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 );
             }
 
+            $this->audit->record($profile->supplierId, 'SUPPLIER_PROFILE', $profile->supplierId, $exists ? 'UPDATED' : 'CREATED', ['legalName', 'registrationNumber', 'vatNumber', 'website', 'preferredLanguage', 'preferredCurrency', 'paymentTermsDays']);
             $this->connection->commit();
             return $profile;
         } catch (Throwable $exception) {
@@ -153,6 +155,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             if ($id === false || $id === null) {
                 throw new \RuntimeException('Unable to retrieve the created supplier contact.');
             }
+            $this->audit->record($contact->supplierId, 'SUPPLIER_CONTACT', (int) $id, 'CREATED', ['contactType', 'firstName', 'lastName', 'jobTitle', 'email', 'phone', 'primary']);
             $this->connection->commit();
 
             return new \App\Supplier\Domain\Model\SupplierContact(
@@ -239,6 +242,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
             if ($id === false || $id === null) {
                 throw new \RuntimeException('Unable to retrieve the created supplier address.');
             }
+            $this->audit->record($address->supplierId, 'SUPPLIER_ADDRESS', (int) $id, 'CREATED', ['addressType', 'label', 'companyName', 'street', 'street2', 'postalCode', 'city', 'region', 'country', 'default']);
             $this->connection->commit();
 
             return new \App\Supplier\Domain\Model\SupplierAddress(
@@ -295,6 +299,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                  'isPrimary' => $contact->primary ? 'Y' : 'N',
                  'supplierId' => $contact->supplierId, 'contactId' => $contact->id],
             );
+            $this->audit->record($contact->supplierId, 'SUPPLIER_CONTACT', $contact->id, 'UPDATED', ['contactType', 'firstName', 'lastName', 'jobTitle', 'email', 'phone', 'primary']);
             $this->connection->commit();
             return $updated > 0;
         } catch (\Throwable $exception) {
@@ -341,6 +346,9 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 'DELETE FROM supplier_contacts WHERE supplier_id = :supplierId AND id = :contactId',
                 ['supplierId' => $supplierId, 'contactId' => $contactId],
             );
+            if ($deleted > 0) {
+                $this->audit->record($supplierId, 'SUPPLIER_CONTACT', $contactId, 'DELETED', ['deleted']);
+            }
             $this->connection->commit();
             return $deleted > 0;
         } catch (\Throwable $exception) {
@@ -429,6 +437,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 }
             }
 
+            $this->audit->record($address->supplierId, 'SUPPLIER_ADDRESS', $address->id, 'UPDATED', ['addressType', 'label', 'companyName', 'street', 'street2', 'postalCode', 'city', 'region', 'country', 'default']);
             $this->connection->commit();
             return $updated > 0;
         } catch (\Throwable $exception) {
@@ -485,6 +494,9 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 }
             }
 
+            if ($deleted > 0) {
+                $this->audit->record($supplierId, 'SUPPLIER_ADDRESS', $addressId, 'DELETED', ['deleted']);
+            }
             $this->connection->commit();
             return $deleted > 0;
         } catch (\Throwable $exception) {
@@ -552,18 +564,23 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 );
             }
 
-            $this->connection->insert('supplier_bank_accounts', [
-                'supplier_id' => $account->supplierId,
-                'account_holder_encrypted' => $account->accountHolderEncrypted,
-                'iban_encrypted' => $account->ibanEncrypted,
-                'bic' => $account->bic,
-                'bank_name' => $account->bankName,
-                'currency' => $account->currency,
-                'encryption_key_version' => $account->encryptionKeyVersion,
-                'is_primary' => $account->primary ? 'Y' : 'N',
-                'created_at' => new \DateTimeImmutable(),
-                'updated_at' => new \DateTimeImmutable(),
-            ]);
+            $this->connection->executeStatement(
+                'INSERT INTO supplier_bank_accounts
+                    (supplier_id, account_holder_encrypted, iban_encrypted, bic, bank_name, currency,
+                     encryption_key_version, is_primary, created_at, updated_at)
+                 VALUES (:supplierId, :holderEncrypted, :ibanEncrypted, :bic, :bankName, :currency,
+                         :keyVersion, :isPrimary, SYSTIMESTAMP, SYSTIMESTAMP)',
+                [
+                    'supplierId' => $account->supplierId,
+                    'holderEncrypted' => $account->accountHolderEncrypted,
+                    'ibanEncrypted' => $account->ibanEncrypted,
+                    'bic' => $account->bic,
+                    'bankName' => $account->bankName,
+                    'currency' => $account->currency,
+                    'keyVersion' => $account->encryptionKeyVersion,
+                    'isPrimary' => $account->primary ? 'Y' : 'N',
+                ],
+            );
 
             $id = $this->connection->fetchOne(
                 'SELECT id FROM supplier_bank_accounts
@@ -580,6 +597,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 throw new \RuntimeException('Unable to retrieve the created supplier bank account.');
             }
 
+            $this->audit->record($account->supplierId, 'SUPPLIER_BANK_ACCOUNT', (int) $id, 'CREATED', ['accountHolder', 'iban', 'bic', 'bankName', 'currency', 'primary']);
             $this->connection->commit();
 
             return new SupplierBankAccount(
@@ -608,6 +626,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         $this->connection->beginTransaction();
 
         try {
+            $this->lockSupplierForProfileWrite($supplierId);
             $exists = $this->connection->fetchOne(
                 'SELECT id FROM supplier_bank_accounts
                  WHERE supplier_id = :supplierId AND id = :accountId',
@@ -629,6 +648,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                  WHERE supplier_id = :supplierId AND id = :accountId",
                 ['supplierId' => $supplierId, 'accountId' => $accountId],
             );
+            $this->audit->record($supplierId, 'SUPPLIER_BANK_ACCOUNT', $accountId, 'UPDATED', ['primary']);
 
             $this->connection->commit();
             return true;
@@ -642,13 +662,33 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
 
     public function deleteBankAccount(int $supplierId, int $accountId): bool
     {
-        $deleted = $this->connection->executeStatement(
-            'DELETE FROM supplier_bank_accounts
-             WHERE supplier_id = :supplierId AND id = :accountId',
-            ['supplierId' => $supplierId, 'accountId' => $accountId],
-        );
+        $this->connection->beginTransaction();
+        try {
+            $this->lockSupplierForProfileWrite($supplierId);
+            $exists = $this->connection->fetchOne(
+                'SELECT id FROM supplier_bank_accounts WHERE supplier_id = :supplierId AND id = :accountId FOR UPDATE',
+                ['supplierId' => $supplierId, 'accountId' => $accountId],
+            );
+            if ($exists === false) {
+                $this->connection->commit();
+                return false;
+            }
 
-        return $deleted > 0;
+            $deleted = $this->connection->executeStatement(
+                'DELETE FROM supplier_bank_accounts WHERE supplier_id = :supplierId AND id = :accountId',
+                ['supplierId' => $supplierId, 'accountId' => $accountId],
+            );
+            if ($deleted > 0) {
+                $this->audit->record($supplierId, 'SUPPLIER_BANK_ACCOUNT', $accountId, 'DELETED', ['deleted']);
+            }
+            $this->connection->commit();
+            return $deleted > 0;
+        } catch (Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
     }
 
 
@@ -659,23 +699,35 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         string $ibanEncrypted,
         string $keyVersion,
     ): bool {
-        $updated = $this->connection->executeStatement(
-            'UPDATE supplier_bank_accounts
-             SET account_holder_encrypted = :holderEncrypted,
-                 iban_encrypted = :ibanEncrypted,
-                 encryption_key_version = :keyVersion,
-                 updated_at = SYSTIMESTAMP
-             WHERE supplier_id = :supplierId AND id = :accountId',
-            [
-                'holderEncrypted' => $accountHolderEncrypted,
-                'ibanEncrypted' => $ibanEncrypted,
-                'keyVersion' => $keyVersion,
-                'supplierId' => $supplierId,
-                'accountId' => $accountId,
-            ],
-        );
-
-        return $updated > 0;
+        $this->connection->beginTransaction();
+        try {
+            $this->lockSupplierForProfileWrite($supplierId);
+            $updated = $this->connection->executeStatement(
+                'UPDATE supplier_bank_accounts
+                 SET account_holder_encrypted = :holderEncrypted,
+                     iban_encrypted = :ibanEncrypted,
+                     encryption_key_version = :keyVersion,
+                     updated_at = SYSTIMESTAMP
+                 WHERE supplier_id = :supplierId AND id = :accountId',
+                [
+                    'holderEncrypted' => $accountHolderEncrypted,
+                    'ibanEncrypted' => $ibanEncrypted,
+                    'keyVersion' => $keyVersion,
+                    'supplierId' => $supplierId,
+                    'accountId' => $accountId,
+                ],
+            );
+            if ($updated > 0) {
+                $this->audit->record($supplierId, 'SUPPLIER_BANK_ACCOUNT', $accountId, 'SECURITY_ROTATED', ['encryptionKeyVersion']);
+            }
+            $this->connection->commit();
+            return $updated > 0;
+        } catch (Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
     }
 
 }
