@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\\Observability;
+namespace App\Observability;
 
 use Redis;
 use Throwable;
@@ -278,7 +278,7 @@ class MetricsRegistry
         }
 
         if ($this->redisHost === '') {
-            throw new RuntimeException('Redis metrics storage is not configured.');
+            throw new \\RuntimeException('Redis metrics storage is not configured.');
         }
 
         $redis = new Redis();
