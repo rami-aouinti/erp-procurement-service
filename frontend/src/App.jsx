@@ -123,5 +123,5 @@ function SupplierDetailRoute({ supplierId, navigate }) {
     }).catch((err) => { if (active) setError(err.message); });
     return () => { active = false; };
   }, [supplierId]);
-  return <section className="page-content"><div className="page-heading"><div><p className="eyebrow">MASTER DATA / SUPPLIERS</p><h1>Supplier details</h1><p className="subtitle">Complete supplier record and related business information.</p></div><button className="secondary-button" onClick={() => navigate('/suppliers')}>← Back to suppliers</button></div>{error && <div className="alert alert-error">{error}</div>}{supplier && <><div className="detail-page-actions"><button className="secondary-button" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)}>Edit supplier</button></div><SupplierDetails supplier={supplier} onClose={() => navigate('/suppliers')} /></>}</section>;
+  return <section className="page-content compact-page">{error && <div className="alert alert-error">{error}</div>}{supplier ? <SupplierDetails supplier={supplier} onBack={() => navigate('/suppliers')} onEdit={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)} /> : !error ? <div className="supplier-details"><div className="table-state"><span className="loader"></span>Loading supplier...</div></div> : null}</section>;
 }
