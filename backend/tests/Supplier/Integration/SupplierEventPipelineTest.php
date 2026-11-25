@@ -149,7 +149,7 @@ final class SupplierEventPipelineTest extends KernelTestCase
             try {
                 $results = $search->search($query);
                 $lastSearchError = null;
-            } catch (\\RuntimeException $exception) {
+            } catch (\RuntimeException $exception) {
                 // Elasticsearch may briefly refuse connections while the
                 // consumer/index refresh catches up; keep polling until timeout.
                 $lastSearchError = $exception->getMessage();
