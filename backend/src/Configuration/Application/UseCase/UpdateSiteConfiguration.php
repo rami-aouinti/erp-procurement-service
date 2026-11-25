@@ -76,8 +76,13 @@ final readonly class UpdateSiteConfiguration
             }
         }
 
+        $timezone = $updated['timezone'];
+        if (!is_string($timezone)) {
+            throw new InvalidArgumentException('Timezone must be a valid IANA timezone.');
+        }
+
         try {
-            new DateTimeZone($updated['timezone']);
+            new DateTimeZone($timezone);
         } catch (\Exception) {
             throw new InvalidArgumentException('Timezone must be a valid IANA timezone.');
         }
