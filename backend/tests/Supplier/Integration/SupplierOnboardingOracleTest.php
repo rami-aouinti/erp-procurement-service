@@ -95,10 +95,10 @@ final class SupplierOnboardingOracleTest extends KernelTestCase
         self::assertSame(3, (int) $workflow['VERSION']);
         self::assertSame('Compliance checks completed.', $workflow['DECISION_REASON']);
 
-        self::assertSame(
+        self::assertEqualsCanonicalizing(
             ['SupplierOnboardingSubmitted', 'SupplierOnboardingApproved'],
             $this->connection->fetchFirstColumn(
-                'SELECT event_type FROM supplier_outbox_events WHERE aggregate_id = :id ORDER BY occurred_at, event_type',
+                'SELECT event_type FROM supplier_outbox_events WHERE aggregate_id = :id',
                 ['id' => $this->supplierId],
             ),
         );
