@@ -60,6 +60,14 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
                 $record = new SupplierRecord($supplier);
                 $em->persist($record);
             } else {
+                $onboardingStatus = $connection->fetchOne(
+                    'SELECT onboarding_status FROM supplier_onboarding WHERE supplier_id = :supplierId',
+                    ['supplierId' => $supplier->id()],
+                );
+                if ($onboardingStatus === 'PENDING_APPROVAL' && $supplier->status() === 'ACTIVE') {
+                    throw new \DomainException('A supplier pending approval cannot be activated before a reviewer decision.');
+                }
+
                 $record = $this->find($supplier->id());
                 if (!$record instanceof SupplierRecord) {
                     throw new \RuntimeException('Supplier persistence record disappeared during update.');
