@@ -1,0 +1,105 @@
+{
+  "realm": "erp-procurement",
+  "enabled": true,
+  "displayName": "ERP Procurement",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "procurement-user",
+        "description": "Create and maintain supplier data"
+      },
+      {
+        "name": "supplier-onboarding-submit",
+        "description": "Submit suppliers for approval"
+      },
+      {
+        "name": "supplier-reviewer",
+        "description": "Review and decide supplier onboarding requests"
+      },
+      {
+        "name": "supplier-admin",
+        "description": "Manage supplier onboarding and reviewers"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "erp-procurement-api",
+      "name": "ERP Procurement API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "erp-procurement-frontend",
+      "name": "ERP Procurement Frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "roles",
+        "erp-procurement-api-audience"
+      ]
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "erp-procurement-api-audience",
+      "description": "Adds the ERP Procurement API audience to access tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "erp-procurement-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "erp-procurement-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultDefaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "erp-procurement-api-audience"
+  ],
+  "defaultOptionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "microprofile-jwt"
+  ]
+}
