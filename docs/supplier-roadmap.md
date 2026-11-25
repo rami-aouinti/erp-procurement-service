@@ -60,7 +60,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 - No supplier-facing self-service portal is currently implemented.
 - No complete supplier notification/scheduler workflow for expiry and review reminders is currently implemented.
 - No end-to-end supplier spend analytics / invoice-payment integration is currently implemented.
-- Categories/classification and strategic segmentation are not yet a complete dedicated feature.
+- SUP-F02 classification is now implemented on `main` (normalized Oracle taxonomy, assignments, role-protected APIs, Elasticsearch/Oracle search filters, Redis invalidation and React management/assignment screens); final CI and local Oracle verification are pending.
 
 ## 3. Feature status overview
 
@@ -74,7 +74,7 @@ Status values:
 |---|---|---:|---|---|
 | BASE | Supplier CRUD, validation, search, profile, contacts, addresses, bank accounts | PARTIAL / existing baseline | [Epic #3](https://github.com/rami-aouinti/erp-procurement-service/issues/3) | Existing module |
 | F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Broader end-to-end/Oracle concurrency tests |
-| F02 | Supplier categories, classification and segmentation | PLANNED | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Taxonomy decision |
+| F02 | Supplier categories, classification and segmentation | PARTIAL — implementation on main; verification pending | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | CI + local Oracle verification |
 | F03 | Supplier documents and compliance tracking | PLANNED | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + access control |
 | F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
 | F05 | Supplier contract lifecycle | PLANNED | [#8](https://github.com/rami-aouinti/erp-procurement-service/issues/8) | F03 document storage + reminders |
@@ -104,7 +104,7 @@ This order is a dependency-aware proposal, not a promise that every feature must
 
 ### Wave 1 — Core governance
 - [~] **F01:** Backend workflow, Keycloak roles, audit/history, outbox, PO eligibility guard and React OIDC candidate/reviewer UI implemented; legacy API authorization and full end-to-end/Oracle concurrency coverage remain.
-- [ ] **F02:** Categories and classification.
+- [~] **F02:** Normalized categories, commodity codes, tags, business units, strategic tier, supplier assignment UI, taxonomy administration and filtered search implemented; CI and local Oracle verification pending.
 - [ ] **F04:** Audit trail (start early; onboarding and sensitive changes depend on it).
 
 ### Wave 2 — Compliance and commercial lifecycle
@@ -239,11 +239,13 @@ A feature can be marked **DONE** only when all applicable items pass:
 
 ## 10. Current next action
 
-Start with the foundation/governance prerequisites and then implement **F01 Supplier Onboarding & Approval** together with the minimum audit capability from **F04**. Do not treat the existing ACTIVE / INACTIVE / BLOCKED status as an approval workflow. Before changing supplier status semantics, define backward-compatible migration behavior for all existing supplier rows and any purchase-order references.
+Complete F02 verification on a development database: apply migration 025, run the Supplier unit/functional/integration suites and frontend build, then verify classification assignment, filters, outbox consumption and Elasticsearch reindex. Do not run the destructive development reset merely to apply this additive migration.
 
 ## 11. Change log
 
 | Date | Change | Evidence |
+|---|---|---|
+| 2026-11-25 | Implemented SUP-F02 on main: normalized Oracle taxonomy and supplier relations, atomic assignment with audit/outbox, role-protected APIs, Elasticsearch/Oracle classification filters, Redis cache-key isolation/invalidation, React taxonomy management and supplier assignment/filter UI. Automated verification is pending. | Migration 025, Supplier classification services/controller, `SupplierClassificationOracleTest`, API/event tests, frontend pages and `docs/supplier-classification.md` |
 |---|---|---|
 | 2026-11-25 | Foundation hardening started: contact/address create responses now return persisted Oracle IDs; profile writes lock the supplier row to serialize primary/default changes; functional regression test added. Local Oracle test and CI verification still pending. | Commits on main: repository fix + SupplierApiTest regression coverage |
 | 2026-11-25 | Initial roadmap created after reviewing current `main` Supplier source, Oracle migrations, tests and docs. Existing implementation and planned features separated explicitly. | GitHub issues [#3–#14](https://github.com/rami-aouinti/erp-procurement-service/issues) |
