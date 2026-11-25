@@ -279,10 +279,10 @@ function WorkspaceApp() {
         {route.page === 'dashboard' && <DashboardPage navigate={navigate} roles={roles} apiStatus={apiStatus} apiMessage={apiMessage} />}
         {route.page === 'supplier-classifications' && roles.includes('supplier-admin') && <SupplierClassificationPage />}
         {route.page === 'supplier-classifications' && !roles.includes('supplier-admin') && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to manage supplier classification.</div></section>}
-        {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage />}
+        {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage onNotify={showToast} />}
         {route.page === 'onboarding' && !(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to review supplier onboarding requests.</div></section>}
-        {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} canCreate={roles.includes('supplier-onboarding-submit') || roles.includes('supplier-admin')} siteSettings={settings} itemsPerPage={settings.itemsPerPage} />}
-        {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
+        {route.page === 'suppliers' && <SuppliersPage onNotify={showToast} navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} canCreate={roles.includes('supplier-onboarding-submit') || roles.includes('supplier-admin')} siteSettings={settings} itemsPerPage={settings.itemsPerPage} />}
+        {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} onNotify={showToast} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
         {route.page === 'configuration' && <ConfigurationPage settings={settings} onSettingsChange={setSettings} schema={configurationSchema} preferences={preferences} onPreferencesChange={persistPreferences} canManage={roles.includes('supplier-admin')} onSaveSite={saveSiteConfiguration} saving={configurationSaving} error={configurationError} saved={configurationSaved} />}
         {route.page === 'help' && <HelpPage appName={settings.siteName} />}
