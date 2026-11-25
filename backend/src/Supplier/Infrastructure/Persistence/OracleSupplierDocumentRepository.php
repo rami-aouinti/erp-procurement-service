@@ -228,11 +228,16 @@ final readonly class OracleSupplierDocumentRepository
     }
 
     /** @return list<array<string,mixed>> */
-    public function listForSupplier(int $supplierId): array
+    public function listForSupplier(int $supplierId, int $page = 1, int $pageSize = 25): array
     {
+        if ($page < 1 || $pageSize < 1 || $pageSize > 100) {
+            throw new UnprocessableEntityHttpException('Pagination requires page >= 1 and pageSize between 1 and 100.');
+        }
         if ((int) $this->db->fetchOne('SELECT COUNT(*) FROM suppliers WHERE id = :id', ['id' => $supplierId]) !== 1) {
             throw new NotFoundHttpException('Supplier not found.');
         }
+        $total = (int) $this->db->fetchOne('SELECT COUNT(*) FROM supplier_documents WHERE supplier_id = :supplierId', ['supplierId' => $supplierId]);
+        $offset = ($page - 1) * $pageSize;
 
         $rows = $this->db->fetchAllAssociative(
             'SELECT d.id, d.supplier_id AS "supplierId", d.document_type_id AS "documentTypeId",
@@ -245,11 +250,12 @@ final readonly class OracleSupplierDocumentRepository
              FROM supplier_documents d
              LEFT JOIN supplier_document_versions v ON v.id = d.current_version_id
              WHERE d.supplier_id = :supplierId
-             ORDER BY d.updated_at DESC, d.id DESC',
-            ['supplierId' => $supplierId]
+             ORDER BY d.updated_at DESC, d.id DESC
+             OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY',
+            ['supplierId' => $supplierId, 'offset' => $offset, 'pageSize' => $pageSize]
         );
 
-        return array_map(static function (array $row): array {
+        $items = array_map(static function (array $row): array {
             return [
                 'id' => (int) $row['id'],
                 'supplierId' => (int) $row['supplierId'],
@@ -271,5 +277,15 @@ final readonly class OracleSupplierDocumentRepository
                 ],
             ];
         }, $rows);
+
+        return [
+            'items' => $items,
+            'pagination' => [
+                'page' => $page,
+                'pageSize' => $pageSize,
+                'totalItems' => $total,
+                'totalPages' => (int) ceil($total / $pageSize),
+            ],
+        ];
     }
 }
