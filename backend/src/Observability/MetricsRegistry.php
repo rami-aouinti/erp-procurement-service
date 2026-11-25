@@ -7,7 +7,7 @@ namespace App\Observability;
 use Redis;
 use Throwable;
 
-final class MetricsRegistry
+class MetricsRegistry
 {
     private array $requests = [];
     private array $histograms = [];
