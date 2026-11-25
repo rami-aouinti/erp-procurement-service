@@ -13,6 +13,16 @@ final readonly class KeycloakRoleGuard
     {
     }
 
+    public function hasAnyRole(string ...$requiredRoles): bool
+    {
+        $user = $this->requestStack->getCurrentRequest()?->attributes->get('_keycloak_user');
+        if (!is_array($user) || !is_array($user['roles'] ?? null)) {
+            return false;
+        }
+
+        return array_intersect($requiredRoles, $user['roles']) !== [];
+    }
+
     public function assertAnyRole(string ...$requiredRoles): void
     {
         $user = $this->requestStack->getCurrentRequest()?->attributes->get('_keycloak_user');
@@ -20,7 +30,7 @@ final readonly class KeycloakRoleGuard
             throw new AccessDeniedHttpException('An authenticated Keycloak identity is required.');
         }
 
-        if (array_intersect($requiredRoles, $user['roles']) === []) {
+        if (!$this->hasAnyRole(...$requiredRoles)) {
             throw new AccessDeniedHttpException('The authenticated user does not have the required role.');
         }
     }
