@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Supplier\Transport\Http;
 
 use App\Security\Keycloak\KeycloakRoleGuard;
-use App\Supplier\Application\Port\SupplierClassificationReader;
 use App\Supplier\Application\Service\ManageSupplierClassification;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,10 +40,10 @@ final class SupplierClassificationController
     }
 
     #[Route('/suppliers/{id<\d+>}/classification', name: 'supplier_classification_get', methods: ['GET'])]
-    public function get(int $id, SupplierClassificationReader $reader, ManageSupplierClassification $manager): JsonResponse
+    public function get(int $id, ManageSupplierClassification $manager): JsonResponse
     {
         $this->roles->assertAnyRole('procurement-user','supplier-onboarding-submit','supplier-reviewer','supplier-admin');
-        return new JsonResponse($manager->get($id, $reader));
+        return new JsonResponse($manager->get($id));
     }
 
     #[Route('/suppliers/{id<\d+>}/classification', name: 'supplier_classification_assign', methods: ['PUT'])]
