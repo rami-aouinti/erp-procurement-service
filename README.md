@@ -345,7 +345,7 @@ After the full Oracle schema has been installed (including migration 019), run t
 bash scripts/dev-reset.sh --yes
 ```
 
-The script requires the backend container to report `APP_ENV=dev`, uses the `FREEPDB1` service and refuses to run as SYS. It stops the Supplier workers, deletes business rows in foreign-key-safe order, reseeds the data, creates encrypted bank fixtures, clears the dedicated Redis database, purges Supplier RabbitMQ queues, recreates the Elasticsearch Supplier index from Oracle and restarts the workers.
+The script requires the backend container to report `APP_ENV=dev`, uses the `FREEPDB1` service and refuses to run as SYS. Ensure `.env` contains a valid base64-encoded 32-byte `SUPPLIER_BANK_ENCRYPTION_KEY`; the fixtures use the real AES-256-GCM application service. It stops the Supplier workers, deletes business rows in foreign-key-safe order, reseeds the data, creates encrypted bank fixtures, clears Redis and Symfony's dev cache, purges Supplier RabbitMQ queues, recreates the Elasticsearch Supplier index from Oracle and restarts the workers.
 
 **Destructive command:** this removes all ERP business data in the configured development schema, including suppliers, products, purchase orders, goods receipts, inventory, outbox/consumer state and audit history. It preserves the Oracle schema, migrations, sequences, Docker volumes and monitoring history. Do not run it against production or a shared database.
 
