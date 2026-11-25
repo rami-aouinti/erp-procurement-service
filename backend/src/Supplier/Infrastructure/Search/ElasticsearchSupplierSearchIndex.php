@@ -65,7 +65,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
     public function index(Supplier $supplier): void
     {
         $this->ensureIndex();
-        $this->request('PUT', '/' . self::INDEX . '/_doc/' . $supplier->id() . '?refresh=wait_for', [
+        $this->request('PUT', '/' . $this->index . '/_doc/' . $supplier->id() . '?refresh=wait_for', [
             'id' => $supplier->id(),
             'name' => $supplier->name(),
             'email' => $supplier->email(),
@@ -84,13 +84,13 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
     public function delete(int $supplierId): void
     {
         $this->ensureIndex();
-        $this->request('DELETE', '/' . self::INDEX . '/_doc/' . $supplierId . '?refresh=wait_for', null, [200, 404]);
+        $this->request('DELETE', '/' . $this->index . '/_doc/' . $supplierId . '?refresh=wait_for', null, [200, 404]);
     }
 
     public function reindex(iterable $suppliers): int
     {
         $this->ensureIndex();
-        $this->request('POST', '/' . self::INDEX . '/_delete_by_query?refresh=true&conflicts=proceed', [
+        $this->request('POST', '/' . $this->index . '/_delete_by_query?refresh=true&conflicts=proceed', [
             'query' => ['match_all' => (object) []],
         ]);
         $count = 0;
@@ -104,7 +104,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
     private function ensureIndex(): void
     {
         try {
-            $this->request('GET', '/' . self::INDEX);
+            $this->request('GET', '/' . $this->index);
 
             return;
         } catch (RuntimeException $exception) {
@@ -113,7 +113,7 @@ final readonly class ElasticsearchSupplierSearchIndex implements SupplierSearchI
             }
         }
 
-        $this->request('PUT', '/' . self::INDEX, [
+        $this->request('PUT', '/' . $this->index, [
             'settings' => ['number_of_shards' => 1, 'number_of_replicas' => 0],
             'mappings' => [
                 'properties' => [
