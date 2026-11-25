@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, CircleHelp, Settings, Moon, Sun } from 'lucide-react';
+import { Building2, CircleHelp, Settings, Moon, Sun, Search } from 'lucide-react';
 import SettingsPage from './pages/SettingsPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
 import MetricCard from './components/MetricCard.jsx';
@@ -26,6 +26,7 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState('checking');
   const [apiMessage, setApiMessage] = useState('Connecting to Symfony...');
   const [supplierCount, setSupplierCount] = useState(0);
+  const [supplierSearch, setSupplierSearch] = useState('');
   const [theme, setTheme] = useState(() => window.localStorage.getItem('erp-theme') || 'light');
   const [settings, setSettings] = useState(() => { try { return { appName: 'Procurement Management Suite', shopName: '', shopEmail: '', shopAddress: '', currency: 'EUR', palette: 'indigo', ...JSON.parse(window.localStorage.getItem('erp-settings') || '{}') }; } catch { return { appName: 'Procurement Management Suite', shopName: '', shopEmail: '', shopAddress: '', currency: 'EUR', palette: 'indigo' }; } });
 
@@ -108,6 +109,7 @@ export default function App() {
         <header className="topbar">
           <div className="breadcrumbs"><span>Workspace</span><span className="crumb-separator">/</span><strong>{pageTitle}</strong></div>
           <div className="topbar-right">
+            {route.page === 'suppliers' && <label className="topbar-search"><Search size={17} /><input value={supplierSearch} onChange={(event) => setSupplierSearch(event.target.value)} placeholder="Search suppliers..." aria-label="Search suppliers" /></label>}
             <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -120,7 +122,7 @@ export default function App() {
           <div className="dashboard-grid"><StatusPanel status={apiStatus} message={apiMessage} /><section className="welcome-panel"><div className="welcome-icon">↗</div><div><h3>Supplier management</h3><p>Keep your supplier records, contacts, addresses and payment information up to date.</p><button className="primary-button" onClick={() => navigate('/suppliers')}>Open suppliers <span>→</span></button></div></section></div>
           <footer className="page-footer">React + Vite <span>·</span> Symfony 7.4 <span>·</span> Oracle Database</footer>
         </section>}
-        {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} />}
+        {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} />}
         {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
         {route.page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} />}
