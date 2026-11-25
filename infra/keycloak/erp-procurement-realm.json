@@ -23,6 +23,10 @@
       {
         "name": "supplier-admin",
         "description": "Manage supplier onboarding and reviewers"
+      },
+      {
+        "name": "supplier-finance",
+        "description": "Manage supplier bank account details"
       }
     ]
   },
