@@ -266,7 +266,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
 
 
 
-    public function updateContact(\\App\\Supplier\\Domain\\Model\\SupplierContact $contact): bool
+    public function updateContact(\App\Supplier\Domain\Model\SupplierContact $contact): bool
     {
         if ($contact->id === null) return false;
         $this->connection->beginTransaction();
