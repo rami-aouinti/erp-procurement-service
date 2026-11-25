@@ -8,6 +8,8 @@ import SuppliersPage from './pages/SuppliersPage.jsx';
 import SupplierEditPage from './pages/SupplierEditPage.jsx';
 import SupplierDetails from './components/SupplierDetails.jsx';
 import { suppliersApi } from './api/suppliers.js';
+import { useAuth } from './auth/AuthProvider.jsx';
+import LoginPage from './auth/LoginPage.jsx';
 
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -21,7 +23,8 @@ function routeFromLocation() {
   return { page: 'dashboard' };
 }
 
-export default function App() {
+function WorkspaceApp() {
+  const { user, logout } = useAuth();
   const [route, setRoute] = useState(routeFromLocation);
   const [apiStatus, setApiStatus] = useState('checking');
   const [apiMessage, setApiMessage] = useState('Connecting to Symfony...');
@@ -113,7 +116,7 @@ export default function App() {
             <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <span className="avatar" aria-label="User avatar">RA</span>
+            <span className="avatar" aria-label="User avatar">{String(user?.preferred_username || user?.email || 'U').slice(0, 2).toUpperCase()}</span><button className="secondary-button auth-logout" type="button" onClick={logout}>Sign out</button>
           </div>
         </header>
         {route.page === 'dashboard' && <section className="page-content">
@@ -144,4 +147,19 @@ function SupplierDetailRoute({ supplierId, navigate }) {
     return () => { active = false; };
   }, [supplierId]);
   return <section className="page-content compact-page">{error && <div className="alert alert-error">{error}</div>}{supplier ? <SupplierDetails supplier={supplier} onBack={() => navigate('/suppliers')} onEdit={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)} /> : !error ? <div className="supplier-details"><div className="table-state"><span className="loader"></span>Loading supplier...</div></div> : null}</section>;
+}
+
+
+export default function App() {
+  const { initialized, authenticated, login } = useAuth();
+
+  if (!initialized) {
+    return <main className="auth-screen"><section className="auth-card"><span className="loader"></span><p>Connecting to identity provider...</p></section></main>;
+  }
+
+  if (!authenticated) {
+    return <LoginPage onLogin={login} />;
+  }
+
+  return <WorkspaceApp />;
 }
