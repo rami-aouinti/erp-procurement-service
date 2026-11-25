@@ -29,6 +29,10 @@ interface SupplierProfileRepository
 
     public function addAddress(SupplierAddress $address): SupplierAddress;
 
+    public function updateAddress(SupplierAddress $address): bool;
+
+    public function deleteAddress(int $supplierId, int $addressId): bool;
+
     /** @return list<SupplierBankAccount> */
     public function findBankAccounts(int $supplierId): array;
 
