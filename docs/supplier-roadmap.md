@@ -52,7 +52,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 
 ### 2.3 Current implementation gaps (do not describe these as already delivered)
 
-- Supplier onboarding backend is **PARTIAL**: Keycloak RS256 JWT validation, role-protected candidate submission/review endpoints, Oracle transition history, transactional outbox events and a purchase-order eligibility trigger are implemented. React OIDC login/review screens, comprehensive authorization/Oracle concurrency tests and migration of legacy Supplier/profile/bank-account routes remain open. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
+- Supplier onboarding is **PARTIAL**: Keycloak RS256 JWT validation, role-protected candidate submission/review endpoints, Oracle transition history, transactional outbox events, purchase-order eligibility trigger, React OIDC login (Authorization Code + PKCE), candidate submission form and reviewer queue/decision/history screens are implemented. Remaining: migrate legacy Supplier/profile/contact/address/bank-account routes to backend authorization and add broader end-to-end/Oracle concurrency tests. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
 - No supplier document repository, malware-scanning lifecycle or compliance checklist is currently implemented.
 - A privacy-safe append-only audit baseline is implemented for Supplier master data, profiles, contacts, addresses and bank accounts. Actor identity is still unresolved until authentication/RBAC is introduced; audit records currently identify HTTP requests as ANONYMOUS and CLI/worker activity as SYSTEM.
 - No contract lifecycle module is currently implemented.
@@ -73,7 +73,7 @@ Status values:
 | ID | Feature | Status | Tracking issue | Main dependency |
 |---|---|---:|---|---|
 | BASE | Supplier CRUD, validation, search, profile, contacts, addresses, bank accounts | PARTIAL / existing baseline | [Epic #3](https://github.com/rami-aouinti/erp-procurement-service/issues/3) | Existing module |
-| F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Frontend OIDC/review UI + legacy API authorization + broader tests |
+| F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Legacy API authorization + broader end-to-end/Oracle concurrency tests |
 | F02 | Supplier categories, classification and segmentation | PLANNED | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Taxonomy decision |
 | F03 | Supplier documents and compliance tracking | PLANNED | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + access control |
 | F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
@@ -103,7 +103,7 @@ This order is a dependency-aware proposal, not a promise that every feature must
 - [ ] Add database migration inventory/version tracking and documented rollback approach.
 
 ### Wave 1 — Core governance
-- [~] **F01:** Backend state machine, Keycloak roles, audit/history, outbox and purchase-order eligibility guard implemented; frontend OIDC/review UI and full authorization coverage remain.
+- [~] **F01:** Backend workflow, Keycloak roles, audit/history, outbox, PO eligibility guard and React OIDC candidate/reviewer UI implemented; legacy API authorization and full end-to-end/Oracle concurrency coverage remain.
 - [ ] **F02:** Categories and classification.
 - [ ] **F04:** Audit trail (start early; onboarding and sensitive changes depend on it).
 
