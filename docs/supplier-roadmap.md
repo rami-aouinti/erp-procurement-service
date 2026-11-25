@@ -75,7 +75,7 @@ Status values:
 | BASE | Supplier CRUD, validation, search, profile, contacts, addresses, bank accounts | PARTIAL / existing baseline | [Epic #3](https://github.com/rami-aouinti/erp-procurement-service/issues/3) | Existing module |
 | F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Broader end-to-end/Oracle concurrency tests |
 | F02 | Supplier categories, classification and segmentation | DONE — local test suites confirmed passing | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Delivered |
-| F03 | Supplier documents and compliance tracking | PARTIAL — Oracle metadata foundation and security namespace committed; lifecycle pending | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + malware scanning |
+| F03 | Supplier documents and compliance tracking | PARTIAL — Oracle metadata foundation, private local storage and MIME/size validation committed; lifecycle pending | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Upload API + Oracle lifecycle + explicit no-scanner release policy |
 | F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
 | F05 | Supplier contract lifecycle | PLANNED | [#8](https://github.com/rami-aouinti/erp-procurement-service/issues/8) | F03 document storage + reminders |
 | F06 | Supplier performance scorecards | PLANNED | [#9](https://github.com/rami-aouinti/erp-procurement-service/issues/9) | Reliable PO/receipt/quality data |
@@ -108,7 +108,7 @@ This order is a dependency-aware proposal, not a promise that every feature must
 - [ ] **F04:** Audit trail (start early; onboarding and sensitive changes depend on it).
 
 ### Wave 2 — Compliance and commercial lifecycle
-- [~] **F03:** Oracle metadata schema, CI initialization, protected API namespace, private local storage foundation and MIME/size validation are in place; S3, scan/review lifecycle, upload API and UI remain.
+- [~] **F03:** Oracle metadata schema, CI initialization, protected API namespace, private local storage foundation and MIME/size validation are in place; ClamAV was deliberately removed to keep local resource usage low. S3, upload/review lifecycle and UI remain.
 - [ ] **F05:** Contract lifecycle.
 - [ ] **F08:** Notifications and scheduled reminders.
 
@@ -206,7 +206,7 @@ A feature can be marked **DONE** only when all applicable items pass:
 - Protect external supplier access against IDOR and tenant/supplier boundary bypass.
 - Encrypt sensitive financial data; mask it in API responses.
 - Keep encryption keys in secret management, version keys and test rotation/recovery.
-- Validate uploaded files by content signature and scan/quarantine before use.
+- Validate uploaded files by content signature and quarantine until the configured review/release policy permits use. If antivirus is not deployed, explicitly document that limitation and never label files as scanned or malware-free.
 - Redact sensitive data from logs, events, metrics, traces and audit diffs.
 - Define retention, deletion, export and access review requirements before launch.
 
@@ -239,7 +239,7 @@ A feature can be marked **DONE** only when all applicable items pass:
 
 ## 10. Current next action
 
-Continue F03 by implementing private local and S3-compatible object storage, streaming upload validation, malware quarantine/scanning, metadata persistence and supplier-scoped authorization. Migration 026 is additive and is initialized by CI after migration 025. Do not run the destructive development reset merely to apply this migration.
+Continue F03 by implementing complete private object storage, streaming upload validation, metadata persistence and supplier-scoped authorization. Define a safe document-release policy that does not falsely claim antivirus scanning; consider an external scanner only if production requirements justify it. Migration 026 is additive and is initialized by CI after migration 025. Do not run the destructive development reset merely to apply this migration.
 
 ## 11. Change log
 
