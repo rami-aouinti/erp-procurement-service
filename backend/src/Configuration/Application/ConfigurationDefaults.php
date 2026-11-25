@@ -89,10 +89,10 @@ final class ConfigurationDefaults
                 'min' => 5,
                 'max' => 100,
             ],
-            ['key' => 'supplierForm.requireEmail', 'label' => 'Require supplier email', 'type' => 'toggle', 'group' => 'supplierForm'],
-            ['key' => 'supplierForm.requirePhone', 'label' => 'Require supplier phone', 'type' => 'toggle', 'group' => 'supplierForm'],
-            ['key' => 'supplierForm.requireTaxNumber', 'label' => 'Require supplier tax number', 'type' => 'toggle', 'group' => 'supplierForm'],
-            ['key' => 'supplierForm.allowInactive', 'label' => 'Allow inactive suppliers', 'type' => 'toggle', 'group' => 'supplierForm'],
+            ['key' => 'supplierForm.requireEmail', 'label' => 'Require supplier email', 'type' => 'toggle', 'group' => 'forms'],
+            ['key' => 'supplierForm.requirePhone', 'label' => 'Require supplier phone', 'type' => 'toggle', 'group' => 'forms'],
+            ['key' => 'supplierForm.requireTaxNumber', 'label' => 'Require supplier tax number', 'type' => 'toggle', 'group' => 'forms'],
+            ['key' => 'supplierForm.allowInactive', 'label' => 'Allow inactive suppliers', 'type' => 'toggle', 'group' => 'forms'],
         ];
     }
 }
