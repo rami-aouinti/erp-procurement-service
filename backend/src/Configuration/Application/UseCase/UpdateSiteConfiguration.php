@@ -7,6 +7,7 @@ namespace App\Configuration\Application\UseCase;
 use App\Configuration\Application\ConfigurationDefaults;
 use App\Configuration\Application\Port\ConfigurationCache;
 use App\Configuration\Domain\Repository\ConfigurationRepository;
+use DateTimeZone;
 use InvalidArgumentException;
 
 final readonly class UpdateSiteConfiguration
@@ -33,7 +34,17 @@ final readonly class UpdateSiteConfiguration
         }
 
         $current = array_replace($defaults, $this->configurations->find('site') ?? []);
+        $current['supplierForm'] = array_replace(
+            $defaults['supplierForm'],
+            is_array($current['supplierForm'] ?? null) ? $current['supplierForm'] : [],
+        );
         $updated = array_replace($current, $input);
+        if (array_key_exists('supplierForm', $input)) {
+            if (!is_array($input['supplierForm'])) {
+                throw new InvalidArgumentException('Supplier form configuration must be an object.');
+            }
+            $updated['supplierForm'] = array_replace($current['supplierForm'], $input['supplierForm']);
+        }
 
         $this->assertString($updated, 'siteName', 100, true);
         foreach (['companyName' => 160, 'companyEmail' => 180, 'companyPhone' => 40, 'companyAddress' => 1000, 'timezone' => 80] as $field => $maxLength) {
@@ -54,9 +65,6 @@ final readonly class UpdateSiteConfiguration
         if (!is_int($updated['itemsPerPage']) || $updated['itemsPerPage'] < 5 || $updated['itemsPerPage'] > 100) {
             throw new InvalidArgumentException('Rows per page must be an integer between 5 and 100.');
         }
-        if (!is_array($updated['supplierForm'] ?? null)) {
-            throw new InvalidArgumentException('Supplier form configuration must be an object.');
-        }
         $formDefaults = $defaults['supplierForm'];
         $unknownFormFields = array_diff(array_keys($updated['supplierForm']), array_keys($formDefaults));
         if ($unknownFormFields !== []) {
@@ -66,6 +74,12 @@ final readonly class UpdateSiteConfiguration
             if (!is_bool($updated['supplierForm'][$field] ?? $default)) {
                 throw new InvalidArgumentException(sprintf('Supplier form option "%s" must be boolean.', $field));
             }
+        }
+
+        try {
+            new DateTimeZone($updated['timezone']);
+        } catch (\Exception) {
+            throw new InvalidArgumentException('Timezone must be a valid IANA timezone.');
         }
 
         $this->configurations->save('site', $updated, $actorId);
