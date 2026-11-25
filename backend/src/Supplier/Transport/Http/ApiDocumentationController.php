@@ -41,6 +41,22 @@ final class ApiDocumentationController
                         ],
                     ],
                 ],
+
+                '/api/suppliers/{id}/contacts/{contactId}' => [
+                    'parameters' => [
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
+                        ['name' => 'contactId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
+                    ],
+                    'put' => [
+                        'tags' => ['Suppliers'], 'summary' => 'Replace a supplier contact', 'operationId' => 'updateSupplierContact',
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierContactInput']]]],
+                        'responses' => ['200' => ['description' => 'Contact updated'], '400' => ['$ref' => '#/components/responses/BadRequest'], '404' => ['$ref' => '#/components/responses/NotFound']],
+                    ],
+                    'delete' => [
+                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier contact', 'operationId' => 'deleteSupplierContact',
+                        'responses' => ['204' => ['description' => 'Contact deleted'], '404' => ['$ref' => '#/components/responses/NotFound']],
+                    ],
+                ],
                 '/api/suppliers/{id}' => [
                     'parameters' => [['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
                     'get' => [
@@ -60,6 +76,18 @@ final class ApiDocumentationController
             ],
             'components' => [
                 'schemas' => [
+                    'SupplierContactInput' => [
+                        'type' => 'object', 'required' => ['firstName', 'lastName'],
+                        'properties' => [
+                            'contactType' => ['type' => 'string', 'maxLength' => 30, 'default' => 'GENERAL'],
+                            'firstName' => ['type' => 'string', 'maxLength' => 100],
+                            'lastName' => ['type' => 'string', 'maxLength' => 100],
+                            'jobTitle' => ['type' => 'string', 'maxLength' => 120, 'nullable' => true],
+                            'email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 150, 'nullable' => true],
+                            'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
+                            'primary' => ['type' => 'boolean', 'default' => false],
+                        ],
+                    ],
                     'SupplierInput' => [
                         'type' => 'object', 'required' => ['name'],
                         'properties' => [
