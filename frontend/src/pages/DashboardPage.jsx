@@ -33,11 +33,19 @@ export default function DashboardPage({ navigate, roles = [], apiStatus = 'check
     setLoading(true);
     setError('');
     try {
-      const tasks = [suppliersApi.list()];
-      if (canReview) tasks.push(onboardingApi.queue());
-      const [supplierPayload, queuePayload] = await Promise.all(tasks);
+      const supplierPayload = await suppliersApi.list();
       setSuppliers(getItems(supplierPayload));
-      if (canReview) setPending(getItems(queuePayload).length);
+      if (canReview) {
+        try {
+          const queuePayload = await onboardingApi.queue();
+          setPending(getItems(queuePayload).length);
+        } catch (queueError) {
+          setPending(null);
+          console.warn('Unable to load onboarding queue:', queueError);
+        }
+      } else {
+        setPending(null);
+      }
     } catch (err) {
       setError(err.message || 'Unable to load dashboard data.');
     } finally {
@@ -49,10 +57,11 @@ export default function DashboardPage({ navigate, roles = [], apiStatus = 'check
 
   const stats = useMemo(() => {
     const active = suppliers.filter((item) => ['active', 'approved', 'enabled'].includes(statusOf(item))).length;
-    const pendingCount = suppliers.filter((item) => ['pending', 'submitted', 'in-review', 'under-review'].includes(statusOf(item))).length;
-    const inactive = suppliers.filter((item) => ['inactive', 'rejected', 'disabled'].includes(statusOf(item))).length;
+    const pendingCount = pending ?? suppliers.filter((item) => ['pending', 'submitted', 'in-review', 'under-review'].includes(statusOf(item))).length;
+    const inactiveTotal = suppliers.filter((item) => ['inactive', 'rejected', 'disabled'].includes(statusOf(item))).length;
+    const inactive = Math.max(0, inactiveTotal - (canReview ? pendingCount : 0));
     return { active, pending: pendingCount, inactive };
-  }, [suppliers]);
+  }, [suppliers, pending, canReview]);
 
   const recent = useMemo(() => [...suppliers]
     .sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0))
