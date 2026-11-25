@@ -28,7 +28,11 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
         }
 
         $request = $event->getRequest();
-        if (!str_starts_with($request->getPathInfo(), '/api/supplier-onboarding')) {
+        $path = $request->getPathInfo();
+        if (
+            !str_starts_with($path, '/api/supplier-onboarding')
+            && !str_starts_with($path, '/api/configuration')
+        ) {
             return;
         }
 
@@ -71,6 +75,7 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
         if (is_array($apiClientRoles)) {
             $roles = array_merge($roles, $apiClientRoles);
         }
+
         return array_values(array_unique(array_filter($roles, 'is_string')));
     }
 }
