@@ -144,15 +144,16 @@ final class SupplierOnboardingOracleTest extends KernelTestCase
             ['id' => $this->supplierId],
         );
 
-        // Oracle actor_name is VARCHAR2(255). This deliberately causes the
-        // history insert to fail after the workflow UPDATE, exercising rollback
-        // of the whole decision transaction without schema changes or DDL.
+        // Oracle stores actor_name in VARCHAR2(255 BYTE). A 255-character
+        // multibyte username passes the application's character limit but
+        // exceeds Oracle's byte limit. The failure occurs on the history INSERT,
+        // after the workflow UPDATE, so the transaction must roll everything back.
         $failedDecision = $this->request(
             'POST',
             '/api/supplier-onboarding/' . $this->supplierId . '/approve',
             ['reason' => 'This decision must roll back.'],
             ['supplier-reviewer'],
-            str_repeat('x', 256),
+            str_repeat('é', 255),
         );
         self::assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $failedDecision->getStatusCode());
 

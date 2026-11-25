@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LayoutDashboard, LogOut, Menu, X, ChevronRight } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import ConfigurationPage from './pages/ConfigurationPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -20,14 +20,24 @@ function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const detail = path.match(/^\/suppliers\/([^/]+)$/);
   const edit = path.match(/^\/suppliers\/([^/]+)\/edit$/);
-  if (edit) return { page: 'edit', id: decodeURIComponent(edit[1]) };
-  if (detail) return { page: 'detail', id: decodeURIComponent(detail[1]) };
+  const decodeId = (value) => {
+    try { return decodeURIComponent(value); } catch { return null; }
+  };
+  if (edit) {
+    const id = decodeId(edit[1]);
+    return id ? { page: 'edit', id } : { page: 'not-found' };
+  }
+  if (detail) {
+    const id = decodeId(detail[1]);
+    return id ? { page: 'detail', id } : { page: 'not-found' };
+  }
+  if (path === '/') return { page: 'dashboard' };
   if (path === '/suppliers') return { page: 'suppliers' };
   if (path === '/onboarding') return { page: 'onboarding' };
   if (path === '/supplier-classifications') return { page: 'supplier-classifications' };
   if (path === '/settings' || path === '/configuration') return { page: 'configuration' };
   if (path === '/help') return { page: 'help' };
-  return { page: 'dashboard' };
+  return { page: 'not-found' };
 }
 
 function WorkspaceApp() {
@@ -50,6 +60,8 @@ function WorkspaceApp() {
       return { palette: 'indigo', colorMode: 'light' };
     }
   });
+  const persistedPreferencesRef = useRef(preferences);
+  const preferenceSaveQueueRef = useRef(Promise.resolve());
   const [settings, setSettings] = useState(() => {
     const defaults = {
       siteName: 'ERP Procurement', companyName: '', companyEmail: '', companyPhone: '',
@@ -125,14 +137,29 @@ function WorkspaceApp() {
     }).catch((error) => console.warn('Unable to load site configuration:', error));
     configurationApi.getPreferences().then((data) => {
       if (!active) return;
-      setPreferences((current) => ({ ...current, ...data.preferences }));
+      setPreferences((current) => {
+        const merged = { ...current, ...data.preferences };
+        persistedPreferencesRef.current = merged;
+        return merged;
+      });
     }).catch((error) => console.warn('Unable to load user preferences:', error));
     return () => { active = false; };
   }, []);
 
   const persistPreferences = (next) => {
     setPreferences(next);
-    configurationApi.updatePreferences(next).catch((error) => console.warn('Unable to save user preferences:', error));
+    const save = preferenceSaveQueueRef.current
+      .catch(() => {})
+      .then(() => configurationApi.updatePreferences(next));
+    preferenceSaveQueueRef.current = save;
+    save.then(() => {
+      persistedPreferencesRef.current = next;
+    }).catch((error) => {
+      if (preferenceSaveQueueRef.current === save) {
+        setPreferences(persistedPreferencesRef.current);
+        showToast('error', 'Preferences not saved', error.message || 'Your personal preferences could not be saved.');
+      }
+    });
   };
 
   const showToast = useCallback((type, title, message) => {
@@ -219,11 +246,13 @@ function WorkspaceApp() {
   }, []);
 
   useEffect(() => {
-    suppliersApi.list().then((data) => setSupplierCount(data.length)).catch(() => {});
-  }, [route.page]);
+    let active = true;
+    suppliersApi.list().then((data) => { if (active) setSupplierCount(data.length); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
-  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : route.page === 'supplier-classifications' ? 'Supplier classification' : 'Supplier details';
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : route.page === 'supplier-classifications' ? 'Supplier classification' : route.page === 'not-found' ? 'Page not found' : 'Supplier details';
 
   const initials = String(user?.preferred_username || user?.email || "U").slice(0, 2).toUpperCase();
   const displayName = user?.name || user?.preferred_username || user?.email || "Account";
@@ -241,7 +270,6 @@ function WorkspaceApp() {
           <div className="sidebar-group">
             <div className="sidebar-label">WORKSPACE</div>
             <nav className="side-nav" aria-label="Workspace navigation">
-              <a href="/" className={route.page === "dashboard" ? "nav-link active" : "nav-link"} aria-current={route.page === "dashboard" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/"); }}><span className="nav-icon"><LayoutDashboard size={18} /></span><span className="nav-text">Dashboard</span><ChevronRight className="nav-chevron" size={14} /></a>
               <a href="/suppliers" className={isActive("suppliers") ? "nav-link active" : "nav-link"} aria-current={isActive("suppliers") ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/suppliers"); }}><span className="nav-icon"><Building2 size={18} /></span><span className="nav-text">Suppliers</span><span className="nav-count">{supplierCount}</span></a>
               {(roles.includes("supplier-reviewer") || roles.includes("supplier-admin")) && <a href="/onboarding" className={route.page === "onboarding" ? "nav-link active" : "nav-link"} aria-current={route.page === "onboarding" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/onboarding"); }}><span className="nav-icon"><ClipboardCheck size={18} /></span><span className="nav-text">Approvals</span></a>}
               {roles.includes("supplier-admin") && <a href="/supplier-classifications" className={route.page === "supplier-classifications" ? "nav-link active" : "nav-link"} aria-current={route.page === "supplier-classifications" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/supplier-classifications"); }}><span className="nav-icon"><Building2 size={18} /></span><span className="nav-text">Classifications</span></a>}
@@ -286,6 +314,7 @@ function WorkspaceApp() {
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
         {route.page === 'configuration' && <ConfigurationPage settings={settings} onSettingsChange={setSettings} schema={configurationSchema} preferences={preferences} onPreferencesChange={persistPreferences} canManage={roles.includes('supplier-admin')} onSaveSite={saveSiteConfiguration} saving={configurationSaving} error={configurationError} saved={configurationSaved} />}
         {route.page === 'help' && <HelpPage appName={settings.siteName} />}
+        {route.page === 'not-found' && <section className="page-content not-found-page"><div className="not-found-card"><span className="not-found-code">404</span><h1>Page not found</h1><p>The page may have moved, or the address may be incorrect.</p><button type="button" className="primary-button" onClick={() => navigate('/')}>Back to dashboard</button></div></section>}
       </main>
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} onNavigate={navigate} roles={roles} />
       {toast && <div className={'global-toast ' + toast.type} role={toast.type === 'error' ? 'alert' : 'status'} aria-live={toast.type === 'error' ? 'assertive' : 'polite'}><div><strong>{toast.title}</strong><p>{toast.message}</p></div><button type="button" aria-label="Dismiss notification" onClick={() => setToast(null)}>×</button></div>}
