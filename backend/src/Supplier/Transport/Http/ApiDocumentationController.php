@@ -21,8 +21,38 @@ final class ApiDocumentationController
                 'description' => 'REST API for suppliers in the ERP Procurement application.',
             ],
             'servers' => [['url' => '/']],
-            'tags' => [['name' => 'Suppliers', 'description' => 'Supplier master data']],
+            'tags' => [
+                ['name' => 'Suppliers', 'description' => 'Supplier master data'],
+                ['name' => 'Configuration', 'description' => 'Global application configuration'],
+                ['name' => 'User Preferences', 'description' => 'Personal user interface preferences'],
+            ],
             'paths' => [
+                '/api/configuration/site' => [
+                    'get' => [
+                        'tags' => ['Configuration'], 'summary' => 'Read global site configuration and its form schema',
+                        'operationId' => 'getSiteConfiguration', 'security' => [['bearerAuth' => []]],
+                        'responses' => ['200' => ['description' => 'Effective settings merged with application defaults'], '401' => ['description' => 'Unauthorized']],
+                    ],
+                    'put' => [
+                        'tags' => ['Configuration'], 'summary' => 'Update global site configuration (supplier-admin only)',
+                        'operationId' => 'updateSiteConfiguration', 'security' => [['bearerAuth' => []]],
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SiteConfigurationInput']]]],
+                        'responses' => ['200' => ['description' => 'Configuration saved'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Requires supplier-admin role'], '422' => ['$ref' => '#/components/responses/ValidationError']],
+                    ],
+                ],
+                '/api/configuration/me/preferences' => [
+                    'get' => [
+                        'tags' => ['User Preferences'], 'summary' => 'Read preferences for the authenticated user',
+                        'operationId' => 'getMyPreferences', 'security' => [['bearerAuth' => []]],
+                        'responses' => ['200' => ['description' => 'Personal preferences'], '401' => ['description' => 'Unauthorized']],
+                    ],
+                    'put' => [
+                        'tags' => ['User Preferences'], 'summary' => 'Update preferences for the authenticated user',
+                        'operationId' => 'updateMyPreferences', 'security' => [['bearerAuth' => []]],
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/UserPreferencesInput']]]],
+                        'responses' => ['200' => ['description' => 'Preferences saved'], '401' => ['description' => 'Unauthorized'], '422' => ['$ref' => '#/components/responses/ValidationError']],
+                    ],
+                ],
                 '/api/supplier-onboarding' => [
                     'post' => [
                         'tags' => ['Supplier Onboarding'], 'summary' => 'Register and submit a supplier candidate',
@@ -126,6 +156,26 @@ final class ApiDocumentationController
             ],
             'components' => [
                 'schemas' => [
+                    'SiteConfigurationInput' => [
+                        'type' => 'object',
+                        'required' => ['settings'],
+                        'properties' => [
+                            'settings' => ['type' => 'object', 'description' => 'Fields are described by GET /api/configuration/site and validated against the server-side settings registry.'],
+                        ],
+                    ],
+                    'UserPreferencesInput' => [
+                        'type' => 'object',
+                        'required' => ['preferences'],
+                        'properties' => [
+                            'preferences' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'palette' => ['type' => 'string', 'enum' => ['indigo', 'ocean', 'emerald', 'violet', 'rose', 'amber']],
+                                    'colorMode' => ['type' => 'string', 'enum' => ['light', 'dark', 'system']],
+                                ],
+                            ],
+                        ],
+                    ],
                     'SupplierCandidateInput' => [
                         'type' => 'object', 'required' => ['name'],
                         'properties' => [
