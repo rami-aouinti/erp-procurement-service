@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersApi } from '../api/suppliers.js';
 
 const PAGE_SIZE = 5;
-const blank = { name: '', email: '', phone: '', taxNumber: '', status: 'ACTIVE', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
+const blank = { name: '', email: '', phone: '', taxNumber: '', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
 const steps = ['Company', 'Contact', 'Address'];
 
 export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange }) {
@@ -70,7 +70,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
     event.preventDefault(); setSaving(true); setError('');
     try {
       await suppliersApi.create({ ...form, name: form.name.trim(), country: form.country.trim().toUpperCase() || null });
-      setModal(false); setForm(blank); setStep(0); setNotice('Supplier created successfully.');
+      setModal(false); setForm(blank); setStep(0); setNotice('Supplier submitted for approval. It will become active after a reviewer approves it.');
       await load();
     } catch (err) { setError(err.message || 'Unable to create supplier.'); }
     finally { setSaving(false); }
@@ -117,7 +117,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
         <div className="stepper">{steps.map((label, index) => <div className={index <= step ? 'step active' : 'step'} key={label}><span>{index < step ? '✓' : index + 1}</span><small>{label}</small></div>)}</div>
         {error && <div className="alert alert-error" role="alert">{error}</div>}
         <form onSubmit={step === 2 ? createSupplier : (event) => { event.preventDefault(); next(); }}>
-          {step === 0 && <div className="modal-form-grid"><div className="form-section-title">Company information</div><label className="full-field">Company name <b>*</b><input name="name" required autoFocus maxLength="150" value={form.name} onChange={change} placeholder="e.g. Acme GmbH" /></label><label>Tax / VAT number<input name="taxNumber" maxLength="50" value={form.taxNumber} onChange={change} placeholder="DE123456789" /></label><label>Supplier status<select name="status" value={form.status} onChange={change}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select></label></div>}
+          {step === 0 && <div className="modal-form-grid"><div className="form-section-title">Company information</div><label className="full-field">Company name <b>*</b><input name="name" required autoFocus maxLength="150" value={form.name} onChange={change} placeholder="e.g. Acme GmbH" /></label><label>Tax / VAT number<input name="taxNumber" maxLength="50" value={form.taxNumber} onChange={change} placeholder="DE123456789" /></label></div>}
           {step === 1 && <div className="modal-form-grid"><div className="form-section-title">Primary contact</div><label>Contact person<input name="contactPerson" maxLength="150" value={form.contactPerson} onChange={change} placeholder="Full name" /></label><label>Email address<input name="email" type="email" maxLength="150" value={form.email} onChange={change} placeholder="contact@company.com" /></label><label className="full-field">Phone number<input name="phone" maxLength="30" value={form.phone} onChange={change} placeholder="+49 30 123456" /></label></div>}
           {step === 2 && <div className="modal-form-grid"><div className="form-section-title">Business address</div><label className="full-field">Street and number<input name="street" maxLength="180" value={form.street} onChange={change} placeholder="Hafenstraße 12" /></label><label>Postal code<input name="postalCode" maxLength="20" value={form.postalCode} onChange={change} placeholder="10115" /></label><label>City<input name="city" maxLength="100" value={form.city} onChange={change} placeholder="Berlin" /></label><label>Country code<input name="country" maxLength="2" value={form.country} onChange={change} placeholder="DE" /></label><div className="form-hint full-field">Legal details, additional contacts, addresses and bank accounts can be managed from the supplier detail page after creation.</div></div>}
           <footer className="modal-footer"><button type="button" className="secondary-button" onClick={step === 0 ? closeCreate : previous}>{step === 0 ? 'Cancel' : '← Back'}</button><button type="submit" className="primary-button" disabled={saving}>{saving ? 'Creating...' : step === 2 ? 'Create supplier' : 'Continue →'}</button></footer>
