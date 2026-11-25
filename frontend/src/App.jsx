@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck } from 'lucide-react';
+import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LayoutDashboard, LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import ConfigurationPage from './pages/ConfigurationPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
 import MetricCard from './components/MetricCard.jsx';
@@ -35,6 +35,7 @@ function WorkspaceApp() {
   const [apiMessage, setApiMessage] = useState('Connecting to Symfony...');
   const [supplierCount, setSupplierCount] = useState(0);
   const [supplierSearch, setSupplierSearch] = useState('');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [theme, setTheme] = useState(() => window.localStorage.getItem('erp-theme') || 'light');
   const [preferences, setPreferences] = useState(() => {
     try {
@@ -148,11 +149,12 @@ function WorkspaceApp() {
   const navigate = useCallback((path) => {
     window.history.pushState({}, '', path);
     setRoute(routeFromLocation());
+    setMobileNavOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
-    const onPopState = () => setRoute(routeFromLocation());
+    const onPopState = () => { setRoute(routeFromLocation()); setMobileNavOpen(false); };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -187,36 +189,54 @@ function WorkspaceApp() {
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
   const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : route.page === 'supplier-classifications' ? 'Supplier classification' : 'Supplier details';
 
+  const initials = String(user?.preferred_username || user?.email || "U").slice(0, 2).toUpperCase();
+  const displayName = user?.name || user?.preferred_username || user?.email || "Account";
+  const email = user?.email || "";
+
   return (
-    <div className="erp-app">
+    <div className={mobileNavOpen ? "erp-app mobile-nav-open" : "erp-app"}>
+      {mobileNavOpen && <button className="sidebar-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} /> }
       <aside className="sidebar">
-        <a className="brand" href="/" onClick={(event) => { event.preventDefault(); navigate('/'); }}>
-          <span className="brand-mark">P</span><span className="brand-copy"><strong>{settings.siteName || 'ERP Procurement'}</strong><small>MANAGEMENT SUITE</small></span>
+        <a className="brand" href="/" onClick={(event) => { event.preventDefault(); navigate("/"); }}>
+          <span className="brand-mark">P</span>
+          <span className="brand-copy"><strong>{settings.siteName || "ERP Procurement"}</strong><small>PROCUREMENT WORKSPACE</small></span>
         </a>
-        <div className="sidebar-label">WORKSPACE</div>
-        <nav className="side-nav" aria-label="Main navigation">
-          <a href="/suppliers" className={isActive('suppliers') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }}><span className="nav-icon"><Building2 size={18} /></span>Suppliers<span className="nav-count">{supplierCount}</span></a>
-          {(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <a href="/onboarding" className={route.page === 'onboarding' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/onboarding'); }}><span className="nav-icon"><ClipboardCheck size={18} /></span>Approvals</a>}
-        </nav>
-        {roles.includes('supplier-admin') && <a href="/supplier-classifications" className={route.page === 'supplier-classifications' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/supplier-classifications'); }}><span className="nav-icon"><Building2 size={18} /></span>Classification</a>}
+        <div className="sidebar-scroll">
+          <div className="sidebar-group">
+            <div className="sidebar-label">WORKSPACE</div>
+            <nav className="side-nav" aria-label="Workspace navigation">
+              <a href="/" className={route.page === "dashboard" ? "nav-link active" : "nav-link"} aria-current={route.page === "dashboard" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/"); }}><span className="nav-icon"><LayoutDashboard size={18} /></span><span className="nav-text">Dashboard</span><ChevronRight className="nav-chevron" size={14} /></a>
+              <a href="/suppliers" className={isActive("suppliers") ? "nav-link active" : "nav-link"} aria-current={isActive("suppliers") ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/suppliers"); }}><span className="nav-icon"><Building2 size={18} /></span><span className="nav-text">Suppliers</span><span className="nav-count">{supplierCount}</span></a>
+              {(roles.includes("supplier-reviewer") || roles.includes("supplier-admin")) && <a href="/onboarding" className={route.page === "onboarding" ? "nav-link active" : "nav-link"} aria-current={route.page === "onboarding" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/onboarding"); }}><span className="nav-icon"><ClipboardCheck size={18} /></span><span className="nav-text">Approvals</span></a>}
+              {roles.includes("supplier-admin") && <a href="/supplier-classifications" className={route.page === "supplier-classifications" ? "nav-link active" : "nav-link"} aria-current={route.page === "supplier-classifications" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/supplier-classifications"); }}><span className="nav-icon"><Building2 size={18} /></span><span className="nav-text">Classifications</span></a>}
+            </nav>
+          </div>
+          <div className="sidebar-group sidebar-admin-group">
+            <div className="sidebar-label">PREFERENCES</div>
+            <nav className="side-nav" aria-label="Application preferences">
+              <a href="/configuration" className={route.page === "configuration" ? "nav-link active" : "nav-link"} aria-current={route.page === "configuration" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/configuration"); }}><span className="nav-icon"><Settings size={18} /></span><span className="nav-text">Configuration</span></a>
+              <a href="/help" className={route.page === "help" ? "nav-link active" : "nav-link"} aria-current={route.page === "help" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/help"); }}><span className="nav-icon"><CircleHelp size={18} /></span><span className="nav-text">Help & support</span></a>
+            </nav>
+          </div>
+        </div>
         <div className="sidebar-bottom">
-          <nav className="side-nav sidebar-utility-nav" aria-label="Application">
-            <a href="/configuration" className={route.page === 'configuration' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/configuration'); }}><span className="nav-icon"><Settings size={18} /></span>Configuration</a>
-            <a href="/help" className={route.page === 'help' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/help'); }}><span className="nav-icon"><CircleHelp size={18} /></span>Help</a>
-          </nav>
-          <div className="sidebar-connection"><span className={`connection-dot ${apiStatus}`}></span><span><strong>Backend API</strong><small>{apiStatus === 'online' ? 'Connected' : apiStatus === 'offline' ? 'Unavailable' : 'Checking...'}</small></span></div>
-          <div className="sidebar-version">ERP Procurement · Development</div>
+          <div className="sidebar-connection"><span className={"connection-dot " + apiStatus}></span><span><strong>System status</strong><small>{apiStatus === "online" ? "All systems operational" : apiStatus === "offline" ? "API unavailable" : "Checking services..."}</small></span><span className="connection-status-label">{apiStatus === "online" ? "Online" : apiStatus === "offline" ? "Offline" : "…"}</span></div>
+          <div className="sidebar-user"><span className="sidebar-user-avatar">{initials}</span><span className="sidebar-user-copy"><strong>{displayName}</strong><small>{email || "Signed in"}</small></span><button className="sidebar-logout" type="button" onClick={logout} aria-label="Sign out" title="Sign out"><LogOut size={16} /></button></div>
+          <div className="sidebar-version">{settings.siteName || "ERP Procurement"} <span>·</span> Workspace</div>
         </div>
       </aside>
       <main className="main-area">
         <header className="topbar">
-          <div className="breadcrumbs"><span>Workspace</span><span className="crumb-separator">/</span><strong>{pageTitle}</strong></div>
+          <div className="topbar-leading">
+            <button className="mobile-nav-toggle" type="button" aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={19} /> : <Menu size={19} />}</button>
+            <div className="breadcrumbs"><span>Workspace</span><span className="crumb-separator">/</span><strong>{pageTitle}</strong></div>
+            </div>
           <div className="topbar-right">
             {route.page === 'suppliers' && <label className="topbar-search"><Search size={17} /><input value={supplierSearch} onChange={(event) => setSupplierSearch(event.target.value)} placeholder="Search suppliers..." aria-label="Search suppliers" /></label>}
             <button className="theme-toggle" type="button" onClick={() => persistPreferences({ ...preferences, colorMode: theme === 'dark' ? 'light' : 'dark' })} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <span className="avatar" aria-label="User avatar">{String(user?.preferred_username || user?.email || 'U').slice(0, 2).toUpperCase()}</span><button className="secondary-button auth-logout" type="button" onClick={logout}>Sign out</button>
+            <span className="avatar" aria-label={"Signed in as " + displayName} title={displayName}>{initials}</span>
           </div>
         </header>
         {route.page === 'dashboard' && <section className="page-content">
