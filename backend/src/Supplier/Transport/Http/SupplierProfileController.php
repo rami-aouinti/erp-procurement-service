@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Supplier\Transport\Http;
 
+use App\Security\Keycloak\KeycloakRoleGuard;
+
 use App\Supplier\Application\DTO\SupplierProfileData;
 use App\Supplier\Application\UseCase\GetSupplierProfile;
 use App\Supplier\Application\UseCase\UpdateSupplierProfile;
