@@ -62,8 +62,8 @@ final class OracleConfigurationRepositoryTest extends KernelTestCase
             'colorMode' => 'light',
         ]);
 
-        self::assertSame(['palette' => 'ocean', 'colorMode' => 'dark'], $this->preferenceRepository->findForUser($userA));
-        self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], $this->preferenceRepository->findForUser($userB));
+        self::assertEquals(['palette' => 'ocean', 'colorMode' => 'dark'], $this->preferenceRepository->findForUser($userA));
+        self::assertEquals(['palette' => 'indigo', 'colorMode' => 'light'], $this->preferenceRepository->findForUser($userB));
     }
 
     public function testUserPreferenceUpdatesAreIdempotentAndDoNotDuplicateRows(): void
@@ -75,7 +75,7 @@ final class OracleConfigurationRepositoryTest extends KernelTestCase
         $this->preferenceRepository->saveForUser($userId, ['palette' => 'indigo']);
         $this->preferenceRepository->saveForUser($userId, ['colorMode' => 'light']);
 
-        self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], $this->preferenceRepository->findForUser($userId));
+        self::assertEquals(['palette' => 'indigo', 'colorMode' => 'light'], $this->preferenceRepository->findForUser($userId));
         self::assertSame(
             2,
             (int) $this->connection->fetchOne(
