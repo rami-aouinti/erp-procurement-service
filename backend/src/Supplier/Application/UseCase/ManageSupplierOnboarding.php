@@ -18,10 +18,10 @@ final readonly class ManageSupplierOnboarding
     }
 
     /** @return array<string, mixed> */
-    public function submit(int $supplierId): array
+    public function submit(int $supplierId, bool $activateOnApproval = false): array
     {
         $actor = $this->roles->currentActor();
-        return $this->connection->transactional(function (Connection $db) use ($supplierId, $actor): array {
+        return $this->connection->transactional(function (Connection $db) use ($supplierId, $actor, $activateOnApproval): array {
             $supplier = $db->fetchAssociative(
                 'SELECT id, status FROM suppliers WHERE id = :id FOR UPDATE',
                 ['id' => $supplierId],
@@ -39,7 +39,7 @@ final readonly class ManageSupplierOnboarding
                 $db->insert('supplier_onboarding', [
                     'supplier_id' => $supplierId,
                     'onboarding_status' => 'DRAFT',
-                    'previous_supplier_status' => $supplier['STATUS'],
+                    'previous_supplier_status' => $activateOnApproval ? 'ACTIVE' : $supplier['STATUS'],
                     'version' => 1,
                 ]);
             } else {
