@@ -25,12 +25,12 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 
 | Capability | Current implementation | Status / boundary |
 |---|---|---|
-| Supplier master CRUD | `SupplierController`, `CreateSupplier`, `UpdateSupplier`, `GetSupplier`, `ListSuppliers`, `DeleteSupplier`, domain `Supplier` | **Implemented baseline.** Existing status enum is ACTIVE / INACTIVE / BLOCKED; legacy routes still need Keycloak authorization. |
+| Supplier master CRUD | `SupplierController`, `CreateSupplier`, `UpdateSupplier`, `GetSupplier`, `ListSuppliers`, `DeleteSupplier`, domain `Supplier` | **Implemented baseline.** Existing status enum is ACTIVE / INACTIVE / BLOCKED; all legacy Supplier routes now require Keycloak authentication and role authorization. |
 | Validation and duplicate protection | `SupplierDataValidator`, value objects for name/email/phone, repository email existence check | **Implemented.** Email duplicate protection exists; broader legal-entity duplicate detection is future work. |
 | Supplier profile | `SupplierProfile`, profile repository/use cases/controller and Oracle migration 009 | **Implemented baseline.** Legal name, registration number, VAT number, website, language, currency and payment terms. |
-| Multiple contacts | `SupplierContact`, `ManageSupplierProfileRelations`, profile repository and `supplier_contacts` | **Implemented baseline.** Listing/adding is present; full edit/delete lifecycle and richer contact governance should be verified/extended separately. |
-| Multiple addresses | `SupplierAddress`, `ManageSupplierProfileRelations`, profile repository and `supplier_addresses` | **Implemented baseline.** Listing/adding is present; full edit/delete lifecycle and address validation remain candidates for hardening. |
-| Bank accounts | `SupplierBankAccount`, `ManageSupplierBankAccounts`, `SupplierBankDataEncryptor`, encrypted Oracle columns | **Implemented baseline.** IBAN validation, AES-256-GCM encryption, masked responses, primary account selection/deletion and key-version metadata. |
+| Multiple contacts | `SupplierContact`, `ManageSupplierProfileRelations`, profile repository and `supplier_contacts` | **Implemented.** Listing, adding, editing and deleting contacts; primary-contact consistency is transactional. |
+| Multiple addresses | `SupplierAddress`, `ManageSupplierProfileRelations`, profile repository and `supplier_addresses` | **Implemented.** Listing, adding, editing and deleting addresses; default-address consistency is transactional. |
+| Bank accounts | `SupplierBankAccount`, `ManageSupplierBankAccounts`, `SupplierBankDataEncryptor`, encrypted Oracle columns | **Implemented.** IBAN validation, AES-256-GCM encryption, masked responses, primary account selection/deletion and key-version metadata; backend access is restricted to supplier-finance or supplier-admin. |
 | Bank encryption operations | `supplier:bank-accounts:rotate-encryption` command and key-version metadata | **Implemented.** Operational key backup/rotation procedures still require disciplined deployment controls. |
 | Supplier search | `SearchSuppliers`, `RedisSupplierListCache`, `ElasticsearchSupplierSearchIndex` | **Implemented.** Redis cache, Elasticsearch search and Oracle fallback; current indexed fields are documented in the root README. |
 | Reliable event publication | `supplier_outbox_events`, `PublishSupplierOutboxCommand`, `RabbitMqSupplierEventBus` | **Implemented.** Same-Oracle-transaction outbox, publisher confirms, row claims, lease recovery, exponential retry and terminal FAILED state. |
@@ -52,7 +52,7 @@ The following is based on the current `main` source tree, Supplier PHP classes, 
 
 ### 2.3 Current implementation gaps (do not describe these as already delivered)
 
-- Supplier onboarding is **PARTIAL**: Keycloak RS256 JWT validation, role-protected candidate submission/review endpoints, Oracle transition history, transactional outbox events, purchase-order eligibility trigger, React OIDC login (Authorization Code + PKCE), candidate submission form and reviewer queue/decision/history screens are implemented. Remaining: migrate legacy Supplier/profile/contact/address/bank-account routes to backend authorization and add broader end-to-end/Oracle concurrency tests. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
+- Supplier onboarding is **PARTIAL**: Keycloak RS256 JWT validation, role-protected candidate submission/review endpoints, Oracle transition history, transactional outbox events, purchase-order eligibility trigger, React OIDC login (Authorization Code + PKCE), candidate submission form and reviewer queue/decision/history screens are implemented. Legacy Supplier/profile/contact/address/bank-account routes now also enforce backend authentication and role authorization. Remaining: broader end-to-end and Oracle concurrency tests. Existing ACTIVE / INACTIVE / BLOCKED status is not equivalent to a review workflow.
 - No supplier document repository, malware-scanning lifecycle or compliance checklist is currently implemented.
 - A privacy-safe append-only audit baseline is implemented for Supplier master data, profiles, contacts, addresses and bank accounts. Actor identity is still unresolved until authentication/RBAC is introduced; audit records currently identify HTTP requests as ANONYMOUS and CLI/worker activity as SYSTEM.
 - No contract lifecycle module is currently implemented.
@@ -73,7 +73,7 @@ Status values:
 | ID | Feature | Status | Tracking issue | Main dependency |
 |---|---|---:|---|---|
 | BASE | Supplier CRUD, validation, search, profile, contacts, addresses, bank accounts | PARTIAL / existing baseline | [Epic #3](https://github.com/rami-aouinti/erp-procurement-service/issues/3) | Existing module |
-| F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Legacy API authorization + broader end-to-end/Oracle concurrency tests |
+| F01 | Supplier onboarding and approval workflow | PARTIAL | [#4](https://github.com/rami-aouinti/erp-procurement-service/issues/4) | Broader end-to-end/Oracle concurrency tests |
 | F02 | Supplier categories, classification and segmentation | PLANNED | [#5](https://github.com/rami-aouinti/erp-procurement-service/issues/5) | Taxonomy decision |
 | F03 | Supplier documents and compliance tracking | PLANNED | [#6](https://github.com/rami-aouinti/erp-procurement-service/issues/6) | Private object storage + access control |
 | F04 | Supplier audit trail and change history | PARTIAL | [#7](https://github.com/rami-aouinti/erp-procurement-service/issues/7) | Authenticated actor identity + retention policy + audit read API |
