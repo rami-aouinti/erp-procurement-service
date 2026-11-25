@@ -196,3 +196,16 @@ docker compose exec backend composer test:integration
 The reset orchestrator applies audit migration 020, clears Oracle business rows without dropping schema objects, seeds procurement/Supplier/receiving fixtures, creates encrypted bank-account fixtures through the application service, and verifies expected row counts. It then clears Redis and Symfony's dev cache, purges the Supplier RabbitMQ queues, deletes the Elasticsearch Supplier index, restarts workers and runs the explicit `supplier:reindex` command to rebuild all Supplier documents from Oracle (it does not rely on an HTTP list request, which may legitimately fall back to Oracle while Elasticsearch is empty).
 
 Only use this against the local development database. The command requires the backend container to expose `APP_ENV=dev` and Oracle service `FREEPDB1`, and requires the explicit `--yes` confirmation. It intentionally preserves Docker volumes and monitoring history.
+
+
+## Elasticsearch index isolation
+
+The application uses the `suppliers` Elasticsearch index by default. PHPUnit sets `ELASTICSEARCH_INDEX=suppliers_test`, so functional and integration tests never write into the development/production read model. The index name is injected into the Elasticsearch adapter through Symfony configuration; deployments can override it with the `ELASTICSEARCH_INDEX` environment variable.
+
+A database rollback cannot undo Elasticsearch writes because Oracle and Elasticsearch do not share a transaction. Functional tests that explicitly index a document therefore track its ID and delete that projection in `tearDown()`. The test index remains separate as a second safety boundary. For a development index that contains stale documents, rebuild it from Oracle with:
+
+```bash
+docker compose exec backend php bin/console supplier:reindex --env=dev
+```
+
+This command replaces the Elasticsearch projection with the current Oracle supplier set; it does not delete or modify Oracle suppliers.
