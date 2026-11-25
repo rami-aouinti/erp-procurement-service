@@ -94,7 +94,7 @@ export default function CommandPalette({ open, onClose, onNavigate, roles = [] }
       <section ref={dialogRef} className="command-dialog" role="dialog" aria-modal="true" aria-labelledby="command-title" aria-describedby="command-description">
         <h2 id="command-title" className="sr-only">Command palette</h2>
         <p id="command-description" className="sr-only">Search available workspace actions. Use arrow keys to navigate and Enter to open.</p>
-        <div className="command-search"><Search size={19} aria-hidden="true" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} placeholder="What would you like to do?" aria-label="Search commands" aria-controls="command-results" /><kbd>ESC</kbd></div>
+        <div className="command-search"><Search size={19} aria-hidden="true" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} placeholder="What would you like to do?" aria-label="Search commands" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-controls="command-results" aria-activedescendant={filtered[activeIndex] ? `command-option-${filtered[activeIndex].id}` : undefined} /><kbd>ESC</kbd></div>
         <div id="command-results" className="command-results" role="listbox" aria-label="Available commands">
           {filtered.length ? filtered.map((item, index) => (
             <button type="button" role="option" aria-selected={index === activeIndex} className={index === activeIndex ? 'command-option active' : 'command-option'} key={item.id} id={`command-option-${item.id}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => { onNavigate(item.path); onClose(); }}>
