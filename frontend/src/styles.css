@@ -601,3 +601,52 @@ h1,h2,h3{color:var(--text-primary)}h1{font-size:clamp(30px,3vw,39px);letter-spac
  .supplier-summary-row{grid-template-columns:1fr}.directory-heading{align-items:flex-start}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+
+/* Compact supplier screens: one card, with actions kept inside it */
+.page-content.compact-page {
+  width: min(1240px, calc(100% - 72px));
+  padding-top: 32px;
+}
+.directory-card .directory-actions {
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+.directory-actions .primary-button,
+.directory-actions .secondary-button {
+  min-height: 38px;
+}
+.details-heading {
+  align-items: center;
+}
+.details-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.edit-form-card > form {
+  width: 100%;
+}
+.edit-card-heading {
+  align-items: center;
+}
+.edit-card-heading h2 {
+  color: var(--text-primary);
+}
+@media (max-width: 680px) {
+  .page-content.compact-page {
+    width: calc(100% - 32px);
+    padding-top: 24px;
+  }
+  .details-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .details-page-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .directory-card .directory-actions {
+    justify-content: flex-end;
+  }
+}
