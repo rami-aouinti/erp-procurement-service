@@ -79,7 +79,7 @@ services:
     command: ["start-dev", "--import-realm", "--health-enabled=true"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-local-keycloak-admin-change-me}
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME: http://localhost:8081
       KC_HEALTH_ENABLED: "true"
@@ -87,13 +87,6 @@ services:
       - "127.0.0.1:8081:8080"
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
-
   backend:
     build:
       context: ./backend
