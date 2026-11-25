@@ -40,7 +40,8 @@ run_sql() {
     'sqlplus -L -s "$APP_USER/$APP_USER_PASSWORD@//localhost:1521/FREEPDB1"' < "$file"
 }
 
-# The additive migration is idempotent and must exist before the reset references its table.
+# Reassert the conditional unique indexes and ensure the audit table exists before resetting data.
+run_sql database/oracle/019_fix_supplier_profile_conditional_unique_indexes.sql
 run_sql database/oracle/020_create_supplier_audit_trail.sql
 run_sql database/oracle/030_reset_dev_data.sql
 
