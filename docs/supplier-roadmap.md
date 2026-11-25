@@ -91,7 +91,10 @@ The GitHub feature issues contain the detailed implementation task checklist and
 This order is a dependency-aware proposal, not a promise that every feature must be delivered before the next one.
 
 ### Foundation hardening (before expanding workflows)
-- [ ] Review and complete contact/address update and delete operations.
+- [ ] Implement contact/address update and delete operations (currently add/list only; tracked as remaining foundation work).
+- [x] Return Oracle-generated IDs from contact/address creation responses.
+- [x] Serialize contact/address/bank-account primary/default changes by locking the parent supplier row inside the write transaction.
+- [ ] Run the new Oracle functional regression test locally and confirm the CI result.
 - [ ] Review profile/bank-account permissions and authorization tests.
 - [ ] Add consistent pagination, filtering and API error contracts to relationship endpoints.
 - [ ] Confirm supplier deletion policy (hard delete vs deactivate/archive) in the presence of audit, contracts, documents and purchase history.
@@ -241,4 +244,5 @@ Start with the foundation/governance prerequisites and then implement **F01 Supp
 
 | Date | Change | Evidence |
 |---|---|---|
+| 2026-11-25 | Foundation hardening started: contact/address create responses now return persisted Oracle IDs; profile writes lock the supplier row to serialize primary/default changes; functional regression test added. Local Oracle test and CI verification still pending. | Commits on main: repository fix + SupplierApiTest regression coverage |
 | 2026-11-25 | Initial roadmap created after reviewing current `main` Supplier source, Oracle migrations, tests and docs. Existing implementation and planned features separated explicitly. | GitHub issues [#3–#14](https://github.com/rami-aouinti/erp-procurement-service/issues) |
