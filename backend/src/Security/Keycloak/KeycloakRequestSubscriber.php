@@ -28,11 +28,22 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
         }
 
         $request = $event->getRequest();
+        // A trusted in-process authenticator (for example a test identity) may
+        // already have populated this attribute. HTTP clients cannot set it.
+        if ($request->attributes->has('_keycloak_user')) {
+            return;
+        }
+
         $path = $request->getPathInfo();
-        if (
-            !str_starts_with($path, '/api/supplier-onboarding')
-            && !str_starts_with($path, '/api/configuration')
-        ) {
+        $protectedPaths = ['/api/supplier-onboarding', '/api/configuration', '/api/suppliers'];
+        $isProtectedPath = false;
+        foreach ($protectedPaths as $protectedPath) {
+            if ($path === $protectedPath || str_starts_with($path, $protectedPath . '/')) {
+                $isProtectedPath = true;
+                break;
+            }
+        }
+        if (!$isProtectedPath) {
             return;
         }
 
