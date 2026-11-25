@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace App\Supplier\Transport\Http;
 
 use App\Security\Keycloak\KeycloakRoleGuard;
+use App\Supplier\Application\DTO\SupplierData;
+use App\Supplier\Application\Exception\SupplierValidationException;
+use App\Supplier\Application\UseCase\CreateSupplier;
 use App\Supplier\Application\UseCase\ManageSupplierOnboarding;
+use App\Supplier\Domain\Exception\InvalidSupplierData;
+use App\Supplier\Domain\Exception\SupplierEmailAlreadyUsed;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,8 +21,62 @@ final readonly class SupplierOnboardingController
 {
     public function __construct(
         private ManageSupplierOnboarding $onboarding,
+        private CreateSupplier $createSupplier,
         private KeycloakRoleGuard $roles,
     ) {
+    }
+
+    #[Route('', name: 'api_supplier_onboarding_create', methods: ['POST'])]
+    public function createCandidate(Request $request): JsonResponse
+    {
+        $this->roles->assertAnyRole('supplier-onboarding-submit', 'supplier-admin');
+
+        try {
+            $payload = $this->payload($request);
+            if (array_key_exists('status', $payload)) {
+                throw new \InvalidArgumentException('Operational status is managed internally and must not be supplied.');
+            }
+            $allowed = ['name', 'email', 'phone', 'taxNumber', 'contactPerson', 'street', 'city', 'postalCode', 'country'];
+            foreach ($payload as $field => $value) {
+                if (!in_array($field, $allowed, true)) {
+                    throw new \InvalidArgumentException(sprintf('Unknown field "%s".', $field));
+                }
+                if ($value !== null && !is_string($value)) {
+                    throw new \InvalidArgumentException(sprintf('Field "%s" must be a string or null.', $field));
+                }
+            }
+            if (!is_string($payload['name'] ?? null)) {
+                throw new \InvalidArgumentException('Field "name" is required and must be a string.');
+            }
+
+            $supplier = $this->createSupplier->execute(new SupplierData(
+                $payload['name'],
+                $payload['email'] ?? null,
+                $payload['phone'] ?? null,
+                $payload['taxNumber'] ?? null,
+                'INACTIVE',
+                $payload['contactPerson'] ?? null,
+                $payload['street'] ?? null,
+                $payload['city'] ?? null,
+                $payload['postalCode'] ?? null,
+                $payload['country'] ?? null,
+            ));
+            $state = $this->onboarding->submit((int) $supplier->id());
+
+            return new JsonResponse([
+                'supplierId' => $supplier->id(),
+                'name' => $supplier->name(),
+                'email' => $supplier->email(),
+                'operationalStatus' => $supplier->status(),
+                'onboardingStatus' => $state['status'],
+            ], 201);
+        } catch (SupplierValidationException $exception) {
+            return new JsonResponse(['error' => 'Supplier validation failed.', 'violations' => $exception->violations()], 422);
+        } catch (SupplierEmailAlreadyUsed $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], 409);
+        } catch (InvalidSupplierData | \InvalidArgumentException | JsonException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], 400);
+        }
     }
 
     #[Route('/queue', name: 'api_supplier_onboarding_queue', methods: ['GET'])]
