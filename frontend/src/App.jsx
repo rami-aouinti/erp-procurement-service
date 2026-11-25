@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LayoutDashboard, LogOut, Menu, X, ChevronRight } from 'lucide-react';
+import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import ConfigurationPage from './pages/ConfigurationPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -270,7 +270,6 @@ function WorkspaceApp() {
           <div className="sidebar-group">
             <div className="sidebar-label">WORKSPACE</div>
             <nav className="side-nav" aria-label="Workspace navigation">
-              <a href="/" className={route.page === "dashboard" ? "nav-link active" : "nav-link"} aria-current={route.page === "dashboard" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/"); }}><span className="nav-icon"><LayoutDashboard size={18} /></span><span className="nav-text">Dashboard</span><ChevronRight className="nav-chevron" size={14} /></a>
               <a href="/suppliers" className={isActive("suppliers") ? "nav-link active" : "nav-link"} aria-current={isActive("suppliers") ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/suppliers"); }}><span className="nav-icon"><Building2 size={18} /></span><span className="nav-text">Suppliers</span><span className="nav-count">{supplierCount}</span></a>
               {(roles.includes("supplier-reviewer") || roles.includes("supplier-admin")) && <a href="/onboarding" className={route.page === "onboarding" ? "nav-link active" : "nav-link"} aria-current={route.page === "onboarding" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/onboarding"); }}><span className="nav-icon"><ClipboardCheck size={18} /></span><span className="nav-text">Approvals</span></a>}
               {roles.includes("supplier-admin") && <a href="/supplier-classifications" className={route.page === "supplier-classifications" ? "nav-link active" : "nav-link"} aria-current={route.page === "supplier-classifications" ? "page" : undefined} onClick={(e) => { e.preventDefault(); navigate("/supplier-classifications"); }}><span className="nav-icon"><Building2 size={18} /></span><span className="nav-text">Classifications</span></a>}
