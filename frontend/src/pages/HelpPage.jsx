@@ -170,6 +170,15 @@ export default function HelpPage({ appName }) {
             </div>
           </section>
 
+          <section className="help-scope-panel">
+            <div className="help-scope-heading"><span className="help-scope-icon"><Workflow size={19} /></span><div><span className="help-section-kicker">PRODUCT SCOPE</span><h2>What is included in this workspace?</h2></div></div>
+            <p>The current application focuses on supplier lifecycle management and its supporting administration workflows.</p>
+            <div className="help-scope-columns">
+              <div><strong><CheckCircle2 size={15} /> Available in the current workspace</strong><ul><li>Supplier directory, profiles and data maintenance</li><li>Supplier onboarding review and decision history</li><li>Supplier categories, commodities, tags and business units</li><li>Shared workspace settings and personal appearance preferences</li></ul></div>
+              <div><strong><CircleHelp size={15} /> Not currently provided here</strong><ul><li>Purchase order creation and approval</li><li>Goods receipt and warehouse inventory management</li><li>Invoice capture, matching and payment processing</li></ul></div>
+            </div>
+          </section>
+
           <section className="help-support-panel">
             <div className="help-support-icon"><LifeBuoy size={20} /></div>
             <div><h2>Need further assistance?</h2><p>Contact your internal application administrator or service desk. Include the page, the action you attempted, the approximate time and any error message. Do not include passwords, access tokens or sensitive supplier data in support requests.</p></div>
