@@ -38,4 +38,10 @@ final class ClamAvResponseParserTest extends TestCase
         $this->expectException(RuntimeException::class);
         (new ClamAvResponseParser())->parse("unexpected response");
     }
+
+    public function testUnexpectedOkSuffixDoesNotBecomeClean(): void
+    {
+        $this->expectException(RuntimeException::class);
+        (new ClamAvResponseParser())->parse("stream: NOT OK");
+    }
 }
