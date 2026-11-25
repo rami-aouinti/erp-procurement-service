@@ -30,14 +30,15 @@ export default function SupplierEditPage({ supplierId, navigate }) {
     } catch (err) { setError(err.message || 'Unable to update supplier.'); }
     finally { setSaving(false); }
   }
-  return <section className="page-content edit-page">
-    <div className="page-heading"><div><p className="eyebrow">MASTER DATA / SUPPLIERS / EDIT</p><h1>Edit supplier</h1><p className="subtitle">Update company details and primary business information.</p></div><button className="secondary-button" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplierId)}`)}>← Back to details</button></div>
-    {loading ? <div className="table-state"><span className="loader"></span>Loading supplier...</div> : form && <form className="edit-form-card" onSubmit={submit}>
-      <div className="edit-card-heading"><div><h2>{form.name}</h2><p className="section-description">Supplier ID: #{supplierId}</p></div><span className="supplier-status status-active">EDITING</span></div>
+  return <section className="page-content edit-page compact-page">
+    <div className="edit-form-card">
+      {loading ? <div className="table-state"><span className="loader"></span>Loading supplier...</div> : form && <form onSubmit={submit}>
+      <div className="edit-card-heading"><div><h2>{form.name}</h2></div><button type="button" className="secondary-button" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplierId)}`)}>← Back</button></div>
       {error && <div className="alert alert-error" role="alert">{error}</div>}{notice && <div className="alert alert-success" role="status">{notice}</div>}
       <div className="edit-form-grid">{fields.map(([name, label, required]) => <label key={name}>{label}{name === 'status' ? <select name={name} value={form[name] || 'ACTIVE'} onChange={change}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select> : <input name={name} required={Boolean(required)} type={name === 'email' ? 'email' : 'text'} maxLength={name === 'name' ? 150 : 180} value={form[name] || ''} onChange={change} />}</label>)}</div>
-      <div className="edit-form-footer"><button type="button" className="secondary-button" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplierId)}`)}>Cancel</button><button type="submit" className="primary-button" disabled={saving}>{saving ? 'Saving changes...' : 'Save changes'}</button></div>
-    </form>}
-    {error && !form && <div className="alert alert-error">{error}</div>}
+      <div className="edit-form-footer"><button type="submit" className="primary-button" disabled={saving}>{saving ? 'Saving changes...' : 'Save changes'}</button></div>
+      </form>}
+      {error && !form && <div className="alert alert-error">{error}</div>}
+    </div>
   </section>;
 }
