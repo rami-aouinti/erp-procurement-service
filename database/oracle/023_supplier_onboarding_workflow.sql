@@ -72,6 +72,28 @@ ALTER TABLE supplier_audit_logs ADD CONSTRAINT chk_supplier_audit_action CHECK (
     )
 );
 
+CREATE OR REPLACE TRIGGER trg_supplier_activation_guard
+BEFORE UPDATE OF status ON suppliers
+FOR EACH ROW
+WHEN (NEW.status = 'ACTIVE')
+DECLARE
+    v_onboarding_status VARCHAR2(30);
+BEGIN
+    BEGIN
+        SELECT onboarding_status INTO v_onboarding_status
+        FROM supplier_onboarding
+        WHERE supplier_id = :NEW.id;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_onboarding_status := NULL; -- backward-compatible legacy supplier
+    END;
+
+    IF v_onboarding_status IS NOT NULL AND v_onboarding_status <> 'APPROVED' THEN
+        RAISE_APPLICATION_ERROR(-20052, 'A supplier must be APPROVED before it can become ACTIVE.');
+    END IF;
+END;
+/
+
 CREATE OR REPLACE TRIGGER trg_po_supplier_eligibility
 BEFORE INSERT OR UPDATE OF supplier_id ON purchase_orders
 FOR EACH ROW
