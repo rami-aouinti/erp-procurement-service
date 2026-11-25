@@ -43,7 +43,7 @@ final readonly class ManageSupplierClassification
         if ($parentId !== null && (int)$this->db->fetchOne('SELECT COUNT(*) FROM supplier_categories WHERE id=:id AND is_active=1', ['id'=>$parentId]) !== 1) throw new UnprocessableEntityHttpException('Parent category does not exist or is inactive.');
         try {
             if ($type === 'categories') {
-                $id = $this->db->fetchOne('INSERT INTO supplier_categories (parent_id,code,name,description) VALUES (:parent,:code,:name,:description) RETURNING id INTO :id', ['parent'=>$parentId,'code'=>$code,'name'=>$name,'description'=>$data['description'] ?? null], ['id'=>\PDO::PARAM_INT]);
+                $this->db->executeStatement('INSERT INTO supplier_categories (parent_id,code,name,description) VALUES (:parent,:code,:name,:description)', ['parent'=>$parentId,'code'=>$code,'name'=>$name,'description'=>$data['description'] ?? null]);
             } elseif ($type === 'tags') {
                 $this->db->executeStatement('INSERT INTO supplier_tags (code,name,color) VALUES (:code,:name,:color)', ['code'=>$code,'name'=>$name,'color'=>$data['color'] ?? null]);
             } elseif ($type === 'commodities') {
