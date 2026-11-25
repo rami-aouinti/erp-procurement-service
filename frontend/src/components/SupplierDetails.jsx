@@ -13,7 +13,7 @@ const emptyProfile = {
   preferredLanguage: 'de', preferredCurrency: 'EUR', paymentTermsDays: 30,
 };
 
-export default function SupplierDetails({ supplier, onClose }) {
+export default function SupplierDetails({ supplier, onBack, onEdit }) {
   const [tab, setTab] = useState('profile');
   const [profile, setProfile] = useState(emptyProfile);
   const [contacts, setContacts] = useState([]);
@@ -99,12 +99,11 @@ export default function SupplierDetails({ supplier, onClose }) {
   return (
     <section className="supplier-details" aria-label={`Details for ${supplier.name}`}>
       <div className="details-heading">
-        <div>
-          <p className="eyebrow">SUPPLIER RECORD · #{supplier.id}</p>
-          <h3>{supplier.name}</h3>
-          <p className="section-description">Company information, operational contacts and payment details.</p>
+        <div><h3>{supplier.name}</h3></div>
+        <div className="details-page-actions">
+          <button className="secondary-button" type="button" onClick={onBack}>← Back</button>
+          <button className="primary-button" type="button" onClick={onEdit}>Edit supplier</button>
         </div>
-        <button className="secondary-button" type="button" onClick={onClose}>Close</button>
       </div>
 
       <div className="details-tabs" role="tablist" aria-label="Supplier detail sections">
