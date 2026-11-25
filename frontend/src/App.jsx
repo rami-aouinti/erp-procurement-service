@@ -12,6 +12,7 @@ import { configurationApi } from './api/configuration.js';
 import { useAuth } from './auth/AuthProvider.jsx';
 import LoginPage from './auth/LoginPage.jsx';
 import OnboardingPage from './pages/OnboardingPage.jsx';
+import SupplierClassificationPage from './pages/SupplierClassificationPage.jsx';
 
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -21,6 +22,7 @@ function routeFromLocation() {
   if (detail) return { page: 'detail', id: decodeURIComponent(detail[1]) };
   if (path === '/suppliers') return { page: 'suppliers' };
   if (path === '/onboarding') return { page: 'onboarding' };
+  if (path === '/supplier-classifications') return { page: 'supplier-classifications' };
   if (path === '/settings' || path === '/configuration') return { page: 'configuration' };
   if (path === '/help') return { page: 'help' };
   return { page: 'dashboard' };
@@ -183,7 +185,7 @@ function WorkspaceApp() {
   }, [route.page]);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
-  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : 'Supplier details';
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : route.page === 'supplier-classifications' ? 'Supplier classification' : 'Supplier details';
 
   return (
     <div className="erp-app">
@@ -196,6 +198,7 @@ function WorkspaceApp() {
           <a href="/suppliers" className={isActive('suppliers') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }}><span className="nav-icon"><Building2 size={18} /></span>Suppliers<span className="nav-count">{supplierCount}</span></a>
           {(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <a href="/onboarding" className={route.page === 'onboarding' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/onboarding'); }}><span className="nav-icon"><ClipboardCheck size={18} /></span>Approvals</a>}
         </nav>
+        {roles.includes('supplier-admin') && <a href="/supplier-classifications" className={route.page === 'supplier-classifications' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/supplier-classifications'); }}><span className="nav-icon"><Building2 size={18} /></span>Classification</a>}
         <div className="sidebar-bottom">
           <nav className="side-nav sidebar-utility-nav" aria-label="Application">
             <a href="/configuration" className={route.page === 'configuration' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/configuration'); }}><span className="nav-icon"><Settings size={18} /></span>Configuration</a>
@@ -222,6 +225,8 @@ function WorkspaceApp() {
           <div className="dashboard-grid"><StatusPanel status={apiStatus} message={apiMessage} /><section className="welcome-panel"><div className="welcome-icon">↗</div><div><h3>Supplier management</h3><p>Keep your supplier records, contacts, addresses and payment information up to date.</p><button className="primary-button" onClick={() => navigate('/suppliers')}>Open suppliers <span>→</span></button></div></section></div>
           <footer className="page-footer">React + Vite <span>·</span> Symfony 7.4 <span>·</span> Oracle Database</footer>
         </section>}
+        {route.page === 'supplier-classifications' && roles.includes('supplier-admin') && <SupplierClassificationPage />}
+        {route.page === 'supplier-classifications' && !roles.includes('supplier-admin') && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to manage supplier classification.</div></section>}
         {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage />}
         {route.page === 'onboarding' && !(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to review supplier onboarding requests.</div></section>}
         {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} canCreate={roles.includes('supplier-onboarding-submit') || roles.includes('supplier-admin')} siteSettings={settings} itemsPerPage={settings.itemsPerPage} />}
