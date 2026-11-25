@@ -197,7 +197,7 @@ final readonly class ManageSupplierOnboarding
                 'actorId' => $actor['id'],
                 'actorName' => $actor['username'],
                 'requestId' => $requestId,
-                'fields' => json_encode(['onboarding_status', 'decision_reason'], JSON_THROW_ON_ERROR),
+                'fields' => json_encode(['onboarding_status', 'supplier_status', 'decision_reason'], JSON_THROW_ON_ERROR),
             ],
         );
 
