@@ -82,6 +82,10 @@ final readonly class LocalPrivateSupplierDocumentStorage implements SupplierDocu
     public function read(string $objectKey)
     {
         $path = $this->path($objectKey);
+        if (!is_file($path) || !is_readable($path)) {
+            throw new RuntimeException('The requested document is not available in private storage.');
+        }
+
         $stream = fopen($path, 'rb');
         if ($stream === false) {
             throw new RuntimeException('The requested document is not available in private storage.');
