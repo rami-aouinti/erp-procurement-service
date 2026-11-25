@@ -41,7 +41,11 @@ final readonly class HandleSupplierEvent
             if ($type === 'SupplierDeleted') {
                 $this->searchIndex->delete($supplierId);
                 $this->cache->invalidate();
-            } elseif (in_array($type, ['SupplierCreated', 'SupplierUpdated'], true)) {
+            } elseif (in_array($type, [
+                'SupplierCreated', 'SupplierUpdated',
+                'SupplierOnboardingSubmitted', 'SupplierOnboardingApproved',
+                'SupplierOnboardingRejected', 'SupplierOnboardingChangesRequested',
+            ], true)) {
                 // Always reload the aggregate. A delayed event must not restore
                 // stale payload data or recreate a supplier deleted in Oracle.
                 $supplier = $this->suppliers->findById($supplierId);
