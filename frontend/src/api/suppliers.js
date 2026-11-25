@@ -31,11 +31,18 @@ export const suppliersApi = {
     const params = new URLSearchParams();
     if (filters.search) params.set('search', filters.search);
     if (filters.status && filters.status !== 'ALL') params.set('status', filters.status);
+    for (const key of ['categoryId','commodityId','tagId','businessUnitId','strategicTier']) if (filters[key]) params.set(key, filters[key]);
     return request(params.size ? `?${params.toString()}` : '');
   },
   create: (data) => request('', json('POST', data), ONBOARDING_API_URL),
   update: (id, data) => request(supplierPath(id), json('PUT', data)),
   remove: (id) => request(supplierPath(id), { method: 'DELETE' }),
+
+  listClassifications: (type) => request('', {}, '/api/supplier-classifications/' + encodeURIComponent(type)),
+  createClassification: (type, data) => request('', json('POST', data), '/api/supplier-classifications/' + encodeURIComponent(type)),
+  setClassificationActive: (type, id, active) => request('/' + encodeURIComponent(id) + '/status', json('PATCH', { active }), '/api/supplier-classifications/' + encodeURIComponent(type)),
+  getClassification: (id) => request('/' + encodeURIComponent(id) + '/classification'),
+  updateClassification: (id, data) => request('/' + encodeURIComponent(id) + '/classification', json('PUT', data)),
 
   getProfile: (id) => request(`${supplierPath(id)}/profile`),
   updateProfile: (id, data) => request(`${supplierPath(id)}/profile`, json('PUT', data)),
