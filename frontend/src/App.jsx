@@ -20,14 +20,24 @@ function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const detail = path.match(/^\/suppliers\/([^/]+)$/);
   const edit = path.match(/^\/suppliers\/([^/]+)\/edit$/);
-  if (edit) return { page: 'edit', id: decodeURIComponent(edit[1]) };
-  if (detail) return { page: 'detail', id: decodeURIComponent(detail[1]) };
+  const decodeId = (value) => {
+    try { return decodeURIComponent(value); } catch { return null; }
+  };
+  if (edit) {
+    const id = decodeId(edit[1]);
+    return id ? { page: 'edit', id } : { page: 'not-found' };
+  }
+  if (detail) {
+    const id = decodeId(detail[1]);
+    return id ? { page: 'detail', id } : { page: 'not-found' };
+  }
+  if (path === '/') return { page: 'dashboard' };
   if (path === '/suppliers') return { page: 'suppliers' };
   if (path === '/onboarding') return { page: 'onboarding' };
   if (path === '/supplier-classifications') return { page: 'supplier-classifications' };
   if (path === '/settings' || path === '/configuration') return { page: 'configuration' };
   if (path === '/help') return { page: 'help' };
-  return { page: 'dashboard' };
+  return { page: 'not-found' };
 }
 
 function WorkspaceApp() {
@@ -236,11 +246,13 @@ function WorkspaceApp() {
   }, []);
 
   useEffect(() => {
-    suppliersApi.list().then((data) => setSupplierCount(data.length)).catch(() => {});
-  }, [route.page]);
+    let active = true;
+    suppliersApi.list().then((data) => { if (active) setSupplierCount(data.length); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
-  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : route.page === 'supplier-classifications' ? 'Supplier classification' : 'Supplier details';
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : route.page === 'supplier-classifications' ? 'Supplier classification' : route.page === 'not-found' ? 'Page not found' : 'Supplier details';
 
   const initials = String(user?.preferred_username || user?.email || "U").slice(0, 2).toUpperCase();
   const displayName = user?.name || user?.preferred_username || user?.email || "Account";
@@ -303,6 +315,7 @@ function WorkspaceApp() {
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
         {route.page === 'configuration' && <ConfigurationPage settings={settings} onSettingsChange={setSettings} schema={configurationSchema} preferences={preferences} onPreferencesChange={persistPreferences} canManage={roles.includes('supplier-admin')} onSaveSite={saveSiteConfiguration} saving={configurationSaving} error={configurationError} saved={configurationSaved} />}
         {route.page === 'help' && <HelpPage appName={settings.siteName} />}
+        {route.page === 'not-found' && <section className="page-content not-found-page"><div className="not-found-card"><span className="not-found-code">404</span><h1>Page not found</h1><p>The page may have moved, or the address may be incorrect.</p><button type="button" className="primary-button" onClick={() => navigate('/')}>Back to dashboard</button></div></section>}
       </main>
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} onNavigate={navigate} roles={roles} />
       {toast && <div className={'global-toast ' + toast.type} role={toast.type === 'error' ? 'alert' : 'status'} aria-live={toast.type === 'error' ? 'assertive' : 'polite'}><div><strong>{toast.title}</strong><p>{toast.message}</p></div><button type="button" aria-label="Dismiss notification" onClick={() => setToast(null)}>×</button></div>}
