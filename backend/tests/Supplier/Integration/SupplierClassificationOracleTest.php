@@ -49,12 +49,17 @@ final class SupplierClassificationOracleTest extends KernelTestCase
             self::assertTrue(true);
         }
 
+        $this->manager->assign($this->supplierId, ['categoryIds'=>[(int)$category['id']]], 'integration-test');
         $this->manager->setActive('categories', (int)$category['id'], false);
+        // Existing relationships survive deactivation and can be retained.
+        $this->manager->assign($this->supplierId, ['categoryIds'=>[(int)$category['id']]], 'integration-test');
+        // Once removed, an inactive entry cannot be assigned again.
+        $this->manager->assign($this->supplierId, ['categoryIds'=>[]], 'integration-test');
         try {
             $this->manager->assign($this->supplierId, ['categoryIds'=>[(int)$category['id']]], 'integration-test');
-            self::fail('Inactive categories must not be assigned.');
+            self::fail('Inactive categories must not be newly assigned.');
         } catch (UnprocessableEntityHttpException) {
-            self::assertTrue(true);
+            self::assertSame([], $this->reader->forSupplier($this->supplierId)['categories']);
         }
     }
 
