@@ -22,7 +22,7 @@ final class ConfigurationUseCasesTest extends TestCase
 
         self::assertSame('ERP Procurement', $defaults['siteName']);
         self::assertSame('EUR', $defaults['currency']);
-        self::assertSame(10, $defaults['itemsPerPage']);
+        self::assertSame(5, $defaults['itemsPerPage']);
         self::assertFalse($defaults['supplierForm']['requireEmail']);
         self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], ConfigurationDefaults::userPreferences());
     }
