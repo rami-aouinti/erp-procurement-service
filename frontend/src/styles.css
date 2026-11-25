@@ -1039,3 +1039,37 @@ input[type="radio"] {
   .configuration-fields,.configuration-mode-options { grid-template-columns: 1fr; }
   .configuration-nav-item { min-height: 38px; font-size: 11px; }
 }
+
+/* Supplier classification master-data form */
+.classification-create-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.classification-create-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+  font-weight: 600;
+}
+.classification-create-form input,
+.classification-create-form select {
+  min-width: 0;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--border, #dbe1ea);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  color: var(--text, #172033);
+  font: inherit;
+}
+.classification-create-form .classification-description { grid-column: span 2; }
+@media (max-width: 640px) {
+  .classification-create-form .classification-description { grid-column: auto; }
+}
