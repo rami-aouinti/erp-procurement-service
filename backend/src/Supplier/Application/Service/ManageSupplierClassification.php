@@ -27,7 +27,12 @@ final readonly class ManageSupplierClassification
     public function list(string $type): array
     {
         [$table] = $this->type($type);
-        $columns = $type === 'categories' ? 'id, parent_id AS "parentId", code, name, description, is_active AS "active"' : ($type === 'tags' ? 'id, code, name, color, is_active AS "active"' : 'id, code, name, description, is_active AS "active"');
+        $columns = match ($type) {
+            'categories' => 'id, parent_id AS "parentId", code, name, description, is_active AS "active"',
+            'tags' => 'id, code, name, color, is_active AS "active"',
+            'commodities' => 'id, code, name, description, is_active AS "active"',
+            default => 'id, code, name, is_active AS "active"',
+        };
         return $this->db->fetchAllAssociative("SELECT {$columns} FROM {$table} ORDER BY name");
     }
 
@@ -39,6 +44,8 @@ final readonly class ManageSupplierClassification
         $name = trim((string)($data['name'] ?? ''));
         if (!preg_match('/^[A-Z0-9][A-Z0-9._-]{1,49}$/', $code)) throw new UnprocessableEntityHttpException('Code must contain 2–50 uppercase letters, digits, dots, underscores or hyphens.');
         if ($name === '' || mb_strlen($name) > 150) throw new UnprocessableEntityHttpException('Name is required and must not exceed 150 characters.');
+        if (isset($data['description']) && (!is_string($data['description']) || mb_strlen($data['description']) > 500)) throw new UnprocessableEntityHttpException('Description must not exceed 500 characters.');
+        if ($type === 'tags' && isset($data['color']) && (!is_string($data['color']) || preg_match('/^#[0-9A-Fa-f]{6}$/', $data['color']) !== 1)) throw new UnprocessableEntityHttpException('Tag color must be a six-digit hexadecimal color.');
         $parentId = $type === 'categories' && isset($data['parentId']) ? (int)$data['parentId'] : null;
         if ($parentId !== null && (int)$this->db->fetchOne('SELECT COUNT(*) FROM supplier_categories WHERE id=:id AND is_active=1', ['id'=>$parentId]) !== 1) throw new UnprocessableEntityHttpException('Parent category does not exist or is inactive.');
         try {
