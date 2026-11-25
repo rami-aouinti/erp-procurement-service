@@ -41,27 +41,29 @@ final readonly class OracleUserPreferenceRepository implements UserPreferenceRep
 
     public function saveForUser(string $userId, array $preferences): void
     {
-        foreach ($preferences as $key => $value) {
-            $this->connection->executeStatement(
-                <<<'SQL'
-                    MERGE INTO app_user_preferences target
-                    USING (
-                        SELECT :userId AS user_id, :preferenceKey AS preference_key FROM dual
-                    ) source
-                    ON (target.user_id = source.user_id AND target.preference_key = source.preference_key)
-                    WHEN MATCHED THEN UPDATE SET
-                        target.preference_value = TO_CLOB(:preferenceValue),
-                        target.updated_at = SYSTIMESTAMP
-                    WHEN NOT MATCHED THEN INSERT
-                        (user_id, preference_key, preference_value, updated_at)
-                        VALUES (:userId, :preferenceKey, TO_CLOB(:preferenceValue), SYSTIMESTAMP)
-                    SQL,
-                [
-                    'userId' => $userId,
-                    'preferenceKey' => (string) $key,
-                    'preferenceValue' => json_encode($value, JSON_THROW_ON_ERROR),
-                ],
-            );
-        }
+        $this->connection->transactional(function (Connection $connection) use ($userId, $preferences): void {
+            foreach ($preferences as $key => $value) {
+                $connection->executeStatement(
+                    <<<'SQL'
+                        MERGE INTO app_user_preferences target
+                        USING (
+                            SELECT :userId AS user_id, :preferenceKey AS preference_key FROM dual
+                        ) source
+                        ON (target.user_id = source.user_id AND target.preference_key = source.preference_key)
+                        WHEN MATCHED THEN UPDATE SET
+                            target.preference_value = TO_CLOB(:preferenceValue),
+                            target.updated_at = SYSTIMESTAMP
+                        WHEN NOT MATCHED THEN INSERT
+                            (user_id, preference_key, preference_value, updated_at)
+                            VALUES (:userId, :preferenceKey, TO_CLOB(:preferenceValue), SYSTIMESTAMP)
+                        SQL,
+                    [
+                        'userId' => $userId,
+                        'preferenceKey' => (string) $key,
+                        'preferenceValue' => json_encode($value, JSON_THROW_ON_ERROR),
+                    ],
+                );
+            }
+        });
     }
 }
