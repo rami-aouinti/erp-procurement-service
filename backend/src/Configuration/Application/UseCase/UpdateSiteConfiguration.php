@@ -71,7 +71,7 @@ final readonly class UpdateSiteConfiguration
             throw new InvalidArgumentException('Unsupported supplier form option(s): ' . implode(', ', $unknownFormFields));
         }
         foreach ($formDefaults as $field => $default) {
-            if (!is_bool($updated['supplierForm'][$field] ?? $default)) {
+            if (!is_bool($updated['supplierForm'][$field])) {
                 throw new InvalidArgumentException(sprintf('Supplier form option "%s" must be boolean.', $field));
             }
         }
