@@ -17,13 +17,14 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/suppliers/{id<\\d+>}')]
 final readonly class SupplierProfileRelationsController
 {
-    public function __construct(private ManageSupplierProfileRelations $relations)
+    public function __construct(private ManageSupplierProfileRelations $relations, private KeycloakRoleGuard $roles)
     {
     }
 
     #[Route('/contacts', name: 'api_supplier_contacts_list', methods: ['GET'])]
     public function contacts(int $id): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-onboarding-submit', 'supplier-reviewer', 'supplier-admin');
         try {
             return new JsonResponse(array_map(self::serializeContact(...), $this->relations->listContacts($id)));
         } catch (SupplierNotFound) {
@@ -34,6 +35,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/contacts', name: 'api_supplier_contacts_add', methods: ['POST'])]
     public function addContact(int $id, Request $request): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             $data = $this->payload($request);
             $contact = new SupplierContact(
@@ -60,6 +62,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/contacts/{contactId<\\d+>}', name: 'api_supplier_contacts_update', methods: ['PUT'])]
     public function updateContact(int $id, int $contactId, Request $request): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             $data = $this->payload($request);
             $contact = new SupplierContact(
@@ -89,6 +92,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/contacts/{contactId<\\d+>}', name: 'api_supplier_contacts_delete', methods: ['DELETE'])]
     public function deleteContact(int $id, int $contactId): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             if (!$this->relations->deleteContact($id, $contactId)) {
                 return new JsonResponse(['error' => 'Supplier contact not found.'], 404);
@@ -103,6 +107,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/addresses', name: 'api_supplier_addresses_list', methods: ['GET'])]
     public function addresses(int $id): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-onboarding-submit', 'supplier-reviewer', 'supplier-admin');
         try {
             return new JsonResponse(array_map(self::serializeAddress(...), $this->relations->listAddresses($id)));
         } catch (SupplierNotFound) {
@@ -113,6 +118,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/addresses', name: 'api_supplier_addresses_add', methods: ['POST'])]
     public function addAddress(int $id, Request $request): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             $data = $this->payload($request);
             $address = new SupplierAddress(
@@ -141,6 +147,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/addresses/{addressId<\d+>}', name: 'api_supplier_addresses_update', methods: ['PUT'])]
     public function updateAddress(int $id, int $addressId, Request $request): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             $data = $this->payload($request);
             $address = new SupplierAddress(
@@ -173,6 +180,7 @@ final readonly class SupplierProfileRelationsController
     #[Route('/addresses/{addressId<\d+>}', name: 'api_supplier_addresses_delete', methods: ['DELETE'])]
     public function deleteAddress(int $id, int $addressId): JsonResponse
     {
+        $this->roles->assertAnyRole('procurement-user', 'supplier-admin');
         try {
             if (!$this->relations->deleteAddress($id, $addressId)) {
                 return new JsonResponse(['error' => 'Supplier address not found.'], 404);
