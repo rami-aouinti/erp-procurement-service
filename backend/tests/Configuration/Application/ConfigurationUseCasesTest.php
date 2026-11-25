@@ -45,6 +45,7 @@ final class ConfigurationUseCasesTest extends TestCase
         self::assertTrue($updated['supplierForm']['requireEmail']);
         self::assertTrue($updated['supplierForm']['requirePhone']);
         self::assertFalse($updated['supplierForm']['requireTaxNumber']);
+        self::assertFalse($updated['supplierForm']['requireContactPerson']);
         self::assertSame('keycloak-user-123', $repository->actorId);
         self::assertSame(['site'], $cache->invalidated);
     }
