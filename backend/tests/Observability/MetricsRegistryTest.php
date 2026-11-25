@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Tests\\Observability;
+namespace App\Tests\Observability;
 
-use App\\Observability\\MetricsRegistry;
-use PHPUnit\\Framework\\TestCase;
+use App\Observability\MetricsRegistry;
+use PHPUnit\Framework\TestCase;
 
 final class MetricsRegistryTest extends TestCase
 {
