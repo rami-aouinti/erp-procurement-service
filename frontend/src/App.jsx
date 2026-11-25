@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Building2, LayoutDashboard, Moon, Sun } from 'lucide-react';
 import MetricCard from './components/MetricCard.jsx';
 import StatusPanel from './components/StatusPanel.jsx';
 import SuppliersPage from './pages/SuppliersPage.jsx';
@@ -21,6 +22,12 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState('checking');
   const [apiMessage, setApiMessage] = useState('Connecting to Symfony...');
   const [supplierCount, setSupplierCount] = useState(0);
+  const [theme, setTheme] = useState(() => window.localStorage.getItem('erp-theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('erp-theme', theme);
+  }, [theme]);
 
   const navigate = useCallback((path) => {
     window.history.pushState({}, '', path);
@@ -62,17 +69,18 @@ export default function App() {
   }, [route.page]);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : 'Supplier details';
 
   return (
     <div className="erp-app">
       <aside className="sidebar">
         <a className="brand" href="/" onClick={(event) => { event.preventDefault(); navigate('/'); }}>
-          <span className="brand-mark">ERP</span><span className="brand-copy"><strong>Procurement</strong><small>MANAGEMENT SUITE</small></span>
+          <span className="brand-mark">P</span><span className="brand-copy"><strong>Procurement</strong><small>MANAGEMENT SUITE</small></span>
         </a>
         <div className="sidebar-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
-          <a href="/" className={isActive('dashboard') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/'); }}><span className="nav-icon">⌂</span>Dashboard</a>
-          <a href="/suppliers" className={isActive('suppliers') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }}><span className="nav-icon">▤</span>Suppliers<span className="nav-count">{supplierCount}</span></a>
+          <a href="/" className={isActive('dashboard') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/'); }}><span className="nav-icon"><LayoutDashboard size={18} /></span>Dashboard</a>
+          <a href="/suppliers" className={isActive('suppliers') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }}><span className="nav-icon"><Building2 size={18} /></span>Suppliers<span className="nav-count">{supplierCount}</span></a>
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-connection"><span className={`connection-dot ${apiStatus}`}></span><span><strong>Backend API</strong><small>{apiStatus === 'online' ? 'Connected' : apiStatus === 'offline' ? 'Unavailable' : 'Checking...'}</small></span></div>
@@ -81,8 +89,14 @@ export default function App() {
       </aside>
       <main className="main-area">
         <header className="topbar">
-          <div className="breadcrumbs"><span>Workspace</span><span className="crumb-separator">/</span><strong>{route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : 'Supplier details'}</strong></div>
-          <div className="topbar-right"><span className="environment-label">LOCAL DEVELOPMENT</span><span className="avatar">RA</span></div>
+          <div className="breadcrumbs"><span>Workspace</span><span className="crumb-separator">/</span><strong>{pageTitle}</strong></div>
+          <div className="topbar-right">
+            <span className="environment-label"><span className="environment-dot"></span>LOCAL DEVELOPMENT</span>
+            <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}<span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </button>
+            <span className="avatar">RA</span>
+          </div>
         </header>
         {route.page === 'dashboard' && <section className="page-content">
           <div className="page-heading"><div><p className="eyebrow">OVERVIEW</p><h1>Dashboard</h1><p className="subtitle">Welcome back. Here is what's happening in your procurement workspace.</p></div><span className="date-label">System overview</span></div>
