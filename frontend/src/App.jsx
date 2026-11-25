@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck, LayoutDashboard, LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import ConfigurationPage from './pages/ConfigurationPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
-import MetricCard from './components/MetricCard.jsx';
-import StatusPanel from './components/StatusPanel.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import './dashboard.css';
 import SuppliersPage from './pages/SuppliersPage.jsx';
 import SupplierEditPage from './pages/SupplierEditPage.jsx';
 import SupplierDetails from './components/SupplierDetails.jsx';
@@ -248,12 +248,7 @@ function WorkspaceApp() {
             <span className="avatar" aria-label={"Signed in as " + displayName} title={displayName}>{initials}</span>
           </div>
         </header>
-        {route.page === 'dashboard' && <section className="page-content">
-          <div className="page-heading"><div><p className="eyebrow">OVERVIEW</p><h1>Dashboard</h1><p className="subtitle">Welcome back. Here is what's happening in your procurement workspace.</p></div><span className="date-label">System overview</span></div>
-          <div className="metrics-grid"><MetricCard label="Suppliers" value={String(supplierCount)} detail="Registered business partners" /><MetricCard label="Purchase orders" value="—" detail="Procurement activity" /><MetricCard label="Products in stock" value="—" detail="Inventory overview" /></div>
-          <div className="dashboard-grid"><StatusPanel status={apiStatus} message={apiMessage} /><section className="welcome-panel"><div className="welcome-icon">↗</div><div><h3>Supplier management</h3><p>Keep your supplier records, contacts, addresses and payment information up to date.</p><button className="primary-button" onClick={() => navigate('/suppliers')}>Open suppliers <span>→</span></button></div></section></div>
-          <footer className="page-footer">React + Vite <span>·</span> Symfony 7.4 <span>·</span> Oracle Database</footer>
-        </section>}
+        {route.page === 'dashboard' && <DashboardPage navigate={navigate} roles={roles} apiStatus={apiStatus} apiMessage={apiMessage} />}
         {route.page === 'supplier-classifications' && roles.includes('supplier-admin') && <SupplierClassificationPage />}
         {route.page === 'supplier-classifications' && !roles.includes('supplier-admin') && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to manage supplier classification.</div></section>}
         {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage />}
