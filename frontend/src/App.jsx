@@ -160,6 +160,15 @@ function WorkspaceApp() {
   }, []);
 
   useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMobileNavOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
     let cancelled = false;
     async function checkApi() {
       try {
