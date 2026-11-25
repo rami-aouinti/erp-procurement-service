@@ -11,6 +11,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
   const [sortDirection, setSortDirection] = useState('asc');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('ALL');
+  const [location, setLocation] = useState('ALL');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,13 +36,16 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
   useEffect(() => { const timer = window.setTimeout(() => setQuery(searchValue.trim()), 300); return () => window.clearTimeout(timer); }, [searchValue]);
   useEffect(() => { load(); }, [load]);
 
-  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const sortedItems = useMemo(() => [...items].sort((a, b) => {
+  const locations = useMemo(() => [...new Map(items.filter((item) => item.city || item.country).map((item) => { const key = [item.city || '', item.country || ''].join('|'); return [key, { key, label: [item.city, item.country].filter(Boolean).join(', ') }]; })).values()].sort((a, b) => a.label.localeCompare(b.label)), [items]);
+  const filteredItems = useMemo(() => location === 'ALL' ? items : items.filter((item) => [item.city || '', item.country || ''].join('|') === location), [items, location]);
+  const pages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const sortedItems = useMemo(() => [...filteredItems].sort((a, b) => {
     const value = (item) => sortField === 'location' ? [item.city, item.postalCode, item.country].filter(Boolean).join(' ') : item[sortField] || '';
     const comparison = String(value(a)).localeCompare(String(value(b)), undefined, { numeric: true, sensitivity: 'base' });
     return sortDirection === 'asc' ? comparison : -comparison;
-  }), [items, sortField, sortDirection]);
+  }), [filteredItems, sortField, sortDirection]);
   const visible = useMemo(() => sortedItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [sortedItems, page]);
+  const resetFilters = () => { onSearchChange(''); setStatus('ALL'); setLocation('ALL'); setPage(1); };
   const toggleSort = (field) => {
     if (sortField === field) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDirection('asc'); }
@@ -93,13 +97,15 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
           <div className="directory-action-group">
             <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>
             <button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button>
-            <button className="secondary-button" onClick={exportCsv} disabled={items.length === 0}>↓ Export CSV</button>
+            <button className="secondary-button" onClick={exportCsv} disabled={filteredItems.length === 0}>↓ Export CSV</button>
+            <select className="directory-filter" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select>
+            <select className="directory-filter" value={location} onChange={(event) => { setLocation(event.target.value); setPage(1); }} aria-label="Filter suppliers by location"><option value="ALL">All locations</option>{locations.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select>
+            <button className="secondary-button reset-filters-button" onClick={resetFilters} disabled={!searchValue && status === 'ALL' && location === 'ALL'}>↺ Reset filters</button>
           </div>
         </div>
         {notice && <div className="alert alert-success" role="status">{notice}</div>}
         {error && !modal && <div className="alert alert-error" role="alert">{error}</div>}
-        <div className="directory-toolbar"><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select></div>
-        {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : items.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span><button className="primary-button" onClick={openCreate}>Create supplier</button></div> : <>
+        {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : filteredItems.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span><button className="primary-button" onClick={openCreate}>Create supplier</button></div> : <>
           <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th>{sortLabel('name', 'SUPPLIER')}</th><th>{sortLabel('contactPerson', 'CONTACT INFORMATION')}</th><th>{sortLabel('location', 'LOCATION')}</th><th>{sortLabel('status', 'STATUS')}</th><th className="actions-heading">ACTIONS</th></tr></thead>
             <tbody>{visible.map((supplier) => <tr key={supplier.id}>
               <td><button className="supplier-name-link" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}`)}>{supplier.name}</button><small>SUP-{String(supplier.id).padStart(4, '0')} · {supplier.taxNumber || 'No tax number'}</small></td>
@@ -108,7 +114,7 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
               <td><span className={`supplier-status status-${String(supplier.status || 'inactive').toLowerCase()}`}><i></i>{supplier.status || 'UNKNOWN'}</span></td>
               <td><div className="table-actions"><button title="View supplier" aria-label="View supplier" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}`)}>↗</button><button title="Edit supplier" aria-label="Edit supplier" onClick={() => navigate(`/suppliers/${encodeURIComponent(supplier.id)}/edit`)}>✎</button><button className="delete-action" title="Delete supplier" aria-label="Delete supplier" onClick={() => { setError(''); setDeleting(supplier); }}>⌫</button></div></td>
             </tr>)}</tbody></table></div>
-          <div className="pagination directory-pagination"><span>Showing <strong>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, items.length)}</strong> of <strong>{items.length}</strong> suppliers</span><div><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="page-number">{page} / {pages}</span><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div>
+          <div className="pagination directory-pagination"><span>Showing <strong>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredItems.length)}</strong> of <strong>{filteredItems.length}</strong> suppliers</span><div><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="page-number">{page} / {pages}</span><button className="secondary-button" disabled={page >= pages} onClick={() => setPage((value) => value + 1)}>Next</button></div></div>
         </>}
       </section>
 
