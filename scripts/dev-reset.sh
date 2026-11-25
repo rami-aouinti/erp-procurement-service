@@ -51,9 +51,11 @@ run_sql database/oracle/022_seed_goods_receiving_fixtures.sql
 
 echo "Creating encrypted bank-account fixtures through the application service..."
 docker compose exec -T backend php bin/console app:fixtures:supplier-bank-accounts --env=dev
+run_sql database/oracle/031_verify_dev_fixtures.sql
 
 echo "Clearing the dedicated development Redis database..."
 docker compose exec -T redis redis-cli FLUSHDB
+docker compose exec -T backend php bin/console cache:clear --env=dev
 
 echo "Removing the Supplier Elasticsearch read model..."
 ES_STATUS="$(docker compose exec -T elasticsearch sh -lc \
