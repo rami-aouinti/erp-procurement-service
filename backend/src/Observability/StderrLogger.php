@@ -40,6 +40,13 @@ final class StderrLogger extends AbstractLogger
             'context' => $safeContext,
         ];
         $json = json_encode($record, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        error_log($json === false ? '{"level":"error","message":"Unable to encode application log"}' : $json);
+        $line = $json === false ? '{"level":"error","message":"Unable to encode application log"}' : $json;
+        if ($this->testLogPath !== null) {
+            file_put_contents($this->testLogPath, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+
+            return;
+        }
+
+        error_log($line);
     }
 }
