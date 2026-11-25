@@ -349,6 +349,152 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         }
     }
 
+
+    public function updateAddress(\App\Supplier\Domain\Model\SupplierAddress $address): bool
+    {
+        if ($address->id === null) {
+            return false;
+        }
+
+        $this->connection->beginTransaction();
+        try {
+            $this->lockSupplierForProfileWrite($address->supplierId);
+            $existing = $this->connection->fetchAssociative(
+                'SELECT address_type, is_default FROM supplier_addresses
+                 WHERE supplier_id = :supplierId AND id = :addressId FOR UPDATE',
+                ['supplierId' => $address->supplierId, 'addressId' => $address->id],
+            );
+            if ($existing === false) {
+                $this->connection->commit();
+                return false;
+            }
+
+            $oldType = (string) $existing['ADDRESS_TYPE'];
+            $wasDefault = $existing['IS_DEFAULT'] === 'Y';
+
+            if ($wasDefault) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_addresses SET is_default = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND id = :addressId",
+                    ['supplierId' => $address->supplierId, 'addressId' => $address->id],
+                );
+            }
+
+            if ($address->default) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_addresses SET is_default = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND address_type = :addressType
+                       AND id <> :addressId AND is_default = 'Y'",
+                    ['supplierId' => $address->supplierId, 'addressType' => $address->addressType, 'addressId' => $address->id],
+                );
+            }
+
+            $updated = $this->connection->executeStatement(
+                'UPDATE supplier_addresses
+                 SET address_type = :addressType, label = :label, company_name = :companyName,
+                     street = :street, street2 = :street2, postal_code = :postalCode,
+                     city = :city, region = :region, country = :country,
+                     is_default = :isDefault, updated_at = SYSTIMESTAMP
+                 WHERE supplier_id = :supplierId AND id = :addressId',
+                [
+                    'addressType' => $address->addressType,
+                    'label' => $address->label,
+                    'companyName' => $address->companyName,
+                    'street' => trim($address->street),
+                    'street2' => $address->street2,
+                    'postalCode' => trim($address->postalCode),
+                    'city' => trim($address->city),
+                    'region' => $address->region,
+                    'country' => $address->country,
+                    'isDefault' => $address->default ? 'Y' : 'N',
+                    'supplierId' => $address->supplierId,
+                    'addressId' => $address->id,
+                ],
+            );
+
+            if ($wasDefault && (!$address->default || $oldType !== $address->addressType)) {
+                $replacementId = $this->connection->fetchOne(
+                    'SELECT id FROM supplier_addresses
+                     WHERE supplier_id = :supplierId AND address_type = :addressType
+                       AND id <> :addressId
+                     ORDER BY id ASC FETCH FIRST 1 ROWS ONLY',
+                    ['supplierId' => $address->supplierId, 'addressType' => $oldType, 'addressId' => $address->id],
+                );
+                if ($replacementId !== false && $replacementId !== null) {
+                    $this->connection->executeStatement(
+                        "UPDATE supplier_addresses SET is_default = 'Y', updated_at = SYSTIMESTAMP
+                         WHERE supplier_id = :supplierId AND id = :replacementId",
+                        ['supplierId' => $address->supplierId, 'replacementId' => $replacementId],
+                    );
+                }
+            }
+
+            $this->connection->commit();
+            return $updated > 0;
+        } catch (\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    public function deleteAddress(int $supplierId, int $addressId): bool
+    {
+        $this->connection->beginTransaction();
+        try {
+            $this->lockSupplierForProfileWrite($supplierId);
+            $address = $this->connection->fetchAssociative(
+                'SELECT address_type, is_default FROM supplier_addresses
+                 WHERE supplier_id = :supplierId AND id = :addressId FOR UPDATE',
+                ['supplierId' => $supplierId, 'addressId' => $addressId],
+            );
+            if ($address === false) {
+                $this->connection->commit();
+                return false;
+            }
+
+            $wasDefault = $address['IS_DEFAULT'] === 'Y';
+            $addressType = (string) $address['ADDRESS_TYPE'];
+            if ($wasDefault) {
+                $this->connection->executeStatement(
+                    "UPDATE supplier_addresses SET is_default = 'N', updated_at = SYSTIMESTAMP
+                     WHERE supplier_id = :supplierId AND id = :addressId",
+                    ['supplierId' => $supplierId, 'addressId' => $addressId],
+                );
+            }
+
+            $deleted = $this->connection->executeStatement(
+                'DELETE FROM supplier_addresses WHERE supplier_id = :supplierId AND id = :addressId',
+                ['supplierId' => $supplierId, 'addressId' => $addressId],
+            );
+
+            if ($wasDefault) {
+                $replacementId = $this->connection->fetchOne(
+                    'SELECT id FROM supplier_addresses
+                     WHERE supplier_id = :supplierId AND address_type = :addressType
+                     ORDER BY id ASC FETCH FIRST 1 ROWS ONLY',
+                    ['supplierId' => $supplierId, 'addressType' => $addressType],
+                );
+                if ($replacementId !== false && $replacementId !== null) {
+                    $this->connection->executeStatement(
+                        "UPDATE supplier_addresses SET is_default = 'Y', updated_at = SYSTIMESTAMP
+                         WHERE supplier_id = :supplierId AND id = :replacementId",
+                        ['supplierId' => $supplierId, 'replacementId' => $replacementId],
+                    );
+                }
+            }
+
+            $this->connection->commit();
+            return $deleted > 0;
+        } catch (\Throwable $exception) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     /**
      * Serialize profile writes per supplier. This prevents concurrent requests
      * from racing while replacing a primary contact, default address or
