@@ -21,9 +21,8 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ConfigurationController
 {
     #[Route('/site', name: 'api_configuration_site_get', methods: ['GET'])]
-    public function site(GetSiteConfiguration $useCase, KeycloakRoleGuard $roles): JsonResponse
+    public function site(GetSiteConfiguration $useCase): JsonResponse
     {
-        $roles->assertAnyRole('supplier-admin');
 
         return new JsonResponse([
             'settings' => $useCase->execute(),
