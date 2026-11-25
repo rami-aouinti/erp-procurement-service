@@ -41,7 +41,7 @@ final class DoctrineSupplierRepository extends ServiceEntityRepository implement
             ->andWhere('supplier.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
-            ->setHint(\\Doctrine\\ORM\\Query::HINT_REFRESH, true)
+            ->setHint(\Doctrine\ORM\Query::HINT_REFRESH, true)
             ->getOneOrNullResult();
 
         return $record instanceof SupplierRecord ? $this->toDomain($record) : null;
