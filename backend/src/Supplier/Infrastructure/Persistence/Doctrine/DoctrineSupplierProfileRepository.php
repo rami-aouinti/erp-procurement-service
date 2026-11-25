@@ -129,18 +129,23 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                     ['supplierId' => $contact->supplierId, 'contactType' => $contact->contactType],
                 );
             }
-            $this->connection->insert('supplier_contacts', [
-                'supplier_id' => $contact->supplierId,
-                'contact_type' => $contact->contactType,
-                'first_name' => trim($contact->firstName),
-                'last_name' => trim($contact->lastName),
-                'job_title' => $contact->jobTitle,
-                'email' => $contact->email,
-                'phone' => $contact->phone,
-                'is_primary' => $contact->primary ? 'Y' : 'N',
-                'created_at' => new \DateTimeImmutable(),
-                'updated_at' => new \DateTimeImmutable(),
-            ]);
+            $this->connection->executeStatement(
+                'INSERT INTO supplier_contacts
+                    (supplier_id, contact_type, first_name, last_name, job_title, email, phone,
+                     is_primary, created_at, updated_at)
+                 VALUES (:supplierId, :contactType, :firstName, :lastName, :jobTitle, :email, :phone,
+                         :isPrimary, SYSTIMESTAMP, SYSTIMESTAMP)',
+                [
+                    'supplierId' => $contact->supplierId,
+                    'contactType' => $contact->contactType,
+                    'firstName' => trim($contact->firstName),
+                    'lastName' => trim($contact->lastName),
+                    'jobTitle' => $contact->jobTitle,
+                    'email' => $contact->email,
+                    'phone' => $contact->phone,
+                    'isPrimary' => $contact->primary ? 'Y' : 'N',
+                ],
+            );
             $id = $this->connection->fetchOne(
                 'SELECT MAX(id) FROM supplier_contacts WHERE supplier_id = :supplierId',
                 ['supplierId' => $contact->supplierId],
@@ -207,21 +212,26 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                     ['supplierId' => $address->supplierId, 'addressType' => $address->addressType],
                 );
             }
-            $this->connection->insert('supplier_addresses', [
-                'supplier_id' => $address->supplierId,
-                'address_type' => $address->addressType,
-                'label' => $address->label,
-                'company_name' => $address->companyName,
-                'street' => trim($address->street),
-                'street2' => $address->street2,
-                'postal_code' => trim($address->postalCode),
-                'city' => trim($address->city),
-                'region' => $address->region,
-                'country' => $address->country,
-                'is_default' => $address->default ? 'Y' : 'N',
-                'created_at' => new \DateTimeImmutable(),
-                'updated_at' => new \DateTimeImmutable(),
-            ]);
+            $this->connection->executeStatement(
+                'INSERT INTO supplier_addresses
+                    (supplier_id, address_type, label, company_name, street, street2, postal_code,
+                     city, region, country, is_default, created_at, updated_at)
+                 VALUES (:supplierId, :addressType, :label, :companyName, :street, :street2, :postalCode,
+                         :city, :region, :country, :isDefault, SYSTIMESTAMP, SYSTIMESTAMP)',
+                [
+                    'supplierId' => $address->supplierId,
+                    'addressType' => $address->addressType,
+                    'label' => $address->label,
+                    'companyName' => $address->companyName,
+                    'street' => trim($address->street),
+                    'street2' => $address->street2,
+                    'postalCode' => trim($address->postalCode),
+                    'city' => trim($address->city),
+                    'region' => $address->region,
+                    'country' => $address->country,
+                    'isDefault' => $address->default ? 'Y' : 'N',
+                ],
+            );
             $id = $this->connection->fetchOne(
                 'SELECT MAX(id) FROM supplier_addresses WHERE supplier_id = :supplierId',
                 ['supplierId' => $address->supplierId],
