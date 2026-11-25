@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Supplier\Application\Service;
 
 use App\Supplier\Application\Port\SupplierListCache;
+use App\Supplier\Application\Port\SupplierClassificationReader;
+use App\Supplier\Infrastructure\Audit\SupplierAuditLogger;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -19,7 +21,7 @@ final readonly class ManageSupplierClassification
         'business-units' => ['supplier_business_units', 'business unit'],
     ];
 
-    public function __construct(private Connection $db, private SupplierListCache $cache) {}
+    public function __construct(private Connection $db, private SupplierListCache $cache, private SupplierAuditLogger $audit) {}
 
     /** @return list<array<string,mixed>> */
     public function list(string $type): array
@@ -68,6 +70,13 @@ final readonly class ManageSupplierClassification
         return ['id'=>$id,'active'=>$active];
     }
 
+    /** @return array<string,mixed> */
+    public function get(int $supplierId, SupplierClassificationReader $reader): array
+    {
+        if ((int)$this->db->fetchOne('SELECT COUNT(*) FROM suppliers WHERE id=:id', ['id'=>$supplierId]) !== 1) throw new NotFoundHttpException('Supplier not found.');
+        return $reader->forSupplier($supplierId);
+    }
+
     /** @param array<string,mixed> $data @return array<string,mixed> */
     public function assign(int $supplierId, array $data, string $actor): array
     {
@@ -85,6 +94,7 @@ final readonly class ManageSupplierClassification
             $this->replace('supplier_supplier_tags','tag_id','supplier_tags',$supplierId,$tags,$actor);
             $this->replace('supplier_supplier_business_units','business_unit_id','supplier_business_units',$supplierId,$units,$actor);
             $this->db->executeStatement('MERGE INTO supplier_classification_profiles p USING (SELECT :id supplier_id FROM dual) x ON (p.supplier_id=x.supplier_id) WHEN MATCHED THEN UPDATE SET p.strategic_tier=:tier,p.updated_by=:actor,p.updated_at=SYSTIMESTAMP,p.version=p.version+1 WHEN NOT MATCHED THEN INSERT (supplier_id,strategic_tier,updated_by) VALUES (:id,:tier,:actor)', ['id'=>$supplierId,'tier'=>$tier,'actor'=>$actor]);
+            $this->audit->record($supplierId, 'SUPPLIER_CLASSIFICATION', $supplierId, 'UPDATED', ['categories', 'commodities', 'tags', 'businessUnits', 'strategicTier']);
             $this->db->executeStatement("INSERT INTO supplier_outbox_events (event_id,event_type,aggregate_id,payload,status,attempts,occurred_at,next_attempt_at) VALUES (RAWTOHEX(SYS_GUID()),'SupplierClassificationUpdated',:id,:payload,'PENDING',0,SYSTIMESTAMP,SYSTIMESTAMP)", ['id'=>$supplierId,'payload'=>json_encode(['supplierId'=>$supplierId], JSON_THROW_ON_ERROR)]);
             $this->db->commit();
         } catch (\Throwable $e) {
