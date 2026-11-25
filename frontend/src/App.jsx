@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, CircleHelp, Settings, Moon, Sun, Search } from 'lucide-react';
+import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck } from 'lucide-react';
 import SettingsPage from './pages/SettingsPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
 import MetricCard from './components/MetricCard.jsx';
@@ -10,6 +10,7 @@ import SupplierDetails from './components/SupplierDetails.jsx';
 import { suppliersApi } from './api/suppliers.js';
 import { useAuth } from './auth/AuthProvider.jsx';
 import LoginPage from './auth/LoginPage.jsx';
+import OnboardingPage from './pages/OnboardingPage.jsx';
 
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -18,13 +19,14 @@ function routeFromLocation() {
   if (edit) return { page: 'edit', id: decodeURIComponent(edit[1]) };
   if (detail) return { page: 'detail', id: decodeURIComponent(detail[1]) };
   if (path === '/suppliers') return { page: 'suppliers' };
+  if (path === '/onboarding') return { page: 'onboarding' };
   if (path === '/settings') return { page: 'settings' };
   if (path === '/help') return { page: 'help' };
   return { page: 'dashboard' };
 }
 
 function WorkspaceApp() {
-  const { user, logout } = useAuth();
+  const { user, logout, roles } = useAuth();
   const [route, setRoute] = useState(routeFromLocation);
   const [apiStatus, setApiStatus] = useState('checking');
   const [apiMessage, setApiMessage] = useState('Connecting to Symfony...');
@@ -87,7 +89,7 @@ function WorkspaceApp() {
   }, [route.page]);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
-  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'settings' ? 'Settings' : route.page === 'help' ? 'Help' : 'Supplier details';
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'settings' ? 'Settings' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : 'Supplier details';
 
   return (
     <div className="erp-app">
@@ -98,6 +100,7 @@ function WorkspaceApp() {
         <div className="sidebar-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
           <a href="/suppliers" className={isActive('suppliers') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }}><span className="nav-icon"><Building2 size={18} /></span>Suppliers<span className="nav-count">{supplierCount}</span></a>
+          {(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <a href="/onboarding" className={route.page === 'onboarding' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/onboarding'); }}><span className="nav-icon"><ClipboardCheck size={18} /></span>Approvals</a>}
         </nav>
         <div className="sidebar-bottom">
           <nav className="side-nav sidebar-utility-nav" aria-label="Application">
@@ -125,6 +128,7 @@ function WorkspaceApp() {
           <div className="dashboard-grid"><StatusPanel status={apiStatus} message={apiMessage} /><section className="welcome-panel"><div className="welcome-icon">↗</div><div><h3>Supplier management</h3><p>Keep your supplier records, contacts, addresses and payment information up to date.</p><button className="primary-button" onClick={() => navigate('/suppliers')}>Open suppliers <span>→</span></button></div></section></div>
           <footer className="page-footer">React + Vite <span>·</span> Symfony 7.4 <span>·</span> Oracle Database</footer>
         </section>}
+        {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage />}
         {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} />}
         {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
