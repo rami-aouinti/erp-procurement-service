@@ -6,6 +6,7 @@ namespace App\Tests\Supplier\Application\Validation;
 
 use App\Supplier\Application\DTO\SupplierData;
 use App\Supplier\Application\Exception\SupplierValidationException;
+use App\Supplier\Application\Port\SupplierFormPolicy;
 use App\Supplier\Application\Validator\SupplierDataValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -60,6 +61,28 @@ final class SupplierDataValidatorTest extends TestCase
             self::fail('Expected SupplierValidationException.');
         } catch (SupplierValidationException $exception) {
             self::assertCount(4, $exception->violations());
+        }
+    }
+
+    public function testEnforcesRequiredFieldsFromConfiguration(): void
+    {
+        $policy = new class implements SupplierFormPolicy {
+            public function isRequired(string $field): bool
+            {
+                return in_array($field, ['email', 'phone', 'taxNumber', 'contactPerson'], true);
+            }
+        };
+        $validator = new SupplierDataValidator($policy);
+
+        try {
+            $validator->validate(new SupplierData('Acme GmbH'));
+            self::fail('Expected SupplierValidationException.');
+        } catch (SupplierValidationException $exception) {
+            self::assertCount(4, $exception->violations());
+            self::assertStringContainsString('email', implode(' ', $exception->violations()));
+            self::assertStringContainsString('phone', implode(' ', $exception->violations()));
+            self::assertStringContainsString('tax number', implode(' ', $exception->violations()));
+            self::assertStringContainsString('contact person', implode(' ', $exception->violations()));
         }
     }
 
