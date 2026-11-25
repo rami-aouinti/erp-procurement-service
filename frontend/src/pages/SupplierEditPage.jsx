@@ -6,7 +6,7 @@ const fields = [
   ['email', 'Email address'], ['phone', 'Phone number'], ['status', 'Status'],
   ['street', 'Street and number'], ['postalCode', 'Postal code'], ['city', 'City'], ['country', 'Country code'],
 ];
-export default function SupplierEditPage({ supplierId, navigate }) {
+export default function SupplierEditPage({ supplierId, navigate, onNotify = () => {} }) {
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,8 +26,9 @@ export default function SupplierEditPage({ supplierId, navigate }) {
     try {
       await suppliersApi.update(supplierId, { ...form, country: (form.country || '').trim().toUpperCase() || null });
       setNotice('Supplier changes saved successfully.');
+      onNotify('success', 'Supplier updated', 'Your changes have been saved.');
       window.setTimeout(() => navigate(`/suppliers/${encodeURIComponent(supplierId)}`), 650);
-    } catch (err) { setError(err.message || 'Unable to update supplier.'); }
+    } catch (err) { setError(err.message || 'Unable to update supplier.'); onNotify('error', 'Update failed', err.message || 'Unable to update supplier.'); }
     finally { setSaving(false); }
   }
   return <section className="page-content edit-page compact-page">
