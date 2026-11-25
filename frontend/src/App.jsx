@@ -129,6 +129,7 @@ function WorkspaceApp() {
           <footer className="page-footer">React + Vite <span>·</span> Symfony 7.4 <span>·</span> Oracle Database</footer>
         </section>}
         {route.page === 'onboarding' && (roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <OnboardingPage />}
+        {route.page === 'onboarding' && !(roles.includes('supplier-reviewer') || roles.includes('supplier-admin')) && <section className="page-content"><div className="alert alert-error" role="alert">You do not have permission to review supplier onboarding requests.</div></section>}
         {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} />}
         {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
