@@ -71,7 +71,10 @@ final class KeycloakJwtAuthenticator
             throw new \RuntimeException('Keycloak signing keys are unavailable.');
         }
         $jwks = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-        foreach (($jwks['keys'] ?? []) as $jwk) {
+        foreach ($jwks['keys'] as $jwk) {
+            if (!is_array($jwk)) {
+                continue;
+            }
             if (($jwk['kid'] ?? null) === $kid && ($jwk['kty'] ?? null) === 'RSA' && ($jwk['use'] ?? 'sig') === 'sig') {
                 $pem = $this->rsaPublicKeyToPem(
                     $this->base64UrlDecode((string) ($jwk['n'] ?? '')),
@@ -116,7 +119,8 @@ final class KeycloakJwtAuthenticator
         };
         $rsa = $integer($modulus).$integer($exponent);
         $rsa = "\x30".$this->derLength(strlen($rsa)).$rsa;
-        $algorithm = hex2bin('300d06092a864886f70d0101010500');
+        $algorithm = hex2bin('300d06092a864886f70d0101010500')
+            ?: throw new \\RuntimeException('Unable to encode the RSA public key algorithm.');
         $bitString = "\x03".$this->derLength(strlen($rsa) + 1)."\0".$rsa;
         $sequence = $algorithm.$bitString;
         $der = "\x30".$this->derLength(strlen($sequence)).$sequence;
