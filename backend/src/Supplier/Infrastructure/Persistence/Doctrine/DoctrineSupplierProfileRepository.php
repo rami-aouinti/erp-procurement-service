@@ -146,11 +146,11 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 ['supplierId' => $contact->supplierId],
             );
             if ($id === false || $id === null) {
-                throw new \\RuntimeException('Unable to retrieve the created supplier contact.');
+                throw new \RuntimeException('Unable to retrieve the created supplier contact.');
             }
             $this->connection->commit();
 
-            return new \\App\\Supplier\\Domain\\Model\\SupplierContact(
+            return new \App\Supplier\Domain\Model\SupplierContact(
                 (int) $id,
                 $contact->supplierId,
                 $contact->contactType,
@@ -227,11 +227,11 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
                 ['supplierId' => $address->supplierId],
             );
             if ($id === false || $id === null) {
-                throw new \\RuntimeException('Unable to retrieve the created supplier address.');
+                throw new \RuntimeException('Unable to retrieve the created supplier address.');
             }
             $this->connection->commit();
 
-            return new \\App\\Supplier\\Domain\\Model\\SupplierAddress(
+            return new \App\Supplier\Domain\Model\SupplierAddress(
                 (int) $id,
                 $address->supplierId,
                 $address->addressType,
@@ -268,7 +268,7 @@ final readonly class DoctrineSupplierProfileRepository implements SupplierProfil
         );
 
         if ($lockedId === false || $lockedId === null) {
-            throw new \\RuntimeException('Supplier no longer exists while updating its profile.');
+            throw new \RuntimeException('Supplier no longer exists while updating its profile.');
         }
     }
 
