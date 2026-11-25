@@ -21,6 +21,7 @@ use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -37,16 +38,24 @@ final class SupplierController
     {
         $this->roles->assertAnyRole('procurement-user', 'supplier-onboarding-submit', 'supplier-reviewer', 'supplier-admin');
         $status = trim((string) $request->query->get('status', ''));
+        $filters = [];
+        foreach (['categoryId', 'commodityId', 'tagId', 'businessUnitId'] as $key) {
+            $value = $request->query->get($key);
+            if ($value === null || $value === '') continue;
+            $id = filter_var($value, FILTER_VALIDATE_INT);
+            if ($id === false || $id < 1) throw new BadRequestHttpException(sprintf('Query parameter "%s" must be a positive integer.', $key));
+            $filters[$key] = $id;
+        }
+        $tier = $request->query->get('strategicTier');
+        if ($tier !== null && $tier !== '') {
+            $tier = strtoupper((string)$tier);
+            if (!in_array($tier, ['STANDARD', 'PREFERRED', 'STRATEGIC'], true)) throw new BadRequestHttpException('Query parameter "strategicTier" is invalid.');
+            $filters['strategicTier'] = $tier;
+        }
         return new JsonResponse($useCase->execute(
             (string) $request->query->get('search', ''),
             $status !== '' && strtoupper($status) !== 'ALL' ? $status : null,
-            array_filter([
-                'categoryId' => $request->query->get('categoryId'),
-                'commodityId' => $request->query->get('commodityId'),
-                'tagId' => $request->query->get('tagId'),
-                'businessUnitId' => $request->query->get('businessUnitId'),
-                'strategicTier' => $request->query->get('strategicTier'),
-            ], static fn (mixed $value): bool => $value !== null && $value !== ''),
+            $filters,
         ));
     }
 
