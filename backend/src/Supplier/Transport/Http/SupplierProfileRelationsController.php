@@ -138,6 +138,52 @@ final readonly class SupplierProfileRelationsController
         }
     }
 
+    #[Route('/addresses/{addressId<\d+>}', name: 'api_supplier_addresses_update', methods: ['PUT'])]
+    public function updateAddress(int $id, int $addressId, Request $request): JsonResponse
+    {
+        try {
+            $data = $this->payload($request);
+            $address = new SupplierAddress(
+                $addressId,
+                $id,
+                strtoupper(self::string($data, 'addressType')),
+                self::nullableString($data, 'label'),
+                self::nullableString($data, 'companyName'),
+                self::string($data, 'street'),
+                self::nullableString($data, 'street2'),
+                self::string($data, 'postalCode'),
+                self::string($data, 'city'),
+                self::nullableString($data, 'region'),
+                strtoupper(self::string($data, 'country')),
+                self::boolean($data, 'default'),
+            );
+
+            if (!$this->relations->updateAddress($address)) {
+                return new JsonResponse(['error' => 'Supplier address not found.'], 404);
+            }
+
+            return new JsonResponse(self::serializeAddress($address));
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
+        } catch (JsonException | InvalidArgumentException $exception) {
+            return new JsonResponse(['error' => $exception->getMessage()], 400);
+        }
+    }
+
+    #[Route('/addresses/{addressId<\d+>}', name: 'api_supplier_addresses_delete', methods: ['DELETE'])]
+    public function deleteAddress(int $id, int $addressId): JsonResponse
+    {
+        try {
+            if (!$this->relations->deleteAddress($id, $addressId)) {
+                return new JsonResponse(['error' => 'Supplier address not found.'], 404);
+            }
+
+            return new JsonResponse(null, 204);
+        } catch (SupplierNotFound) {
+            return new JsonResponse(['error' => 'Supplier not found.'], 404);
+        }
+    }
+
     /** @return array<string, mixed> */
     private function payload(Request $request): array
     {
