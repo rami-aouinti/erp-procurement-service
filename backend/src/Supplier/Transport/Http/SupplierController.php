@@ -40,6 +40,13 @@ final class SupplierController
         return new JsonResponse($useCase->execute(
             (string) $request->query->get('search', ''),
             $status !== '' && strtoupper($status) !== 'ALL' ? $status : null,
+            array_filter([
+                'categoryId' => $request->query->get('categoryId'),
+                'commodityId' => $request->query->get('commodityId'),
+                'tagId' => $request->query->get('tagId'),
+                'businessUnitId' => $request->query->get('businessUnitId'),
+                'strategicTier' => $request->query->get('strategicTier'),
+            ], static fn (mixed $value): bool => $value !== null && $value !== ''),
         ));
     }
 
