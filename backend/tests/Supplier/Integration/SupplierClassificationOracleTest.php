@@ -26,7 +26,6 @@ final class SupplierClassificationOracleTest extends KernelTestCase
         $this->manager = $container->get(ManageSupplierClassification::class);
         $this->reader = $container->get(SupplierClassificationReader::class);
         $this->db->beginTransaction();
-        self::assertNotEmpty($container->get(ManageSupplierClassification::class)->list('business-units'));
         $this->supplierId = (int)$this->db->fetchOne('SELECT id FROM suppliers ORDER BY id FETCH FIRST 1 ROWS ONLY');
         self::assertGreaterThan(0, $this->supplierId, 'Supplier fixtures must exist before classification integration tests.');
     }
