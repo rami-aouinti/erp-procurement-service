@@ -17,6 +17,7 @@
             <directory>tests/Supplier/Application</directory>
             <directory>tests/Supplier/Transport</directory>
             <directory>tests/Supplier/Infrastructure</directory>
+            <directory>tests/Security</directory>
         </testsuite>
         <testsuite name="Observability Unit">
             <directory>tests/Observability</directory>
@@ -24,6 +25,7 @@
         <testsuite name="Supplier Unit">
             <directory>tests/Supplier/Domain</directory>
             <directory>tests/Supplier/Application</directory>
+            <directory>tests/Security</directory>
         </testsuite>
         <testsuite name="Supplier Functional">
             <directory>tests/Supplier/Transport</directory>
