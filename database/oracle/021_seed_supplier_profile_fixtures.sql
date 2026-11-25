@@ -109,3 +109,98 @@ VALUES
 
 COMMIT;
 PROMPT Supplier profile, contact and address fixtures seeded.
+
+
+-- Seed safe, immutable creation events for the SQL-loaded fixture records.
+-- The audit payload contains field names only, never fixture field values.
+INSERT INTO supplier_audit_logs
+    (supplier_id, entity_type, entity_id, action, actor_type, actor_identifier,
+     actor_label, request_id, changed_fields, occurred_at)
+SELECT s.id, 'SUPPLIER', s.id, 'CREATED', 'SYSTEM', NULL,
+       'Development fixture loader', 'fixture-seed-v1',
+       TO_CLOB('["name","email","phone","taxNumber","status","contactPerson","street","city","postalCode","country"]'),
+       SYSTIMESTAMP
+  FROM suppliers s
+ WHERE s.email IN (
+       'purchasing@nordtech.example', 'orders@hanseatic-office.example',
+       'procurement@global-parts.example', 'sales@elbe-tools.example',
+       'orders@weser-electronics.example'
+ )
+   AND NOT EXISTS (
+       SELECT 1 FROM supplier_audit_logs a
+        WHERE a.supplier_id = s.id AND a.entity_type = 'SUPPLIER'
+          AND a.entity_id = s.id AND a.action = 'CREATED'
+          AND a.request_id = 'fixture-seed-v1'
+   );
+
+INSERT INTO supplier_audit_logs
+    (supplier_id, entity_type, entity_id, action, actor_type, actor_identifier,
+     actor_label, request_id, changed_fields, occurred_at)
+SELECT p.supplier_id, 'SUPPLIER_PROFILE', p.supplier_id, 'CREATED', 'SYSTEM', NULL,
+       'Development fixture loader', 'fixture-seed-v1',
+       TO_CLOB('["legalName","registrationNumber","vatNumber","website","preferredLanguage","preferredCurrency","paymentTermsDays"]'),
+       SYSTIMESTAMP
+  FROM supplier_profiles p
+ WHERE EXISTS (
+       SELECT 1 FROM suppliers s WHERE s.id = p.supplier_id
+        AND s.email IN (
+            'purchasing@nordtech.example', 'orders@hanseatic-office.example',
+            'procurement@global-parts.example', 'sales@elbe-tools.example',
+            'orders@weser-electronics.example'
+        )
+ )
+   AND NOT EXISTS (
+       SELECT 1 FROM supplier_audit_logs a
+        WHERE a.supplier_id = p.supplier_id AND a.entity_type = 'SUPPLIER_PROFILE'
+          AND a.entity_id = p.supplier_id AND a.action = 'CREATED'
+          AND a.request_id = 'fixture-seed-v1'
+   );
+
+INSERT INTO supplier_audit_logs
+    (supplier_id, entity_type, entity_id, action, actor_type, actor_identifier,
+     actor_label, request_id, changed_fields, occurred_at)
+SELECT c.supplier_id, 'SUPPLIER_CONTACT', c.id, 'CREATED', 'SYSTEM', NULL,
+       'Development fixture loader', 'fixture-seed-v1',
+       TO_CLOB('["contactType","firstName","lastName","jobTitle","email","phone","primary"]'),
+       SYSTIMESTAMP
+  FROM supplier_contacts c
+ WHERE EXISTS (
+       SELECT 1 FROM suppliers s WHERE s.id = c.supplier_id
+        AND s.email IN (
+            'purchasing@nordtech.example', 'orders@hanseatic-office.example',
+            'procurement@global-parts.example', 'sales@elbe-tools.example',
+            'orders@weser-electronics.example'
+        )
+ )
+   AND NOT EXISTS (
+       SELECT 1 FROM supplier_audit_logs a
+        WHERE a.supplier_id = c.supplier_id AND a.entity_type = 'SUPPLIER_CONTACT'
+          AND a.entity_id = c.id AND a.action = 'CREATED'
+          AND a.request_id = 'fixture-seed-v1'
+   );
+
+INSERT INTO supplier_audit_logs
+    (supplier_id, entity_type, entity_id, action, actor_type, actor_identifier,
+     actor_label, request_id, changed_fields, occurred_at)
+SELECT a.supplier_id, 'SUPPLIER_ADDRESS', a.id, 'CREATED', 'SYSTEM', NULL,
+       'Development fixture loader', 'fixture-seed-v1',
+       TO_CLOB('["addressType","label","companyName","street","street2","postalCode","city","region","country","default"]'),
+       SYSTIMESTAMP
+  FROM supplier_addresses a
+ WHERE EXISTS (
+       SELECT 1 FROM suppliers s WHERE s.id = a.supplier_id
+        AND s.email IN (
+            'purchasing@nordtech.example', 'orders@hanseatic-office.example',
+            'procurement@global-parts.example', 'sales@elbe-tools.example',
+            'orders@weser-electronics.example'
+        )
+ )
+   AND NOT EXISTS (
+       SELECT 1 FROM supplier_audit_logs l
+        WHERE l.supplier_id = a.supplier_id AND l.entity_type = 'SUPPLIER_ADDRESS'
+          AND l.entity_id = a.id AND l.action = 'CREATED'
+          AND l.request_id = 'fixture-seed-v1'
+   );
+
+COMMIT;
+PROMPT Supplier fixture audit history seeded.
