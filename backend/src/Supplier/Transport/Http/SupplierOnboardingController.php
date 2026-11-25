@@ -147,11 +147,11 @@ final readonly class SupplierOnboardingController
         if (trim($request->getContent()) === '') {
             return [];
         }
-        $payload = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        if (!is_array($payload) || array_is_list($payload)) {
+        $payload = json_decode($request->getContent(), false, 512, JSON_THROW_ON_ERROR);
+        if (!$payload instanceof \stdClass) {
             throw new \InvalidArgumentException('A JSON object is required.');
         }
-        return $payload;
+        return get_object_vars($payload);
     }
 
     /** @param callable(): array<string, mixed> $operation */
