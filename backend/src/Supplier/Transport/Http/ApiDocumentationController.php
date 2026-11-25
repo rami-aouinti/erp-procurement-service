@@ -70,10 +70,7 @@ final class ApiDocumentationController
                     'post' => [
                         'tags' => ['Suppliers'], 'summary' => 'Create a supplier', 'operationId' => 'createSupplier',
                         'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierInput'], 'example' => ['name' => 'Acme GmbH', 'email' => 'contact@acme.de', 'phone' => '+49 421 123456', 'taxNumber' => 'DE123456789']]]],
-                        'securitySchemes' => [
-                    'bearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'bearerFormat' => 'JWT'],
-                ],
-                'responses' => [
+                        'responses' => [
                             '201' => ['description' => 'Supplier created', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]],
                             '400' => ['$ref' => '#/components/responses/BadRequest'], '422' => ['$ref' => '#/components/responses/ValidationError'], '409' => ['$ref' => '#/components/responses/Conflict'],
                         ],
@@ -199,6 +196,9 @@ final class ApiDocumentationController
                         ],
                     ],
                     'Error' => ['type' => 'object', 'required' => ['error'], 'properties' => ['error' => ['type' => 'string'], 'violations' => ['type' => 'array', 'items' => ['type' => 'string']]]],
+                ],
+                'securitySchemes' => [
+                    'bearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'bearerFormat' => 'JWT'],
                 ],
                 'responses' => [
                     'BadRequest' => ['description' => 'Invalid request payload', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]]],
