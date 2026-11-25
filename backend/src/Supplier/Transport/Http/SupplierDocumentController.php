@@ -54,10 +54,15 @@ final class SupplierDocumentController
     }
 
     #[Route('/suppliers/{supplierId<\d+>}/documents', name: 'supplier_documents_list', methods: ['GET'])]
-    public function list(int $supplierId, OracleSupplierDocumentRepository $documents): JsonResponse
+    public function list(int $supplierId, Request $request, OracleSupplierDocumentRepository $documents): JsonResponse
     {
         $this->roles->assertAnyRole('procurement-user', 'supplier-reviewer', 'supplier-admin');
-        return new JsonResponse($documents->listForSupplier($supplierId));
+        $page = filter_var($request->query->get('page', 1), FILTER_VALIDATE_INT);
+        $pageSize = filter_var($request->query->get('pageSize', 25), FILTER_VALIDATE_INT);
+        if ($page === false || $pageSize === false) {
+            throw new UnprocessableEntityHttpException('page and pageSize must be integers.');
+        }
+        return new JsonResponse($documents->listForSupplier($supplierId, $page, $pageSize));
     }
 
     #[Route('/suppliers/{supplierId<\d+>}/documents', name: 'supplier_documents_upload', methods: ['POST'])]
