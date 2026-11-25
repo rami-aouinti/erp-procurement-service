@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace App\Supplier\Application\Validator;
 
 use App\Supplier\Application\DTO\SupplierData;
+use App\Supplier\Application\Port\SupplierFormPolicy;
 use App\Supplier\Application\Exception\SupplierValidationException;
 
 final class SupplierDataValidator
 {
     private const STATUSES = ['ACTIVE', 'INACTIVE', 'BLOCKED'];
+
+    public function __construct(private readonly ?SupplierFormPolicy $formPolicy = null)
+    {
+    }
 
     public function validate(SupplierData $data): void
     {
@@ -26,6 +31,9 @@ final class SupplierDataValidator
         }
 
         $email = $this->nullableTrim($data->email);
+        if ($email === null && $this->formPolicy?->isRequired('email')) {
+            $violations[] = 'Supplier email is required by the application configuration.';
+        }
         if ($email !== null) {
             if ($this->length($email) > 150 || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
                 $violations[] = 'Supplier email must be a valid email address of at most 150 characters.';
@@ -33,17 +41,26 @@ final class SupplierDataValidator
         }
 
         $phone = $this->nullableTrim($data->phone);
+        if ($phone === null && $this->formPolicy?->isRequired('phone')) {
+            $violations[] = 'Supplier phone is required by the application configuration.';
+        }
         if ($phone !== null && (!preg_match('/^\+?[0-9\s().-]{7,30}$/', $phone) || preg_match_all('/[0-9]/', $phone) < 7)) {
             $violations[] = 'Supplier phone must contain at least 7 digits and use only common international phone characters.';
         }
 
         $this->maxLength($data->taxNumber, 50, 'Tax number', $violations);
         $taxNumber = $this->nullableTrim($data->taxNumber);
+        if ($taxNumber === null && $this->formPolicy?->isRequired('taxNumber')) {
+            $violations[] = 'Supplier tax number is required by the application configuration.';
+        }
         if ($taxNumber !== null && !preg_match('/^[A-Za-z0-9 .\/-]+$/', $taxNumber)) {
             $violations[] = 'Tax number contains unsupported characters.';
         }
 
         $this->maxLength($data->contactPerson, 150, 'Contact person', $violations);
+        if ($this->nullableTrim($data->contactPerson) === null && $this->formPolicy?->isRequired('contactPerson')) {
+            $violations[] = 'Supplier contact person is required by the application configuration.';
+        }
         $this->maxLength($data->street, 180, 'Street', $violations);
         $this->maxLength($data->city, 100, 'City', $violations);
         $this->maxLength($data->postalCode, 20, 'Postal code', $violations);
