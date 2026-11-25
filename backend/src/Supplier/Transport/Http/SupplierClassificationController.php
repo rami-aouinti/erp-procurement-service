@@ -48,10 +48,10 @@ final class SupplierClassificationController
     }
 
     #[Route('/suppliers/{id<\d+>}/classification', name: 'supplier_classification_assign', methods: ['PUT'])]
-    public function assign(int $id, Request $request, ManageSupplierClassification $manager, Request $httpRequest): JsonResponse
+    public function assign(int $id, Request $request, ManageSupplierClassification $manager): JsonResponse
     {
         $this->roles->assertAnyRole('procurement-user','supplier-admin');
-        $user = $httpRequest->attributes->get('_keycloak_user', []);
+        $user = $request->attributes->get('_keycloak_user', []);
         return new JsonResponse($manager->assign($id, $this->payload($request), (string)($user['username'] ?? $user['id'] ?? 'system')));
     }
 
