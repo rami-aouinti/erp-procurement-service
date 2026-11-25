@@ -63,12 +63,17 @@ CREATE TABLE inventory_movements (
 
 CREATE INDEX idx_gr_purchase_order_id ON goods_receipts(purchase_order_id);
 CREATE INDEX idx_grl_order_line_id ON goods_receipt_lines(purchase_order_line_id);
+CREATE INDEX idx_grl_receipt_id ON goods_receipt_lines(goods_receipt_id);
 CREATE INDEX idx_im_product_date ON inventory_movements(product_id, movement_date);
 
 COMMENT ON TABLE goods_receipts IS 'Goods receipt documents for purchase orders';
 COMMENT ON TABLE goods_receipt_lines IS 'Products and quantities recorded in a goods receipt';
 COMMENT ON TABLE inventory IS 'Current on-hand quantity per product';
 COMMENT ON TABLE inventory_movements IS 'Audit trail of stock increases, decreases and adjustments';
+
+PROMPT Creating a collision-safe receipt number sequence...
+
+CREATE SEQUENCE goods_receipt_number_seq START WITH 1 INCREMENT BY 1 NOCACHE;
 
 PROMPT Creating atomic goods receiving procedure...
 
@@ -85,6 +90,7 @@ CREATE OR REPLACE PROCEDURE receive_purchase_order_line (
     v_received_quantity purchase_order_lines.received_quantity%TYPE;
     v_receipt_id        goods_receipts.id%TYPE;
     v_receipt_number    goods_receipts.receipt_number%TYPE;
+    v_receipt_sequence  NUMBER;
     v_new_status        purchase_orders.status%TYPE;
     v_remaining_lines   NUMBER;
 BEGIN
@@ -116,7 +122,12 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20003, 'Receipt quantity exceeds the remaining ordered quantity.');
     END IF;
 
-    v_receipt_number := 'GR-' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF3');
+    SELECT goods_receipt_number_seq.NEXTVAL
+      INTO v_receipt_sequence
+      FROM dual;
+
+    v_receipt_number := 'GR-' || TO_CHAR(SYSDATE, 'YYYY') || '-' ||
+                        LPAD(TO_CHAR(v_receipt_sequence), 10, '0');
 
     INSERT INTO goods_receipts (receipt_number, purchase_order_id)
     VALUES (v_receipt_number, v_order_id)
