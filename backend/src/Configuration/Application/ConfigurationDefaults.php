@@ -29,7 +29,7 @@ final class ConfigurationDefaults
                 'requireEmail' => false,
                 'requirePhone' => false,
                 'requireTaxNumber' => false,
-                'allowInactive' => true,
+                'requireContactPerson' => false,
             ],
         ];
     }
@@ -92,7 +92,7 @@ final class ConfigurationDefaults
             ['key' => 'supplierForm.requireEmail', 'label' => 'Require supplier email', 'type' => 'toggle', 'group' => 'forms'],
             ['key' => 'supplierForm.requirePhone', 'label' => 'Require supplier phone', 'type' => 'toggle', 'group' => 'forms'],
             ['key' => 'supplierForm.requireTaxNumber', 'label' => 'Require supplier tax number', 'type' => 'toggle', 'group' => 'forms'],
-            ['key' => 'supplierForm.allowInactive', 'label' => 'Allow inactive suppliers', 'type' => 'toggle', 'group' => 'forms'],
+            ['key' => 'supplierForm.requireContactPerson', 'label' => 'Require primary contact person', 'type' => 'toggle', 'group' => 'forms'],
         ];
     }
 }
