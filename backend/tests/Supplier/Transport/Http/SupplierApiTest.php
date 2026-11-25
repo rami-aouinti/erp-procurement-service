@@ -96,7 +96,7 @@ final class SupplierApiTest extends KernelTestCase
         self::assertEqualsCanonicalizing(['SupplierCreated', 'SupplierUpdated', 'SupplierDeleted'], $eventTypes);
 
         $auditEntries = $this->connection->fetchAllAssociative(
-            'SELECT entity_type, action, changed_fields FROM supplier_audit_logs WHERE supplier_id = :id ORDER BY id',
+            'SELECT entity_type, action, DBMS_LOB.SUBSTR(changed_fields, 4000, 1) changed_fields FROM supplier_audit_logs WHERE supplier_id = :id ORDER BY id',
             ['id' => $id],
         );
         self::assertCount(3, $auditEntries);
@@ -104,6 +104,7 @@ final class SupplierApiTest extends KernelTestCase
         foreach ($auditEntries as $entry) {
             $fields = json_decode((string) $entry['CHANGED_FIELDS'], true, 512, JSON_THROW_ON_ERROR);
             self::assertIsArray($fields);
+            self::assertContains('email', $fields);
             self::assertNotContains($this->email, $fields, 'Audit data must contain field names, never field values.');
         }
 
