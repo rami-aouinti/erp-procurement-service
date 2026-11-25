@@ -89,7 +89,11 @@ jobs:
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/006_create_suppliers_sequence.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/007_extend_supplier_management.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/008_create_supplier_outbox.sql
+            sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/009_supplier_profile_management.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/010_create_supplier_consumed_events.sql
+            sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/011_harden_goods_receiving.sql
+            sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/019_fix_supplier_profile_conditional_unique_indexes.sql
+            sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/020_create_supplier_audit_trail.sql
           '
 
       - name: Build backend image (PHP 8.4 + OCI8 + Redis + AMQP)
