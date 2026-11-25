@@ -57,6 +57,21 @@ final class ApiDocumentationController
                         'responses' => ['204' => ['description' => 'Contact deleted'], '404' => ['$ref' => '#/components/responses/NotFound']],
                     ],
                 ],
+                '/api/suppliers/{id}/addresses/{addressId}' => [
+                    'parameters' => [
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
+                        ['name' => 'addressId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]],
+                    ],
+                    'put' => [
+                        'tags' => ['Suppliers'], 'summary' => 'Replace a supplier address', 'operationId' => 'updateSupplierAddress',
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierAddressInput']]]],
+                        'responses' => ['200' => ['description' => 'Address updated'], '400' => ['$ref' => '#/components/responses/BadRequest'], '404' => ['$ref' => '#/components/responses/NotFound']],
+                    ],
+                    'delete' => [
+                        'tags' => ['Suppliers'], 'summary' => 'Delete a supplier address', 'operationId' => 'deleteSupplierAddress',
+                        'responses' => ['204' => ['description' => 'Address deleted'], '404' => ['$ref' => '#/components/responses/NotFound']],
+                    ],
+                ],
                 '/api/suppliers/{id}' => [
                     'parameters' => [['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
                     'get' => [
@@ -86,6 +101,21 @@ final class ApiDocumentationController
                             'email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 150, 'nullable' => true],
                             'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
                             'primary' => ['type' => 'boolean', 'default' => false],
+                        ],
+                    ],
+                    'SupplierAddressInput' => [
+                        'type' => 'object', 'required' => ['addressType', 'street', 'postalCode', 'city', 'country'],
+                        'properties' => [
+                            'addressType' => ['type' => 'string', 'enum' => ['REGISTERED', 'BILLING', 'SHIPPING', 'OTHER']],
+                            'label' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
+                            'companyName' => ['type' => 'string', 'maxLength' => 150, 'nullable' => true],
+                            'street' => ['type' => 'string', 'maxLength' => 180],
+                            'street2' => ['type' => 'string', 'maxLength' => 180, 'nullable' => true],
+                            'postalCode' => ['type' => 'string', 'maxLength' => 20],
+                            'city' => ['type' => 'string', 'maxLength' => 100],
+                            'region' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
+                            'country' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 2, 'example' => 'DE'],
+                            'default' => ['type' => 'boolean', 'default' => false],
                         ],
                     ],
                     'SupplierInput' => [
