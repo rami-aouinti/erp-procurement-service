@@ -5,7 +5,7 @@ import '../suppliers-refinement.css';
 const blank = { name: '', email: '', phone: '', taxNumber: '', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
 const steps = ['Company', 'Contact', 'Address'];
 
-export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange, canCreate = false, siteSettings = {}, itemsPerPage = 5 }) {
+export default function SuppliersPage({ navigate, onCountChange, searchValue, onSearchChange, canCreate = false, siteSettings = {}, itemsPerPage = 5, onNotify = () => {} }) {
   const pageSize = Math.max(5, Math.min(100, Number(itemsPerPage) || 5));
   const supplierForm = siteSettings.supplierForm || {};
   const [items, setItems] = useState([]);
@@ -94,8 +94,9 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
     try {
       await suppliersApi.create({ ...form, name: form.name.trim(), country: form.country.trim().toUpperCase() || null });
       setModal(false); setForm(blank); setStep(0); setNotice('Supplier submitted for approval. It will become active after a reviewer approves it.');
+      onNotify('success', 'Supplier submitted', 'The supplier registration was sent for review.');
       await load();
-    } catch (err) { setError(err.message || 'Unable to create supplier.'); }
+    } catch (err) { setError(err.message || 'Unable to create supplier.'); onNotify('error', 'Supplier creation failed', err.message || 'Unable to create supplier.'); }
     finally { setSaving(false); }
   }
 
@@ -104,8 +105,8 @@ export default function SuppliersPage({ navigate, onCountChange, searchValue, on
     setSaving(true); setError('');
     try {
       await suppliersApi.remove(deleting.id);
-      setDeleting(null); setNotice('Supplier deleted successfully.'); await load();
-    } catch (err) { setError(err.message || 'Unable to delete supplier.'); }
+      setDeleting(null); setNotice('Supplier deleted successfully.'); onNotify('success', 'Supplier deleted', 'The supplier record was removed.'); await load();
+    } catch (err) { setError(err.message || 'Unable to delete supplier.'); onNotify('error', 'Delete failed', err.message || 'Unable to delete supplier.'); }
     finally { setSaving(false); }
   }
 
