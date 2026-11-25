@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Supplier\Infrastructure\Messaging;
 
 use App\Supplier\Infrastructure\Messaging\SupplierEventEnvelopeValidator;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -31,7 +30,7 @@ final class SupplierEventEnvelopeValidatorTest extends TestCase
         (new SupplierEventEnvelopeValidator())->validate($this->validEvent(), 'OTHER-ID');
     }
 
-    #[DataProvider('invalidEvents')]
+    /** @dataProvider invalidEvents */
     public function testRejectsInvalidEventEnvelopes(mixed $event): void
     {
         $this->expectException(RuntimeException::class);
