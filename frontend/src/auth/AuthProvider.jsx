@@ -8,6 +8,7 @@ const keycloak = new Keycloak({
 });
 
 const AuthContext = createContext(null);
+let initializationPromise = null;
 
 export function AuthProvider({ children }) {
   const [initialized, setInitialized] = useState(false);
@@ -16,12 +17,15 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    keycloak.init({
-      onLoad: 'check-sso',
-      pkceMethod: 'S256',
-      checkLoginIframe: false,
-      responseMode: 'query',
-    }).then((isAuthenticated) => {
+    if (!initializationPromise) {
+      initializationPromise = keycloak.init({
+        onLoad: 'check-sso',
+        pkceMethod: 'S256',
+        checkLoginIframe: false,
+        responseMode: 'query',
+      });
+    }
+    initializationPromise.then((isAuthenticated) => {
       if (!active) return;
       setAuthenticated(isAuthenticated);
       setUser(isAuthenticated ? keycloak.tokenParsed || null : null);
