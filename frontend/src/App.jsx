@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, LayoutDashboard, Moon, Sun } from 'lucide-react';
+import { Building2, CircleHelp, Settings, Moon, Sun } from 'lucide-react';
+import SettingsPage from './pages/SettingsPage.jsx';
+import HelpPage from './pages/HelpPage.jsx';
 import MetricCard from './components/MetricCard.jsx';
 import StatusPanel from './components/StatusPanel.jsx';
 import SuppliersPage from './pages/SuppliersPage.jsx';
@@ -14,6 +16,8 @@ function routeFromLocation() {
   if (edit) return { page: 'edit', id: decodeURIComponent(edit[1]) };
   if (detail) return { page: 'detail', id: decodeURIComponent(detail[1]) };
   if (path === '/suppliers') return { page: 'suppliers' };
+  if (path === '/settings') return { page: 'settings' };
+  if (path === '/help') return { page: 'help' };
   return { page: 'dashboard' };
 }
 
@@ -23,11 +27,21 @@ export default function App() {
   const [apiMessage, setApiMessage] = useState('Connecting to Symfony...');
   const [supplierCount, setSupplierCount] = useState(0);
   const [theme, setTheme] = useState(() => window.localStorage.getItem('erp-theme') || 'light');
+  const [settings, setSettings] = useState(() => { try { return { appName: 'Procurement Management Suite', shopName: '', shopEmail: '', shopAddress: '', currency: 'EUR', palette: 'indigo', ...JSON.parse(window.localStorage.getItem('erp-settings') || '{}') }; } catch { return { appName: 'Procurement Management Suite', shopName: '', shopEmail: '', shopAddress: '', currency: 'EUR', palette: 'indigo' }; } });
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem('erp-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem('erp-settings', JSON.stringify(settings));
+    const palettes = { indigo: ['#647cff', '#4f64e8', '#edf0ff'], ocean: ['#0891b2', '#0e7490', '#e0f7fb'], emerald: ['#059669', '#047857', '#e2f8ef'], violet: ['#8b5cf6', '#6d28d9', '#f1eaff'], rose: ['#e11d48', '#be123c', '#fff0f3'], amber: ['#d97706', '#b45309', '#fff5df'] };
+    const colors = palettes[settings.palette] || palettes.indigo;
+    document.documentElement.style.setProperty('--accent', colors[0]);
+    document.documentElement.style.setProperty('--accent-strong', colors[1]);
+    document.documentElement.style.setProperty('--accent-soft', colors[2]);
+  }, [settings]);
 
   const navigate = useCallback((path) => {
     window.history.pushState({}, '', path);
@@ -69,7 +83,7 @@ export default function App() {
   }, [route.page]);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
-  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : 'Supplier details';
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'settings' ? 'Settings' : route.page === 'help' ? 'Help' : 'Supplier details';
 
   return (
     <div className="erp-app">
@@ -79,10 +93,13 @@ export default function App() {
         </a>
         <div className="sidebar-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
-          <a href="/" className={isActive('dashboard') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/'); }}><span className="nav-icon"><LayoutDashboard size={18} /></span>Dashboard</a>
           <a href="/suppliers" className={isActive('suppliers') ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/suppliers'); }}><span className="nav-icon"><Building2 size={18} /></span>Suppliers<span className="nav-count">{supplierCount}</span></a>
         </nav>
         <div className="sidebar-bottom">
+          <nav className="side-nav sidebar-utility-nav" aria-label="Application">
+            <a href="/settings" className={route.page === 'settings' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/settings'); }}><span className="nav-icon"><Settings size={18} /></span>Settings</a>
+            <a href="/help" className={route.page === 'help' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/help'); }}><span className="nav-icon"><CircleHelp size={18} /></span>Help</a>
+          </nav>
           <div className="sidebar-connection"><span className={`connection-dot ${apiStatus}`}></span><span><strong>Backend API</strong><small>{apiStatus === 'online' ? 'Connected' : apiStatus === 'offline' ? 'Unavailable' : 'Checking...'}</small></span></div>
           <div className="sidebar-version">ERP Procurement · Development</div>
         </div>
@@ -107,6 +124,8 @@ export default function App() {
         {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} />}
         {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
+        {route.page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} />}
+        {route.page === 'help' && <HelpPage appName={settings.appName} />}
       </main>
     </div>
   );
