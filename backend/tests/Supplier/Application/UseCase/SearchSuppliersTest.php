@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Supplier\Application\UseCase;
 
 use App\Supplier\Application\Port\SupplierListCache;
+use App\Supplier\Application\Port\SupplierClassificationReader;
 use App\Supplier\Application\Port\SupplierSearchIndex;
 use App\Supplier\Application\UseCase\SearchSuppliers;
 use App\Supplier\Domain\Model\Supplier;
@@ -26,8 +27,9 @@ final class SearchSuppliersTest extends TestCase
 
         $repository = $this->createMock(SupplierRepository::class);
         $repository->expects(self::never())->method('findAll');
+        $classifications = $this->createMock(SupplierClassificationReader::class);
 
-        self::assertSame($expected, (new SearchSuppliers($search, $cache, $repository))->execute());
+        self::assertSame($expected, (new SearchSuppliers($search, $cache, $repository, $classifications))->execute());
     }
 
     public function testUsesElasticsearchAndStoresResultsInRedisCache(): void
@@ -42,12 +44,13 @@ final class SearchSuppliersTest extends TestCase
         );
 
         $search = $this->createMock(SupplierSearchIndex::class);
-        $search->expects(self::once())->method('search')->with('Acme', 'ACTIVE')->willReturn($expected);
+        $search->expects(self::once())->method('search')->with('Acme', 'ACTIVE', 500, [])->willReturn($expected);
 
         $repository = $this->createMock(SupplierRepository::class);
         $repository->expects(self::never())->method('findAll');
 
-        self::assertSame($expected, (new SearchSuppliers($search, $cache, $repository))->execute('Acme', 'ACTIVE'));
+        $classifications = $this->createMock(SupplierClassificationReader::class);
+        self::assertSame($expected, (new SearchSuppliers($search, $cache, $repository, $classifications))->execute('Acme', 'ACTIVE'));
     }
 
     public function testOracleFallbackSearchIncludesCountry(): void
@@ -75,7 +78,8 @@ final class SearchSuppliersTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->method('findAll')->willReturn([$supplier]);
 
-        $results = (new SearchSuppliers($search, $cache, $repository))->execute('DE');
+        $classifications = $this->createMock(SupplierClassificationReader::class);
+        $results = (new SearchSuppliers($search, $cache, $repository, $classifications))->execute('DE');
 
         self::assertCount(1, $results);
         self::assertSame('DE', $results[0]['country']);
@@ -94,7 +98,8 @@ final class SearchSuppliersTest extends TestCase
         $repository = $this->createMock(SupplierRepository::class);
         $repository->expects(self::once())->method('findAll')->willReturn([$supplier]);
 
-        $results = (new SearchSuppliers($search, $cache, $repository))->execute('Berlin', 'ACTIVE');
+        $classifications = $this->createMock(SupplierClassificationReader::class);
+        $results = (new SearchSuppliers($search, $cache, $repository, $classifications))->execute('Berlin', 'ACTIVE');
 
         self::assertCount(1, $results);
         self::assertSame(8, $results[0]['id']);
