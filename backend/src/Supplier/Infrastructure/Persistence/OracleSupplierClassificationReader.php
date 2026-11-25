@@ -48,6 +48,21 @@ final readonly class OracleSupplierClassificationReader implements SupplierClass
     /** @return list<array<string,mixed>> */
     private function rows(string $sql, int $id): array
     {
-        return $this->connection->fetchAllAssociative($sql, ['id'=>$id]);
+        $rows = $this->connection->fetchAllAssociative($sql, ['id'=>$id]);
+
+        // Oracle drivers commonly expose unquoted column names in uppercase.
+        // Normalize the read model keys for API/search consumers.
+        return array_map(static function (array $row): array {
+            $normalized = [];
+            foreach ($row as $key => $value) {
+                $normalizedKey = strtolower((string) $key);
+                if ($normalizedKey === 'parentid') {
+                    $normalizedKey = 'parentId';
+                }
+                $normalized[$normalizedKey] = $value;
+            }
+
+            return $normalized;
+        }, $rows);
     }
 }
