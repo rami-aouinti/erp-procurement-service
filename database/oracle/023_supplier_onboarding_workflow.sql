@@ -72,4 +72,34 @@ ALTER TABLE supplier_audit_logs ADD CONSTRAINT chk_supplier_audit_action CHECK (
     )
 );
 
+CREATE OR REPLACE TRIGGER trg_po_supplier_eligibility
+BEFORE INSERT OR UPDATE OF supplier_id ON purchase_orders
+FOR EACH ROW
+DECLARE
+    v_supplier_status VARCHAR2(20);
+    v_onboarding_status VARCHAR2(30);
+BEGIN
+    -- Serialize eligibility checks with onboarding transitions on the supplier row.
+    SELECT status INTO v_supplier_status
+    FROM suppliers
+    WHERE id = :NEW.supplier_id
+    FOR UPDATE;
+
+    SELECT onboarding_status INTO v_onboarding_status
+    FROM supplier_onboarding
+    WHERE supplier_id = :NEW.supplier_id;
+
+    IF v_supplier_status <> 'ACTIVE' OR v_onboarding_status <> 'APPROVED' THEN
+        RAISE_APPLICATION_ERROR(-20051, 'Purchase orders require an ACTIVE and APPROVED supplier.');
+    END IF;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        -- A missing onboarding row is a legacy supplier created through the
+        -- backward-compatible master-data API. Operational status still applies.
+        IF v_supplier_status IS NULL OR v_supplier_status <> 'ACTIVE' THEN
+            RAISE_APPLICATION_ERROR(-20051, 'Purchase orders require an ACTIVE and APPROVED supplier.');
+        END IF;
+END;
+/
+
 PROMPT Supplier onboarding workflow schema is ready.
