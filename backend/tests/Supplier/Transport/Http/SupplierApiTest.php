@@ -35,6 +35,13 @@ final class SupplierApiTest extends KernelTestCase
         parent::tearDown();
     }
 
+    public function testOnboardingEndpointsRequireAKeycloakAccessToken(): void
+    {
+        $response = $this->request('GET', '/api/supplier-onboarding/queue');
+
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $response->getStatusCode());
+    }
+
     public function testSupplierCrudLifecycle(): void
     {
         $listBefore = $this->request('GET', '/api/suppliers');
