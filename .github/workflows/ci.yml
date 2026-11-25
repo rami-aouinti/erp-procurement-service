@@ -97,6 +97,7 @@ jobs:
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/023_supplier_onboarding_workflow.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/024_create_configuration_settings.sql
             sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/025_supplier_classification.sql
+            sqlplus -s ERP_APP/ErpAppPassword123@//localhost:1521/FREEPDB1 @/tmp/oracle-init/026_supplier_documents_compliance.sql
           '
 
       - name: Build backend image (PHP 8.4 + OCI8 + Redis + AMQP)
