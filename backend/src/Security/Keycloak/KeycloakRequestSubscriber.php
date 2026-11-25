@@ -57,13 +57,16 @@ final readonly class KeycloakRequestSubscriber implements EventSubscriberInterfa
     /** @return list<string> */
     private function roles(array $claims): array
     {
-        $roles = $claims['realm_access']['roles'] ?? [];
-        if (!is_array($roles)) {
-            $roles = [];
-        }
-        foreach (($claims['resource_access'] ?? []) as $client) {
-            if (is_array($client) && is_array($client['roles'] ?? null)) {
-                $roles = array_merge($roles, $client['roles']);
+        $realmAccess = $claims['realm_access'] ?? [];
+        $roles = is_array($realmAccess) && is_array($realmAccess['roles'] ?? null)
+            ? $realmAccess['roles']
+            : [];
+        $resourceAccess = $claims['resource_access'] ?? [];
+        if (is_array($resourceAccess)) {
+            foreach ($resourceAccess as $client) {
+                if (is_array($client) && is_array($client['roles'] ?? null)) {
+                    $roles = array_merge($roles, $client['roles']);
+                }
             }
         }
         return array_values(array_unique(array_filter($roles, 'is_string')));
