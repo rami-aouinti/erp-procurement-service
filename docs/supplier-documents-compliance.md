@@ -2,7 +2,7 @@
 
 ## Delivery status
 
-**Foundation in progress.** Oracle metadata schema is introduced by migration 026 and CI initializes it after migration 025. A private local storage adapter, upload content validator, ClamAV TCP scanner adapter and Docker service are now present. Upload/download API, Oracle lifecycle persistence, asynchronous scan worker, reviewer workflow, production S3 adapter and frontend are not yet delivered. Do not treat the feature as production-ready until the remaining sections below are implemented and verified.
+**Foundation in progress.** Oracle metadata schema is introduced by migration 026 and CI initializes it after migration 025. A private local storage adapter and upload content validator are now present. No antivirus daemon is included; the malware-scanner application port remains optional and unbound for a future lightweight/provider integration. Upload/download API, Oracle lifecycle persistence, reviewer workflow, production S3 adapter and frontend are not yet delivered. Antivirus scanning is intentionally deferred. Do not treat the feature as production-ready until the remaining sections below are implemented and verified.
 
 ## Architecture and data ownership
 
@@ -11,7 +11,7 @@
 - The storage abstraction must expose opaque object keys only. Keys are generated server-side from random identifiers; never derive paths from the original filename or supplier-provided values.
 - The initial local development adapter must write outside the web root with restrictive permissions. The production adapter must support an S3-compatible private bucket, server-side encryption, TLS, and bucket policies that deny public access.
 - The application layer depends on a storage port. HTTP controllers must not know whether local storage or S3 is configured.
-- A document version is not downloadable until malware scanning is CLEAN and the compliance reviewer has APPROVED it. Any scan error or unavailable scanner leaves the object quarantined (fail closed).
+- A document version is not downloadable until the compliance reviewer has APPROVED it and the application has completed its configured safety checks. The current development setup does not perform antivirus scanning; do not describe files as malware-scanned or malware-free. Keep downloads disabled until the no-scanner review policy and lifecycle state are explicitly implemented.
 - Downloads must be authorized on every request and streamed through the backend or granted through a short-lived, narrowly scoped signed URL only after authorization.
 
 ## Oracle migration 026
@@ -35,7 +35,7 @@ Oracle DDL implicitly commits. Before rollout, back up the schema and apply the 
 2. Temporary write: stream to a private quarantine area/object key while calculating SHA-256. Enforce size during streaming, not only from the client Content-Length.
 3. Content validation: inspect file signatures (not just extension or browser MIME); reject mismatches, malformed files, path traversal attempts and unsupported formats.
 4. Metadata commit: persist the logical document/version and PENDING scan/review states. Object write must complete before a version becomes visible. On Oracle failure, delete the staged object; cleanup failures must be observable and recoverable.
-5. Malware scan: scan asynchronously through a port. A clean result moves the version to scan CLEAN; infected or failed scans remain unavailable and are quarantined/rejected.
+5. Safety checks: validate file signatures, MIME allowlist and size. Antivirus scanning is intentionally deferred in the lightweight local setup; the optional application port can support a future external scanner without adding a heavy local daemon.
 6. Compliance review: only a reviewer/admin can approve or reject a clean version. Review decision, actor, timestamp and reason are persisted and audited.
 7. Download: require supplier-scoped authorization and CLEAN + APPROVED + not deleted state. Never trust a client-supplied object key.
 8. Version replacement: create a new immutable version; never overwrite the prior object or erase its review history.
@@ -74,7 +74,7 @@ Collection endpoints must be paginated with a bounded page size. Upload, review 
 - [x] Protect the supplier document API namespace at the Keycloak request boundary.
 - [x] Add a private local object-storage adapter with random opaque keys, restrictive permissions, streaming size enforcement, SHA-256 checksums, and persistent Docker volume.\n- [ ] Add the production S3-compatible adapter.
 - [x] Add upload content validation for detected MIME type, allowlist, actual size and sanitized display filename; storage computes SHA-256 and cleans partial writes on failure.\n- [ ] Wire validation/storage into the authenticated upload API and Oracle metadata transaction.
-- [x] Add malware-scanning application port, streaming ClamAV TCP adapter, fail-closed response parser and private Docker service.\n- [ ] Persist scan state transitions, add quarantine handling and an idempotent scan worker.
+- [x] Keep an optional malware-scanner application port for future integration without binding a heavy local service.\n- [ ] Decide and implement the no-scanner document release policy; add an external scanner only if deployment requirements justify it.
 - [ ] Add application use cases, repository, audit and metadata-only Outbox events.
 - [x] Add unit tests for content-based MIME validation, oversize rejection, private object storage, checksum, traversal rejection and partial-write cleanup.\n- [ ] Add role/IDOR tests, storage outage and scanner failure tests.
 - [ ] Add expiry/required-document compliance queries and idempotent reminders.
@@ -91,8 +91,8 @@ The current development adapter is `LocalPrivateSupplierDocumentStorage`, config
 The local adapter is for development only. It is not a substitute for the production S3-compatible adapter, malware scanner, quarantine workflow, authorization checks or backup/retention controls.
 
 
-## ClamAV scanner foundation (2026-11-25)
+## Lightweight malware-scanning decision (2026-11-25)
 
-The backend now depends on the `SupplierDocumentMalwareScanner` application port. Its ClamAV adapter sends a readable stream through the daemon's TCP `INSTREAM` protocol in 1 MiB chunks; document bytes are not loaded entirely into PHP memory. The response parser maps only an explicit `OK` to CLEAN and `FOUND` to INFECTED. Daemon errors, timeouts, malformed responses and connection failures throw an exception, so callers must leave the document unavailable (fail closed).
+ClamAV was removed from Docker Compose because its memory footprint is disproportionate for this local development environment. The ClamAV adapter, response parser and their tests were removed as well. The application-level scanner port is retained as an extension point, but it is not bound to any implementation and no antivirus scan is claimed.
 
-Docker Compose runs `clamav/clamav:1.4.2` as an internal-only service with a persistent signature database volume. The backend starts independently of scanner readiness and receives its host, port and timeout from environment configuration; Compose monitors ClamAV health separately. If a scan is attempted while the daemon is unavailable, the adapter fails closed. The scanner port is infrastructure only at this stage: no upload endpoint or scan worker invokes it yet, and no document can be marked CLEAN through this foundation alone. ClamAV's `StreamMaxLength` must be configured to match the maximum accepted upload size before enabling larger documents; otherwise ClamAV returns a scan error and the document remains unavailable. The official ClamAV Docker guidance recommends at least 3 GiB RAM (4 GiB preferred), so reserve sufficient Docker Desktop memory before starting this optional local service. The next step is to persist upload metadata in Oracle and dispatch an idempotent scan job that updates scan state transactionally.
+The current upload foundation still performs content-based MIME detection, allowlist checks, size enforcement and private storage. These checks are not antivirus protection. The document lifecycle must therefore make the absence of scanning explicit and must not silently mark a file as CLEAN. Before enabling downloads, implement an explicit review/release policy for deployments without antivirus, or integrate an external scanning provider appropriate to the production environment.
