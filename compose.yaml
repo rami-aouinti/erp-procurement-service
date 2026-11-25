@@ -87,6 +87,7 @@ services:
       - "127.0.0.1:8081:8080"
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
+      - keycloak_data:/opt/keycloak/data/h2
   backend:
     build:
       context: ./backend
@@ -113,9 +114,9 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-erp_app}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
       RABBITMQ_VHOST: /erp
-      KEYCLOAK_ISSUER: http://localhost:8081/realms/erp-procurement
-      KEYCLOAK_AUDIENCE: erp-procurement-api
-      KEYCLOAK_JWKS_URL: http://keycloak:8080/realms/erp-procurement/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/erp-procurement}
+      KEYCLOAK_AUDIENCE: ${KEYCLOAK_AUDIENCE:-erp-procurement-api}
+      KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-http://keycloak:8080/realms/erp-procurement/protocol/openid-connect/certs}
     volumes:
       - ./backend:/app
     ports:
@@ -335,6 +336,8 @@ services:
       - backend
 
 volumes:
+  keycloak_data:
+    name: erp_keycloak_data
   oracle_data:
     name: erp_oracle_data
   cloudbeaver_data:
