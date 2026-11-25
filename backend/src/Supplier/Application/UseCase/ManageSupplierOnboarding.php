@@ -172,6 +172,8 @@ final readonly class ManageSupplierOnboarding
         ?string $reason,
         string $action,
     ): void {
+        // Oracle stores actor names in VARCHAR2(255); keep audit writes within that contract.
+        $actorName = mb_substr($actor['username'], 0, 255);
         $requestId = $this->requests->getCurrentRequest()?->headers->get('X-Request-ID');
         if ($requestId !== null && (strlen($requestId) > 128 || preg_match('/^[A-Za-z0-9._:-]+$/', $requestId) !== 1)) {
             $requestId = null;
@@ -182,7 +184,7 @@ final readonly class ManageSupplierOnboarding
             'from_status' => $from,
             'to_status' => $to,
             'actor_id' => $actor['id'],
-            'actor_name' => $actor['username'],
+            'actor_name' => $actorName,
             'reason' => $reason !== null ? trim($reason) : null,
             'request_id' => $requestId,
         ]);
@@ -197,7 +199,7 @@ final readonly class ManageSupplierOnboarding
                 'supplierId' => $supplierId,
                 'action' => $action,
                 'actorId' => $actor['id'],
-                'actorName' => $actor['username'],
+                'actorName' => $actorName,
                 'requestId' => $requestId,
                 'fields' => json_encode(['onboarding_status', 'supplier_status', 'decision_reason'], JSON_THROW_ON_ERROR),
             ],
