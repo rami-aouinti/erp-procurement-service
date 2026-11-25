@@ -23,6 +23,41 @@ final class ApiDocumentationController
             'servers' => [['url' => '/']],
             'tags' => [['name' => 'Suppliers', 'description' => 'Supplier master data']],
             'paths' => [
+                '/api/supplier-onboarding' => [
+                    'post' => [
+                        'tags' => ['Supplier Onboarding'], 'summary' => 'Register and submit a supplier candidate',
+                        'operationId' => 'createSupplierCandidate', 'security' => [['bearerAuth' => []]],
+                        'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierCandidateInput']]]],
+                        'responses' => ['201' => ['description' => 'Candidate created and submitted'], '400' => ['$ref' => '#/components/responses/BadRequest'], '401' => ['description' => 'Missing or invalid Keycloak token'], '403' => ['description' => 'Missing supplier-onboarding-submit role'], '409' => ['$ref' => '#/components/responses/Conflict'], '422' => ['$ref' => '#/components/responses/ValidationError']],
+                    ],
+                ],
+                '/api/supplier-onboarding/queue' => [
+                    'get' => [
+                        'tags' => ['Supplier Onboarding'], 'summary' => 'List suppliers pending approval',
+                        'operationId' => 'supplierOnboardingQueue', 'security' => [['bearerAuth' => []]],
+                        'responses' => ['200' => ['description' => 'Pending supplier candidates'], '401' => ['description' => 'Missing or invalid Keycloak token'], '403' => ['description' => 'Missing supplier-reviewer role']],
+                    ],
+                ],
+                '/api/supplier-onboarding/{supplierId}/submit' => [
+                    'parameters' => [['name' => 'supplierId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
+                    'post' => ['tags' => ['Supplier Onboarding'], 'summary' => 'Submit a draft or corrected supplier', 'operationId' => 'submitSupplierOnboarding', 'security' => [['bearerAuth' => []]], 'responses' => ['202' => ['description' => 'Submitted'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Forbidden'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']]],
+                ],
+                '/api/supplier-onboarding/{supplierId}/approve' => [
+                    'parameters' => [['name' => 'supplierId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
+                    'post' => ['tags' => ['Supplier Onboarding'], 'summary' => 'Approve a pending supplier', 'operationId' => 'approveSupplierOnboarding', 'security' => [['bearerAuth' => []]], 'requestBody' => ['content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/OnboardingDecision']]]], 'responses' => ['200' => ['description' => 'Approved'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Forbidden'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']]],
+                ],
+                '/api/supplier-onboarding/{supplierId}/reject' => [
+                    'parameters' => [['name' => 'supplierId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
+                    'post' => ['tags' => ['Supplier Onboarding'], 'summary' => 'Reject a pending supplier with a reason', 'operationId' => 'rejectSupplierOnboarding', 'security' => [['bearerAuth' => []]], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/OnboardingDecision']]]], 'responses' => ['200' => ['description' => 'Rejected'], '400' => ['$ref' => '#/components/responses/BadRequest'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Forbidden'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']]],
+                ],
+                '/api/supplier-onboarding/{supplierId}/request-changes' => [
+                    'parameters' => [['name' => 'supplierId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
+                    'post' => ['tags' => ['Supplier Onboarding'], 'summary' => 'Request supplier changes with a reason', 'operationId' => 'requestSupplierOnboardingChanges', 'security' => [['bearerAuth' => []]], 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/OnboardingDecision']]]], 'responses' => ['200' => ['description' => 'Changes requested'], '400' => ['$ref' => '#/components/responses/BadRequest'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Forbidden'], '404' => ['$ref' => '#/components/responses/NotFound'], '409' => ['$ref' => '#/components/responses/Conflict']]],
+                ],
+                '/api/supplier-onboarding/{supplierId}/history' => [
+                    'parameters' => [['name' => 'supplierId', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer', 'minimum' => 1]]],
+                    'get' => ['tags' => ['Supplier Onboarding'], 'summary' => 'Read the onboarding decision timeline', 'operationId' => 'supplierOnboardingHistory', 'security' => [['bearerAuth' => []]], 'responses' => ['200' => ['description' => 'Transition history'], '401' => ['description' => 'Unauthorized'], '403' => ['description' => 'Forbidden'], '404' => ['$ref' => '#/components/responses/NotFound']]],
+                ],
                 '/api/suppliers' => [
                     'get' => [
                         'tags' => ['Suppliers'], 'summary' => 'List suppliers', 'operationId' => 'listSuppliers',
@@ -35,7 +70,10 @@ final class ApiDocumentationController
                     'post' => [
                         'tags' => ['Suppliers'], 'summary' => 'Create a supplier', 'operationId' => 'createSupplier',
                         'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/SupplierInput'], 'example' => ['name' => 'Acme GmbH', 'email' => 'contact@acme.de', 'phone' => '+49 421 123456', 'taxNumber' => 'DE123456789']]]],
-                        'responses' => [
+                        'securitySchemes' => [
+                    'bearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'bearerFormat' => 'JWT'],
+                ],
+                'responses' => [
                             '201' => ['description' => 'Supplier created', 'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Supplier']]]],
                             '400' => ['$ref' => '#/components/responses/BadRequest'], '422' => ['$ref' => '#/components/responses/ValidationError'], '409' => ['$ref' => '#/components/responses/Conflict'],
                         ],
@@ -91,6 +129,24 @@ final class ApiDocumentationController
             ],
             'components' => [
                 'schemas' => [
+                    'SupplierCandidateInput' => [
+                        'type' => 'object', 'required' => ['name'],
+                        'properties' => [
+                            'name' => ['type' => 'string', 'maxLength' => 150],
+                            'email' => ['type' => 'string', 'format' => 'email', 'nullable' => true],
+                            'phone' => ['type' => 'string', 'maxLength' => 30, 'nullable' => true],
+                            'taxNumber' => ['type' => 'string', 'maxLength' => 50, 'nullable' => true],
+                            'contactPerson' => ['type' => 'string', 'maxLength' => 150, 'nullable' => true],
+                            'street' => ['type' => 'string', 'maxLength' => 180, 'nullable' => true],
+                            'city' => ['type' => 'string', 'maxLength' => 100, 'nullable' => true],
+                            'postalCode' => ['type' => 'string', 'maxLength' => 20, 'nullable' => true],
+                            'country' => ['type' => 'string', 'maxLength' => 2, 'nullable' => true],
+                        ],
+                    ],
+                    'OnboardingDecision' => [
+                        'type' => 'object',
+                        'properties' => ['reason' => ['type' => 'string', 'maxLength' => 1000]],
+                    ],
                     'SupplierContactInput' => [
                         'type' => 'object', 'required' => ['firstName', 'lastName'],
                         'properties' => [
