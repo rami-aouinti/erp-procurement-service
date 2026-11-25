@@ -50,6 +50,15 @@ services:
     App\Supplier\Application\Port\SupplierDocumentStorage:
         alias: App\Supplier\Infrastructure\Storage\LocalPrivateSupplierDocumentStorage
 
+    App\Supplier\Application\Port\SupplierDocumentMalwareScanner:
+        alias: App\Supplier\Infrastructure\Scanning\ClamAvSupplierDocumentMalwareScanner
+
+    App\Supplier\Infrastructure\Scanning\ClamAvSupplierDocumentMalwareScanner:
+        arguments:
+            $host: '%env(CLAMAV_HOST)%'
+            $port: '%env(int:CLAMAV_PORT)%'
+            $timeoutSeconds: '%env(float:CLAMAV_TIMEOUT_SECONDS)%'
+
     App\Supplier\Infrastructure\Storage\LocalPrivateSupplierDocumentStorage:
         arguments:
             $root: '%env(SUPPLIER_DOCUMENT_STORAGE_PATH)%'
