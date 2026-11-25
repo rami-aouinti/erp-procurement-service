@@ -13,6 +13,8 @@ import { useAuth } from './auth/AuthProvider.jsx';
 import LoginPage from './auth/LoginPage.jsx';
 import OnboardingPage from './pages/OnboardingPage.jsx';
 import SupplierClassificationPage from './pages/SupplierClassificationPage.jsx';
+import CommandPalette from './components/CommandPalette.jsx';
+import './command-palette.css';
 
 function routeFromLocation() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -36,6 +38,8 @@ function WorkspaceApp() {
   const [supplierCount, setSupplierCount] = useState(0);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [toast, setToast] = useState(null);
   const [theme, setTheme] = useState(() => window.localStorage.getItem('erp-theme') || 'light');
   const [preferences, setPreferences] = useState(() => {
     try {
@@ -131,6 +135,27 @@ function WorkspaceApp() {
     configurationApi.updatePreferences(next).catch((error) => console.warn('Unable to save user preferences:', error));
   };
 
+  const showToast = useCallback((type, title, message) => {
+    setToast({ type, title, message });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 4200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    const onShortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onShortcut);
+    return () => window.removeEventListener('keydown', onShortcut);
+  }, []);
+
   const saveSiteConfiguration = async () => {
     setConfigurationSaving(true);
     setConfigurationError('');
@@ -139,8 +164,10 @@ function WorkspaceApp() {
       const result = await configurationApi.updateSite(settings);
       setSettings(result.settings);
       setConfigurationSaved(true);
+      showToast('success', 'Configuration saved', 'Your workspace settings have been updated.');
     } catch (error) {
       setConfigurationError(error.message || 'Unable to save configuration.');
+      showToast('error', 'Save failed', error.message || 'Unable to save configuration.');
     } finally {
       setConfigurationSaving(false);
     }
@@ -242,6 +269,7 @@ function WorkspaceApp() {
             </div>
           <div className="topbar-right">
             {route.page === 'suppliers' && <label className="topbar-search"><Search size={17} /><input value={supplierSearch} onChange={(event) => setSupplierSearch(event.target.value)} placeholder="Search suppliers..." aria-label="Search suppliers" /></label>}
+            <button className="command-trigger" type="button" onClick={() => setCommandOpen(true)} aria-label="Open command palette" title="Search commands (Ctrl + K)"><Search size={17} /><span>Quick actions</span><kbd>Ctrl K</kbd></button>
             <button className="theme-toggle" type="button" onClick={() => persistPreferences({ ...preferences, colorMode: theme === 'dark' ? 'light' : 'dark' })} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -259,6 +287,8 @@ function WorkspaceApp() {
         {route.page === 'configuration' && <ConfigurationPage settings={settings} onSettingsChange={setSettings} schema={configurationSchema} preferences={preferences} onPreferencesChange={persistPreferences} canManage={roles.includes('supplier-admin')} onSaveSite={saveSiteConfiguration} saving={configurationSaving} error={configurationError} saved={configurationSaved} />}
         {route.page === 'help' && <HelpPage appName={settings.siteName} />}
       </main>
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} onNavigate={navigate} roles={roles} />
+      {toast && <div className={'global-toast ' + toast.type} role={toast.type === 'error' ? 'alert' : 'status'} aria-live={toast.type === 'error' ? 'assertive' : 'polite'}><div><strong>{toast.title}</strong><p>{toast.message}</p></div><button type="button" aria-label="Dismiss notification" onClick={() => setToast(null)}>×</button></div>}
     </div>
   );
 }
