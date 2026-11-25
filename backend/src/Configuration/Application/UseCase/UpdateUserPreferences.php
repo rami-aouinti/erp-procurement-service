@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Configuration\Application\UseCase;
 
 use App\Configuration\Application\ConfigurationDefaults;
+use App\Configuration\Application\Port\ConfigurationCache;
 use App\Configuration\Domain\Repository\UserPreferenceRepository;
 use InvalidArgumentException;
 
@@ -13,8 +14,10 @@ final readonly class UpdateUserPreferences
     private const PALETTES = ['indigo', 'ocean', 'emerald', 'violet', 'rose', 'amber'];
     private const COLOR_MODES = ['light', 'dark', 'system'];
 
-    public function __construct(private UserPreferenceRepository $preferences)
-    {
+    public function __construct(
+        private UserPreferenceRepository $preferences,
+        private ConfigurationCache $cache,
+    ) {
     }
 
     /** @param array<string, mixed> $input
@@ -37,6 +40,7 @@ final readonly class UpdateUserPreferences
         }
 
         $this->preferences->saveForUser($userId, $updated);
+        $this->cache->invalidate('user:' . hash('sha256', $userId));
 
         return $updated;
     }

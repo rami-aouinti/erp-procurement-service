@@ -26,14 +26,17 @@
         <testsuite name="Supplier Unit">
             <directory>tests/Supplier/Domain</directory>
             <directory>tests/Supplier/Application</directory>
-            <directory>tests/Configuration</directory>
             <directory>tests/Security</directory>
         </testsuite>
         <testsuite name="Supplier Functional">
             <directory>tests/Supplier/Transport</directory>
         </testsuite>
         <testsuite name="Configuration Unit">
-            <directory>tests/Configuration</directory>
+            <directory>tests/Configuration/Application</directory>
+            <directory>tests/Configuration/Infrastructure</directory>
+        </testsuite>
+        <testsuite name="Configuration Integration">
+            <directory>tests/Configuration/Integration</directory>
         </testsuite>
         <testsuite name="Supplier Integration">
             <directory>tests/Supplier/Integration</directory>

@@ -33,6 +33,18 @@ services:
       timeout: 3s
       retries: 20
 
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: erp-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    ports:
+      - "127.0.0.1:9121:9121"
+    depends_on:
+      redis:
+        condition: service_healthy
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
     container_name: erp-elasticsearch
