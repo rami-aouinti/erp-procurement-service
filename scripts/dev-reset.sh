@@ -92,7 +92,7 @@ if [[ "$HEALTHY" -ne 1 ]]; then
 fi
 
 echo "Rebuilding the Supplier Elasticsearch index from Oracle..."
-curl -fsS http://localhost:8000/api/suppliers >/dev/null
+docker compose exec -T backend php bin/console supplier:reindex --env=dev
 INDEX_COUNT="$(docker compose exec -T elasticsearch sh -lc \
   'curl -fsS http://localhost:9200/suppliers/_count | grep -oE "count[^0-9]*[0-9]+" | grep -oE "[0-9]+"')"
 if [[ "$INDEX_COUNT" != "5" ]]; then
