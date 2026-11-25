@@ -29,17 +29,41 @@ final class ConfigurationUseCasesTest extends TestCase
 
     public function testSiteConfigurationUpdateMergesNestedFormDefaultsAndInvalidatesCache(): void
     {
-        $repository = new InMemoryConfigurationRepository();
-        $repository->value = [
-            'siteName' => 'Existing ERP',
-            'supplierForm' => ['requireEmail' => true],
-        ];
-        $cache = new InMemoryConfigurationCache();
+        $repository = new class implements ConfigurationRepository {
+            public ?array $value = ['siteName' => 'Existing ERP', 'supplierForm' => ['requireEmail' => true]];
+            public ?string $actorId = null;
+
+            public function find(string $key): ?array
+            {
+                return $key === 'site' ? $this->value : null;
+            }
+
+            public function save(string $key, array $value, string $actorId): void
+            {
+                $this->value = $value;
+                $this->actorId = $actorId;
+            }
+        };
+        $cache = new class implements ConfigurationCache {
+            public array $invalidated = [];
+
+            public function get(string $key): ?array
+            {
+                return null;
+            }
+
+            public function set(string $key, array $value, int $ttl = 300): void
+            {
+            }
+
+            public function invalidate(string $key): void
+            {
+                $this->invalidated[] = $key;
+            }
+        };
         $useCase = new UpdateSiteConfiguration($repository, $cache);
 
-        $updated = $useCase->execute([
-            'supplierForm' => ['requirePhone' => true],
-        ], 'keycloak-user-123');
+        $updated = $useCase->execute(['supplierForm' => ['requirePhone' => true]], 'keycloak-user-123');
 
         self::assertSame('Existing ERP', $updated['siteName']);
         self::assertTrue($updated['supplierForm']['requireEmail']);
@@ -52,7 +76,31 @@ final class ConfigurationUseCasesTest extends TestCase
 
     public function testSiteConfigurationRejectsUnsupportedCurrency(): void
     {
-        $useCase = new UpdateSiteConfiguration(new InMemoryConfigurationRepository(), new InMemoryConfigurationCache());
+        $repository = new class implements ConfigurationRepository {
+            public function find(string $key): ?array
+            {
+                return null;
+            }
+
+            public function save(string $key, array $value, string $actorId): void
+            {
+            }
+        };
+        $cache = new class implements ConfigurationCache {
+            public function get(string $key): ?array
+            {
+                return null;
+            }
+
+            public function set(string $key, array $value, int $ttl = 300): void
+            {
+            }
+
+            public function invalidate(string $key): void
+            {
+            }
+        };
+        $useCase = new UpdateSiteConfiguration($repository, $cache);
 
         $this->expectException(InvalidArgumentException::class);
         $useCase->execute(['currency' => 'BTC'], 'admin-user');
@@ -60,20 +108,54 @@ final class ConfigurationUseCasesTest extends TestCase
 
     public function testSiteConfigurationRejectsUnknownFields(): void
     {
-        $useCase = new UpdateSiteConfiguration(new InMemoryConfigurationRepository(), new InMemoryConfigurationCache());
+        $repository = new class implements ConfigurationRepository {
+            public function find(string $key): ?array
+            {
+                return null;
+            }
+
+            public function save(string $key, array $value, string $actorId): void
+            {
+            }
+        };
+        $cache = new class implements ConfigurationCache {
+            public function get(string $key): ?array
+            {
+                return null;
+            }
+
+            public function set(string $key, array $value, int $ttl = 300): void
+            {
+            }
+
+            public function invalidate(string $key): void
+            {
+            }
+        };
 
         $this->expectException(InvalidArgumentException::class);
-        $useCase->execute(['databasePassword' => 'not-allowed'], 'admin-user');
+        (new UpdateSiteConfiguration($repository, $cache))->execute(['databasePassword' => 'not-allowed'], 'admin-user');
     }
 
     public function testUserPreferencesHaveDefaultsAndAreStoredPerUser(): void
     {
-        $repository = new InMemoryUserPreferenceRepository();
+        $repository = new class implements UserPreferenceRepository {
+            private array $values = [];
+
+            public function findForUser(string $userId): array
+            {
+                return $this->values[$userId] ?? [];
+            }
+
+            public function saveForUser(string $userId, array $preferences): void
+            {
+                $this->values[$userId] = $preferences;
+            }
+        };
         $get = new GetUserPreferences($repository);
         $update = new UpdateUserPreferences($repository);
 
         self::assertSame(['palette' => 'indigo', 'colorMode' => 'light'], $get->execute('user-a'));
-
         $saved = $update->execute('user-a', ['palette' => 'ocean', 'colorMode' => 'dark']);
 
         self::assertSame(['palette' => 'ocean', 'colorMode' => 'dark'], $saved);
@@ -83,62 +165,18 @@ final class ConfigurationUseCasesTest extends TestCase
 
     public function testUserPreferencesRejectUnsupportedPalette(): void
     {
-        $useCase = new UpdateUserPreferences(new InMemoryUserPreferenceRepository());
+        $repository = new class implements UserPreferenceRepository {
+            public function findForUser(string $userId): array
+            {
+                return [];
+            }
+
+            public function saveForUser(string $userId, array $preferences): void
+            {
+            }
+        };
 
         $this->expectException(InvalidArgumentException::class);
-        $useCase->execute('user-a', ['palette' => 'custom-unsafe']);
-    }
-}
-
-final class InMemoryConfigurationRepository implements ConfigurationRepository
-{
-    public ?array $value = null;
-    public ?string $actorId = null;
-
-    public function find(string $key): ?array
-    {
-        return $key === 'site' ? $this->value : null;
-    }
-
-    public function save(string $key, array $value, string $actorId): void
-    {
-        $this->value = $value;
-        $this->actorId = $actorId;
-    }
-}
-
-final class InMemoryUserPreferenceRepository implements UserPreferenceRepository
-{
-    /** @var array<string, array<string, mixed>> */
-    private array $values = [];
-
-    public function findForUser(string $userId): array
-    {
-        return $this->values[$userId] ?? [];
-    }
-
-    public function saveForUser(string $userId, array $preferences): void
-    {
-        $this->values[$userId] = $preferences;
-    }
-}
-
-final class InMemoryConfigurationCache implements ConfigurationCache
-{
-    /** @var list<string> */
-    public array $invalidated = [];
-
-    public function get(string $key): ?array
-    {
-        return null;
-    }
-
-    public function set(string $key, array $value, int $ttl = 300): void
-    {
-    }
-
-    public function invalidate(string $key): void
-    {
-        $this->invalidated[] = $key;
+        (new UpdateUserPreferences($repository))->execute('user-a', ['palette' => 'custom-unsafe']);
     }
 }
