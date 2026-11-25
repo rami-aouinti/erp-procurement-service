@@ -84,6 +84,28 @@ final class HandleSupplierEventTest extends TestCase
         (new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics))($this->event('SupplierClassificationUpdated'));
     }
 
+
+    public function testClassificationIndexFailureReleasesTheEventForRetry(): void
+    {
+        $supplier = \\App\\Supplier\\Domain\\Model\\Supplier::reconstitute(42, 'Current Supplier', null, null, null, new \\DateTimeImmutable());
+        $suppliers = $this->createMock(SupplierRepository::class);
+        $suppliers->expects(self::once())->method('findById')->with(42)->willReturn($supplier);
+        $search = $this->createMock(SupplierSearchIndex::class);
+        $search->expects(self::once())->method('index')->with($supplier)->willThrowException(new RuntimeException('Elasticsearch unavailable'));
+        $cache = $this->createMock(SupplierListCache::class);
+        $cache->expects(self::never())->method('invalidate');
+        $deduplication = $this->createMock(SupplierEventDeduplication::class);
+        $deduplication->expects(self::once())->method('claim')->willReturn('claim-token');
+        $deduplication->expects(self::never())->method('markProcessed');
+        $deduplication->expects(self::once())->method('release')->with('event-42', 'claim-token', RuntimeException::class);
+        $metrics = $this->metrics();
+        $metrics->expects(self::never())->method('incrementSupplierEvent');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Elasticsearch unavailable');
+        (new HandleSupplierEvent($suppliers, $search, $cache, $deduplication, $metrics))($this->event('SupplierClassificationUpdated'));
+    }
+
     public function testDuplicateDeliveryIsSkippedAfterFirstSuccessfulProcessing(): void
     {
         $suppliers = $this->createMock(SupplierRepository::class);
