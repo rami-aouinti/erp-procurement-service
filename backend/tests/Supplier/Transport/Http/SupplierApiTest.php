@@ -48,13 +48,49 @@ final class SupplierApiTest extends KernelTestCase
 
     public function testOnboardingAndConfigurationEndpointsRequireAKeycloakAccessToken(): void
     {
-        $onboarding = $this->request('GET', '/api/supplier-onboarding/queue');
-        $preferences = $this->request('GET', '/api/configuration/me/preferences');
-        $siteConfiguration = $this->request('GET', '/api/configuration/site');
+        $onboarding = $this->request('GET', '/api/supplier-onboarding/queue', null, null);
+        $preferences = $this->request('GET', '/api/configuration/me/preferences', null, null);
+        $siteConfiguration = $this->request('GET', '/api/configuration/site', null, null);
 
         self::assertSame(Response::HTTP_UNAUTHORIZED, $onboarding->getStatusCode());
         self::assertSame(Response::HTTP_UNAUTHORIZED, $preferences->getStatusCode());
         self::assertSame(Response::HTTP_UNAUTHORIZED, $siteConfiguration->getStatusCode());
+    }
+
+
+    public function testLegacySupplierEndpointsRequireAKeycloakIdentity(): void
+    {
+        foreach ([
+            '/api/suppliers',
+            '/api/suppliers/42/profile',
+            '/api/suppliers/42/contacts',
+            '/api/suppliers/42/addresses',
+            '/api/suppliers/42/bank-accounts',
+        ] as $uri) {
+            self::assertSame(
+                Response::HTTP_UNAUTHORIZED,
+                $this->request('GET', $uri, null, null)->getStatusCode(),
+                sprintf('Expected %s to reject an anonymous request.', $uri),
+            );
+        }
+    }
+
+    public function testLegacySupplierRoutesEnforceRoleBoundaries(): void
+    {
+        self::assertSame(
+            Response::HTTP_OK,
+            $this->request('GET', '/api/suppliers', null, ['supplier-reviewer'])->getStatusCode(),
+        );
+
+        self::assertSame(
+            Response::HTTP_FORBIDDEN,
+            $this->request('POST', '/api/suppliers', ['name' => 'Forbidden Direct Supplier'], ['supplier-reviewer'])->getStatusCode(),
+        );
+
+        self::assertSame(
+            Response::HTTP_FORBIDDEN,
+            $this->request('GET', '/api/suppliers/42/bank-accounts', null, ['supplier-reviewer'])->getStatusCode(),
+        );
     }
 
     public function testSupplierCrudLifecycle(): void
@@ -365,10 +401,21 @@ final class SupplierApiTest extends KernelTestCase
     }
 
     /** @param array<string, mixed>|null $payload */
-    private function request(string $method, string $uri, ?array $payload = null): Response
+    /** @param array<string, mixed>|null $payload @param list<string>|null $roles */
+    private function request(string $method, string $uri, ?array $payload = null, ?array $roles = ['supplier-admin']): Response
     {
         $content = $payload === null ? '' : json_encode($payload, JSON_THROW_ON_ERROR);
         $request = Request::create($uri, $method, server: ['CONTENT_TYPE' => 'application/json'], content: $content);
+        if ($roles !== null) {
+            // Internal request attribute simulates an upstream-authenticated identity.
+            // It is not derived from any HTTP header and cannot be supplied by a client.
+            $request->attributes->set('_keycloak_user', [
+                'id' => 'supplier-api-test-user',
+                'username' => 'supplier-api-test',
+                'roles' => $roles,
+            ]);
+        }
+
         return $this->httpKernel->handle($request, HttpKernelInterface::MAIN_REQUEST);
     }
 }
