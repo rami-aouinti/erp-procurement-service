@@ -1,0 +1,16 @@
+# Authentication for supplier onboarding is enforced by the Keycloak request
+# subscriber. The rest of the legacy API remains backward-compatible during
+# the staged migration; do not expose it publicly without an API-wide policy.
+security:
+    password_hashers: []
+    providers:
+        app_user_provider:
+            memory: null
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        main:
+            lazy: true
+            stateless: true
+            provider: app_user_provider
