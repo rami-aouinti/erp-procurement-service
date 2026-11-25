@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Building2, CircleHelp, Settings, Moon, Sun, Search, ClipboardCheck } from 'lucide-react';
-import SettingsPage from './pages/SettingsPage.jsx';
+import ConfigurationPage from './pages/ConfigurationPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
 import MetricCard from './components/MetricCard.jsx';
 import StatusPanel from './components/StatusPanel.jsx';
@@ -8,6 +8,7 @@ import SuppliersPage from './pages/SuppliersPage.jsx';
 import SupplierEditPage from './pages/SupplierEditPage.jsx';
 import SupplierDetails from './components/SupplierDetails.jsx';
 import { suppliersApi } from './api/suppliers.js';
+import { configurationApi } from './api/configuration.js';
 import { useAuth } from './auth/AuthProvider.jsx';
 import LoginPage from './auth/LoginPage.jsx';
 import OnboardingPage from './pages/OnboardingPage.jsx';
@@ -20,7 +21,7 @@ function routeFromLocation() {
   if (detail) return { page: 'detail', id: decodeURIComponent(detail[1]) };
   if (path === '/suppliers') return { page: 'suppliers' };
   if (path === '/onboarding') return { page: 'onboarding' };
-  if (path === '/settings') return { page: 'settings' };
+  if (path === '/settings' || path === '/configuration') return { page: 'configuration' };
   if (path === '/help') return { page: 'help' };
   return { page: 'dashboard' };
 }
@@ -33,7 +34,43 @@ function WorkspaceApp() {
   const [supplierCount, setSupplierCount] = useState(0);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [theme, setTheme] = useState(() => window.localStorage.getItem('erp-theme') || 'light');
-  const [settings, setSettings] = useState(() => { try { return { appName: 'Procurement Management Suite', shopName: '', shopEmail: '', shopAddress: '', currency: 'EUR', palette: 'indigo', ...JSON.parse(window.localStorage.getItem('erp-settings') || '{}') }; } catch { return { appName: 'Procurement Management Suite', shopName: '', shopEmail: '', shopAddress: '', currency: 'EUR', palette: 'indigo' }; } });
+  const [preferences, setPreferences] = useState(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem('erp-preferences') || '{}');
+      const legacy = JSON.parse(window.localStorage.getItem('erp-settings') || '{}');
+      return { palette: legacy.palette || 'indigo', colorMode: window.localStorage.getItem('erp-theme') || 'light', ...stored };
+    } catch {
+      return { palette: 'indigo', colorMode: 'light' };
+    }
+  });
+  const [settings, setSettings] = useState(() => {
+    const defaults = {
+      siteName: 'ERP Procurement', companyName: '', companyEmail: '', companyPhone: '',
+      companyAddress: '', currency: 'EUR', locale: 'en', timezone: 'Europe/Berlin',
+      dateFormat: 'Y-m-d', itemsPerPage: 10,
+      supplierForm: { requireEmail: false, requirePhone: false, requireTaxNumber: false, allowInactive: true },
+    };
+    try {
+      const stored = JSON.parse(window.localStorage.getItem('erp-site-settings') || '{}');
+      const legacy = JSON.parse(window.localStorage.getItem('erp-settings') || '{}');
+      return {
+        ...defaults,
+        ...legacy,
+        ...stored,
+        siteName: stored.siteName || legacy.appName || defaults.siteName,
+        companyName: stored.companyName || legacy.shopName || '',
+        companyEmail: stored.companyEmail || legacy.shopEmail || '',
+        companyAddress: stored.companyAddress || legacy.shopAddress || '',
+        supplierForm: { ...defaults.supplierForm, ...(stored.supplierForm || {}) },
+      };
+    } catch {
+      return defaults;
+    }
+  });
+  const [configurationSchema, setConfigurationSchema] = useState([]);
+  const [configurationSaving, setConfigurationSaving] = useState(false);
+  const [configurationError, setConfigurationError] = useState('');
+  const [configurationSaved, setConfigurationSaved] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -41,13 +78,71 @@ function WorkspaceApp() {
   }, [theme]);
 
   useEffect(() => {
-    window.localStorage.setItem('erp-settings', JSON.stringify(settings));
-    const palettes = { indigo: ['#647cff', '#4f64e8', '#edf0ff'], ocean: ['#0891b2', '#0e7490', '#e0f7fb'], emerald: ['#059669', '#047857', '#e2f8ef'], violet: ['#8b5cf6', '#6d28d9', '#f1eaff'], rose: ['#e11d48', '#be123c', '#fff0f3'], amber: ['#d97706', '#b45309', '#fff5df'] };
-    const colors = palettes[settings.palette] || palettes.indigo;
+    window.localStorage.setItem('erp-site-settings', JSON.stringify(settings));
+  }, [settings]);
+
+  useEffect(() => {
+    const palettes = {
+      indigo: ['#647cff', '#4f64e8', '#edf0ff'],
+      ocean: ['#0891b2', '#0e7490', '#e0f7fb'],
+      emerald: ['#059669', '#047857', '#e2f8ef'],
+      violet: ['#8b5cf6', '#6d28d9', '#f1eaff'],
+      rose: ['#e11d48', '#be123c', '#fff0f3'],
+      amber: ['#d97706', '#b45309', '#fff5df'],
+    };
+    const colors = palettes[preferences.palette] || palettes.indigo;
     document.documentElement.style.setProperty('--accent', colors[0]);
     document.documentElement.style.setProperty('--accent-strong', colors[1]);
     document.documentElement.style.setProperty('--accent-soft', colors[2]);
-  }, [settings]);
+    window.localStorage.setItem('erp-preferences', JSON.stringify(preferences));
+  }, [preferences]);
+
+  useEffect(() => {
+    const applyMode = () => setTheme(
+      preferences.colorMode === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : preferences.colorMode,
+    );
+    applyMode();
+    if (preferences.colorMode !== 'system') return undefined;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener('change', applyMode);
+    return () => media.removeEventListener('change', applyMode);
+  }, [preferences.colorMode]);
+
+  useEffect(() => {
+    let active = true;
+    configurationApi.getSite().then((data) => {
+      if (!active) return;
+      setSettings(data.settings);
+      setConfigurationSchema(data.schema || []);
+    }).catch((error) => console.warn('Unable to load site configuration:', error));
+    configurationApi.getPreferences().then((data) => {
+      if (!active) return;
+      setPreferences((current) => ({ ...current, ...data.preferences }));
+    }).catch((error) => console.warn('Unable to load user preferences:', error));
+    return () => { active = false; };
+  }, []);
+
+  const persistPreferences = (next) => {
+    setPreferences(next);
+    configurationApi.updatePreferences(next).catch((error) => console.warn('Unable to save user preferences:', error));
+  };
+
+  const saveSiteConfiguration = async () => {
+    setConfigurationSaving(true);
+    setConfigurationError('');
+    setConfigurationSaved(false);
+    try {
+      const result = await configurationApi.updateSite(settings);
+      setSettings(result.settings);
+      setConfigurationSaved(true);
+    } catch (error) {
+      setConfigurationError(error.message || 'Unable to save configuration.');
+    } finally {
+      setConfigurationSaving(false);
+    }
+  };
 
   const navigate = useCallback((path) => {
     window.history.pushState({}, '', path);
@@ -89,13 +184,13 @@ function WorkspaceApp() {
   }, [route.page]);
 
   const isActive = (page) => route.page === page || (page === 'suppliers' && ['detail', 'edit'].includes(route.page));
-  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'settings' ? 'Settings' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : 'Supplier details';
+  const pageTitle = route.page === 'dashboard' ? 'Dashboard' : route.page === 'suppliers' ? 'Suppliers' : route.page === 'edit' ? 'Edit supplier' : route.page === 'configuration' ? 'Configuration' : route.page === 'help' ? 'Help' : route.page === 'onboarding' ? 'Onboarding approvals' : 'Supplier details';
 
   return (
     <div className="erp-app">
       <aside className="sidebar">
         <a className="brand" href="/" onClick={(event) => { event.preventDefault(); navigate('/'); }}>
-          <span className="brand-mark">P</span><span className="brand-copy"><strong>{settings.appName || "Procurement"}</strong><small>MANAGEMENT SUITE</small></span>
+          <span className="brand-mark">P</span><span className="brand-copy"><strong>{settings.siteName || 'ERP Procurement'}</strong><small>MANAGEMENT SUITE</small></span>
         </a>
         <div className="sidebar-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Main navigation">
@@ -104,7 +199,7 @@ function WorkspaceApp() {
         </nav>
         <div className="sidebar-bottom">
           <nav className="side-nav sidebar-utility-nav" aria-label="Application">
-            <a href="/settings" className={route.page === 'settings' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/settings'); }}><span className="nav-icon"><Settings size={18} /></span>Settings</a>
+            <a href="/configuration" className={route.page === 'configuration' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/configuration'); }}><span className="nav-icon"><Settings size={18} /></span>Configuration</a>
             <a href="/help" className={route.page === 'help' ? 'nav-link active' : 'nav-link'} onClick={(e) => { e.preventDefault(); navigate('/help'); }}><span className="nav-icon"><CircleHelp size={18} /></span>Help</a>
           </nav>
           <div className="sidebar-connection"><span className={`connection-dot ${apiStatus}`}></span><span><strong>Backend API</strong><small>{apiStatus === 'online' ? 'Connected' : apiStatus === 'offline' ? 'Unavailable' : 'Checking...'}</small></span></div>
@@ -116,7 +211,7 @@ function WorkspaceApp() {
           <div className="breadcrumbs"><span>Workspace</span><span className="crumb-separator">/</span><strong>{pageTitle}</strong></div>
           <div className="topbar-right">
             {route.page === 'suppliers' && <label className="topbar-search"><Search size={17} /><input value={supplierSearch} onChange={(event) => setSupplierSearch(event.target.value)} placeholder="Search suppliers..." aria-label="Search suppliers" /></label>}
-            <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            <button className="theme-toggle" type="button" onClick={() => persistPreferences({ ...preferences, colorMode: theme === 'dark' ? 'light' : 'dark' })} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <span className="avatar" aria-label="User avatar">{String(user?.preferred_username || user?.email || 'U').slice(0, 2).toUpperCase()}</span><button className="secondary-button auth-logout" type="button" onClick={logout}>Sign out</button>
@@ -133,8 +228,8 @@ function WorkspaceApp() {
         {route.page === 'suppliers' && <SuppliersPage navigate={navigate} onCountChange={setSupplierCount} searchValue={supplierSearch} onSearchChange={setSupplierSearch} canCreate={roles.includes('supplier-onboarding-submit') || roles.includes('supplier-admin')} />}
         {route.page === 'edit' && <SupplierEditPage supplierId={route.id} navigate={navigate} />}
         {route.page === 'detail' && <SupplierDetailRoute supplierId={route.id} navigate={navigate} />}
-        {route.page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} />}
-        {route.page === 'help' && <HelpPage appName={settings.appName} />}
+        {route.page === 'configuration' && <ConfigurationPage settings={settings} onSettingsChange={setSettings} schema={configurationSchema} preferences={preferences} onPreferencesChange={persistPreferences} canManage={roles.includes('supplier-admin')} onSaveSite={saveSiteConfiguration} saving={configurationSaving} error={configurationError} saved={configurationSaved} />}
+        {route.page === 'help' && <HelpPage appName={settings.siteName} />}
       </main>
     </div>
   );
