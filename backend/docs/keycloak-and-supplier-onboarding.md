@@ -23,7 +23,25 @@ The local admin credentials come from `KEYCLOAK_ADMIN` and
 `KEYCLOAK_ADMIN_PASSWORD` in `.env`. Change the example credentials before using
 anything beyond a local development machine.
 
-Create internal users in the realm and assign only the required realm roles. The API
+Create internal users in the realm and assign only the required realm roles. For a
+local API exercise, create a user, set a non-temporary password and assign either
+`supplier-onboarding-submit` or `supplier-reviewer` in the user's realm role mapping.
+Then obtain a local-only access token (replace the example credentials):
+
+```bash
+TOKEN=$(curl -fsS -X POST \
+  http://localhost:8081/realms/erp-procurement/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=password' \
+  --data-urlencode 'client_id=erp-procurement-dev-cli' \
+  --data-urlencode 'username=procurement.demo' \
+  --data-urlencode 'password=CHANGE_ME' | jq -r .access_token)
+
+curl -fsS http://localhost:8000/api/supplier-onboarding/queue \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The API
 accepts access tokens whose issuer is
 `http://localhost:8081/realms/erp-procurement` and whose audience includes
 `erp-procurement-api`. The backend downloads public signing keys from Keycloak's JWKS
