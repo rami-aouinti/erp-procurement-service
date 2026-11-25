@@ -41,7 +41,7 @@ export default function SuppliersPage({ navigate, onCountChange }) {
   const closeCreate = () => { if (!saving) setModal(false); };
   const next = () => {
     if (step === 0 && (!form.name.trim() || form.name.trim().length < 2)) { setError('Enter a company name with at least 2 characters.'); return; }
-    if (step === 1 && form.email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(form.email)) { setError('Enter a valid email address.'); return; }
+    if (step === 1 && form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError('Enter a valid email address.'); return; }
     setError(''); setStep((value) => Math.min(2, value + 1));
   };
   const previous = () => { setError(''); setStep((value) => Math.max(0, value - 1)); };
