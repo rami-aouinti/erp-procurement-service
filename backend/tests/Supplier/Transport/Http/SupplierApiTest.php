@@ -16,7 +16,8 @@ final class SupplierApiTest extends KernelTestCase
 {
     private Connection $connection;
     private HttpKernelInterface $httpKernel;
-    private string $email;\n    private ?int $indexedSupplierId = null;
+    private string $email;
+    private ?int $indexedSupplierId = null;
 
     protected function setUp(): void
     {
@@ -32,6 +33,16 @@ final class SupplierApiTest extends KernelTestCase
         if (isset($this->connection) && $this->connection->isTransactionActive()) {
             $this->connection->rollBack();
         }
+
+        // Elasticsearch is outside the Oracle transaction: clean up projections explicitly.
+        if ($this->indexedSupplierId !== null) {
+            try {
+                static::getContainer()->get(SupplierSearchIndex::class)->delete($this->indexedSupplierId);
+            } catch (\Throwable) {
+                // Preserve the original test failure if Elasticsearch is unavailable.
+            }
+        }
+
         parent::tearDown();
     }
 
@@ -177,7 +188,9 @@ final class SupplierApiTest extends KernelTestCase
         // test owns its database transaction, so seed the projection explicitly.
         $supplier = static::getContainer()->get(SupplierRepository::class)->findById($id);
         self::assertNotNull($supplier);
-        static::getContainer()->get(SupplierSearchIndex::class)->index($supplier);\n        $this->indexedSupplierId = $id;
+        static::getContainer()->get(SupplierSearchIndex::class)->index($supplier);
+        $this->indexedSupplierId = $id;
+        $this->indexedSupplierId = $id;
 
         $results = $this->request('GET', '/api/suppliers?search=Elasticsearch%20Demo');
         self::assertSame(Response::HTTP_OK, $results->getStatusCode());
