@@ -4,6 +4,8 @@
 
 WHENEVER SQLERROR EXIT SQL.SQLCODE;
 
+DELETE FROM supplier_onboarding_history;
+DELETE FROM supplier_onboarding;
 DELETE FROM supplier_consumed_events;
 DELETE FROM supplier_outbox_events;
 DELETE FROM supplier_audit_logs;
