@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { suppliersApi } from '../api/suppliers.js';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 const blank = { name: '', email: '', phone: '', taxNumber: '', status: 'ACTIVE', contactPerson: '', street: '', city: '', postalCode: '', country: 'DE' };
 const steps = ['Company', 'Contact', 'Address'];
 
@@ -68,16 +68,13 @@ export default function SuppliersPage({ navigate, onCountChange }) {
 
   return (
     <section className="page-content suppliers-page">
-      <div className="page-heading"><div><p className="eyebrow">MASTER DATA</p><h1>Suppliers</h1><p className="subtitle">Manage your supplier directory, business contacts and payment relationships.</p></div><button className="primary-button create-button" onClick={openCreate}>＋ Create supplier</button></div>
-      <div className="supplier-summary-row">
-        <div className="summary-stat"><span className="summary-icon">▤</span><span><small>Matching suppliers</small><strong>{items.length}</strong></span></div>
-        <div className="summary-stat"><span className="summary-icon green">✓</span><span><small>Active suppliers</small><strong>{items.filter((item) => item.status === 'ACTIVE').length}</strong></span></div>
-        <div className="summary-stat"><span className="summary-icon gray">⌕</span><span><small>Current filter</small><strong>{status === 'ALL' ? 'All statuses' : status.toLowerCase()}</strong></span></div>
-      </div>
-      {notice && <div className="alert alert-success" role="status">{notice}</div>}
-      {error && !modal && <div className="alert alert-error" role="alert">{error}</div>}
       <section className="supplier-table-card directory-card">
-        <div className="directory-heading"><div><h2>Supplier directory</h2><p className="section-description">Search, filter and manage registered suppliers.</p></div><button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button></div>
+        <div className="directory-heading directory-actions">
+          <button className="primary-button" onClick={openCreate}>＋ Create supplier</button>
+          <button className="secondary-button" onClick={load} disabled={loading}>↻ Refresh</button>
+        </div>
+        {notice && <div className="alert alert-success" role="status">{notice}</div>}
+        {error && !modal && <div className="alert alert-error" role="alert">{error}</div>}
         <div className="directory-toolbar"><label className="search-field"><span>⌕</span><input value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder="Search suppliers by name, email, tax number..." aria-label="Search suppliers" /></label><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter suppliers by status"><option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="BLOCKED">Blocked</option></select></div>
         {loading ? <div className="table-state"><span className="loader"></span>Loading supplier records...</div> : items.length === 0 ? <div className="table-state empty-directory"><div className="empty-icon">▤</div><strong>No suppliers found</strong><span>Try changing your search or create your first supplier.</span><button className="primary-button" onClick={openCreate}>Create supplier</button></div> : <>
           <div className="table-scroll"><table className="supplier-table directory-table"><thead><tr><th>SUPPLIER</th><th>CONTACT INFORMATION</th><th>LOCATION</th><th>STATUS</th><th className="actions-heading">ACTIONS</th></tr></thead>
