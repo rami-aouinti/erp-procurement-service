@@ -68,9 +68,17 @@ final class KeycloakJwtAuthenticator
         $context = stream_context_create(['http' => ['timeout' => 3, 'ignore_errors' => false]]);
         $body = @file_get_contents($this->jwksUrl, false, $context);
         if (!is_string($body)) {
-            throw new \RuntimeException('Keycloak signing keys are unavailable.');
+            throw new KeycloakUnavailableException('Keycloak signing keys are unavailable.');
         }
-        $jwks = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        try {
+            $jwks = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new KeycloakUnavailableException('Keycloak returned an invalid JWKS document.', previous: $exception);
+        }
+        if (!is_array($jwks['keys'] ?? null)) {
+            throw new KeycloakUnavailableException('Keycloak returned a JWKS document without signing keys.');
+        }
+
         foreach ($jwks['keys'] as $jwk) {
             if (!is_array($jwk)) {
                 continue;
